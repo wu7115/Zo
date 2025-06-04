@@ -2,7 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-// import { FixedHeader } from '@/app/components/FixedHeader'; // Removed
+import { TopHeader } from '@/app/components/TopHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 import { AiAgentFab } from '@/app/components/AiAgentFab';
 import { ContextualHelpFab } from '@/app/components/ContextualHelpFab';
@@ -25,8 +25,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased bg-muted">
-        {/* <FixedHeader /> Removed */}
-        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-background shadow-xl pb-16"> {/* Removed pt-[20vh] */}
+        <TopHeader />
+        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-background shadow-xl pt-16 pb-16"> {/* Added pt-16 for TopHeader */}
           {children}
         </div>
         <BottomNavigationBar />
@@ -37,5 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
