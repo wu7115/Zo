@@ -1,12 +1,13 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PencilLine, X, Send, User, Bot, Loader2, AlertTriangle } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, AlertTriangle } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar'; // Assuming Avatar can take children for icons
 import { cn } from '@/lib/utils';
 import { askGemini, AskGeminiInput } from '@/ai/flows/ask-gemini-flow';
 
@@ -24,15 +25,28 @@ export function AiAgentFab() {
   const [error, setError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const togglePanel = () => {
-    setIsPanelOpen(!isPanelOpen);
-    if (isPanelOpen) { // Closing the panel
-      setInputPrompt('');
-      setChatHistory([]);
-      setError(null);
-      setIsLoading(false);
-    }
-  };
+  const togglePanel = useCallback(() => {
+    setIsPanelOpen(prevIsPanelOpen => {
+      const newIsPanelOpen = !prevIsPanelOpen;
+      if (!newIsPanelOpen) { // Panel is closing
+        setInputPrompt('');
+        setChatHistory([]);
+        setError(null);
+        setIsLoading(false);
+      }
+      return newIsPanelOpen;
+    });
+  }, []);
+
+  useEffect(() => {
+    const eventListener = () => {
+      togglePanel();
+    };
+    window.addEventListener('toggleAiChatPanel', eventListener);
+    return () => {
+      window.removeEventListener('toggleAiChatPanel', eventListener);
+    };
+  }, [togglePanel]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -56,12 +70,13 @@ export function AiAgentFab() {
       text: inputPrompt,
     };
     setChatHistory((prev) => [...prev, newUserMessage]);
+    const currentPrompt = inputPrompt;
     setInputPrompt('');
     setIsLoading(true);
     setError(null);
 
     try {
-      const aiResponse = await askGemini({ prompt: inputPrompt } as AskGeminiInput);
+      const aiResponse = await askGemini({ prompt: currentPrompt } as AskGeminiInput);
       const newAiMessage: ChatMessage = {
         id: Date.now().toString() + '-ai',
         sender: 'ai',
@@ -84,23 +99,11 @@ export function AiAgentFab() {
 
   return (
     <>
-      <Button
-        variant="default"
-        size="icon"
-        className={cn(
-          "fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-xl z-50 bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 ease-in-out",
-          isPanelOpen && "opacity-0 scale-0"
-        )}
-        onClick={togglePanel}
-        aria-label="Open AI Assistant"
-      >
-        <PencilLine className="h-7 w-7" />
-      </Button>
-
+      {/* The FAB button is removed, panel is controlled by event */}
       {isPanelOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out"
-          onClick={togglePanel}
+          onClick={togglePanel} // Allow closing by clicking overlay
         />
       )}
 

@@ -6,10 +6,24 @@ import { usePathname } from 'next/navigation';
 import { Home, ClipboardList, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/track', label: 'Track', icon: ClipboardList },
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/ask', label: 'Ask AI', icon: Bot },
+interface NavItem {
+  id: string;
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  action?: () => void;
+}
+
+const navItems: NavItem[] = [
+  { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
+  { id: 'home', href: '/', label: 'Home', icon: Home },
+  { 
+    id: 'ask', 
+    href: '#', // Using '#' for non-navigation action
+    label: 'Ask AI', 
+    icon: Bot, 
+    action: () => window.dispatchEvent(new CustomEvent('toggleAiChatPanel')) 
+  },
 ];
 
 export function BottomNavigationBar() {
@@ -19,9 +33,32 @@ export function BottomNavigationBar() {
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 h-16 w-full max-w-md bg-background/80 backdrop-blur-sm shadow-t-md border-t border-border">
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          // For "Ask AI", isActive will depend on panel state, which is not available here directly.
+          // So, it won't show active state based on pathname.
+          const isActive = item.id !== 'ask' && pathname === item.href; 
+
+          if (item.action) {
+            return (
+              <a
+                key={item.id}
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (item.action) item.action();
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center w-1/3 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
+                  // isActive && "text-primary" // Active state for 'ask' would need global state
+                )}
+              >
+                <item.icon className={cn("h-6 w-6 mb-0.5", isActive ? "text-primary" : "")} />
+                <span className={cn("text-xs font-medium", isActive ? "text-primary" : "")}>{item.label}</span>
+              </a>
+            );
+          }
+
           return (
-            <Link key={item.label} href={item.href} legacyBehavior>
+            <Link key={item.id} href={item.href} legacyBehavior>
               <a
                 className={cn(
                   "flex flex-col items-center justify-center w-1/3 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150",
