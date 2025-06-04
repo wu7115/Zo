@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FixedHeader } from '@/app/components/FixedHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 import { AiAgentFab } from '@/app/components/AiAgentFab';
+import { ContextualHelpFab } from '@/app/components/ContextualHelpFab';
 
 export const metadata: Metadata = {
   title: 'Podium',
@@ -29,7 +30,8 @@ export default function RootLayout({
           {children}
         </div>
         <BottomNavigationBar />
-        <AiAgentFab />
+        <AiAgentFab /> {/* For the main Gemini chat */}
+        <ContextualHelpFab /> {/* For contextual recommendations */}
         <Toaster />
       </body>
     </html>
