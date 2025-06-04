@@ -3,8 +3,36 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ClipboardList, Bot } from 'lucide-react';
+import { Home, ClipboardList } from 'lucide-react'; // Removed Bot
 import { cn } from '@/lib/utils';
+import type { SVGProps } from 'react';
+
+// Custom Labubu-inspired SVG Icon
+const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    {/* Head-like circle */}
+    <circle cx="12" cy="14" r="3.5" />
+    {/* Left Ear */}
+    <path d="M9.5 11.5C9 8 7 6.5 8.5 4.5S12 6 12 6" />
+    {/* Right Ear */}
+    <path d="M14.5 11.5C15 8 17 6.5 15.5 4.5S12 6 12 6" />
+    {/* Eyes - simple dots */}
+    <circle cx="10.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+    <circle cx="13.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 
 interface NavItem {
   id: string;
@@ -17,12 +45,12 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
   { id: 'home', href: '/', label: 'Home', icon: Home },
-  { 
-    id: 'ask', 
-    href: '#', // Using '#' for non-navigation action
-    label: 'Ask AI', 
-    icon: Bot, 
-    action: () => window.dispatchEvent(new CustomEvent('toggleAiChatPanel')) 
+  {
+    id: 'ask',
+    href: '#',
+    label: 'Ask AI',
+    icon: LabubuIcon, // Using the new Labubu-inspired icon
+    action: () => window.dispatchEvent(new CustomEvent('toggleAiChatPanel'))
   },
 ];
 
@@ -33,9 +61,7 @@ export function BottomNavigationBar() {
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 h-16 w-full max-w-md bg-background/80 backdrop-blur-sm shadow-t-md border-t border-border">
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
-          // For "Ask AI", isActive will depend on panel state, which is not available here directly.
-          // So, it won't show active state based on pathname.
-          const isActive = item.id !== 'ask' && pathname === item.href; 
+          const isActive = item.id !== 'ask' && pathname === item.href;
 
           if (item.action) {
             return (
@@ -48,7 +74,6 @@ export function BottomNavigationBar() {
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/3 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
-                  // isActive && "text-primary" // Active state for 'ask' would need global state
                 )}
               >
                 <item.icon className={cn("h-6 w-6 mb-0.5", isActive ? "text-primary" : "")} />
