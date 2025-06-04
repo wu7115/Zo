@@ -22,8 +22,14 @@ const menuItems = [
 
 export function FixedHeader() {
   return (
-    <header className="fixed top-0 left-1/2 -translate-x-1/2 z-50 h-[20vh] w-full max-w-md bg-background/80 backdrop-blur-sm shadow-md">
-      <div className="flex overflow-x-auto space-x-3 p-3 items-center h-full no-scrollbar">
+    <header className="fixed top-0 left-1/2 -translate-x-1/2 z-50 h-[20vh] w-full max-w-md bg-background/80 backdrop-blur-sm shadow-md flex flex-col">
+      <div className="px-4 pt-3 pb-1">
+        <h1 className="text-xl font-bold text-primary">
+          <span style={{ fontFamily: 'Times New Roman, Times, serif' }}>Podium</span>
+          <span className="font-headline"> Pulse</span>
+        </h1>
+      </div>
+      <div className="flex-grow overflow-x-auto space-x-3 px-3 pb-3 flex items-center no-scrollbar">
         {menuItems.map((item) => (
           <Link key={item.label} href={item.href} legacyBehavior>
             <a className="flex flex-none flex-col items-center justify-center w-20 h-20 rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition-colors duration-150 cursor-pointer p-1 text-center shadow-lg transform hover:scale-105">
