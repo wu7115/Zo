@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FixedHeader } from '@/app/components/FixedHeader';
+import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 
 export const metadata: Metadata = {
   title: 'Podium Pulse',
@@ -23,9 +24,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-muted">
         <FixedHeader />
-        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-background shadow-xl pt-[20vh]">
+        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-background shadow-xl pt-[20vh] pb-16">
           {children}
         </div>
+        <BottomNavigationBar />
         <Toaster />
       </body>
     </html>
