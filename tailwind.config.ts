@@ -65,6 +65,7 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        softHighlight: '#e6f5ff', // hsl(205, 100%, 95%)
       },
       borderRadius: {
         lg: 'var(--radius)',
