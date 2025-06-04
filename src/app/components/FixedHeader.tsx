@@ -24,9 +24,8 @@ export function FixedHeader() {
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 z-50 h-[20vh] w-full max-w-md bg-background/80 backdrop-blur-sm shadow-md flex flex-col">
       <div className="px-4 pt-3 pb-1">
-        <h1 className="text-xl font-bold text-primary">
-          <span style={{ fontFamily: 'Times New Roman, Times, serif' }}>Podium</span>
-          <span className="font-headline"> Pulse</span>
+        <h1 className="text-xl font-bold text-primary" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+          Podium
         </h1>
       </div>
       <div className="flex-grow overflow-x-auto space-x-3 px-3 pb-3 flex items-center no-scrollbar">

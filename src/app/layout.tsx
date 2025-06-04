@@ -6,7 +6,7 @@ import { FixedHeader } from '@/app/components/FixedHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 
 export const metadata: Metadata = {
-  title: 'Podium Pulse',
+  title: 'Podium',
   description: 'Your personal wellness companion',
 };
 

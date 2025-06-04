@@ -19,7 +19,7 @@ export default function HomePage() {
         </div>
       </main>
       <footer className="text-center py-8 mt-8 sm:mt-12">
-        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Podium Pulse. Stay Active, Stay Inspired.</p>
+        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Podium. Stay Active, Stay Inspired.</p>
       </footer>
     </div>
   );
