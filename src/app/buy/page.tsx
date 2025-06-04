@@ -7,10 +7,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ShoppingCart, Plus, FlaskConical } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 const products = [
   {
@@ -79,54 +84,64 @@ export default function ShopPage() {
               <Badge variant="outline" className="text-sm border-primary text-primary">Points: 421</Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-primary mb-3">Products</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {products.map((product, index) => (
-                  <Card key={index} className="shadow-md hover:shadow-lg transition-shadow">
-                    <CardContent className="p-3 relative aspect-square flex flex-col justify-between items-center">
-                      <Button variant="outline" size="icon" className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <div className="flex-grow flex items-center justify-center w-full pt-6">
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          width={100}
-                          height={125}
-                          className="object-contain max-h-[100px]"
-                          data-ai-hint={product.imageHint}
-                        />
-                      </div>
-                      <div className="text-center w-full mt-2">
-                        <p className="text-sm font-medium text-primary truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <Accordion type="multiple" defaultValue={['products', 'test-kits']} className="w-full">
+              <AccordionItem value="products" className="border-b-0 rounded-lg overflow-hidden">
+                <AccordionTrigger className="bg-muted/20 hover:bg-muted/40 text-primary font-semibold p-3 data-[state=open]:bg-muted/30">
+                  <h3 className="text-lg font-semibold text-primary">Products</h3>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-2 px-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    {products.map((product, index) => (
+                      <Card key={index} className="shadow-md hover:shadow-lg transition-shadow">
+                        <CardContent className="p-3 relative aspect-square flex flex-col justify-between items-center">
+                          <Button variant="outline" size="icon" className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <div className="flex-grow flex items-center justify-center w-full pt-6">
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              width={100}
+                              height={125}
+                              className="object-contain max-h-[100px]"
+                              data-ai-hint={product.imageHint}
+                            />
+                          </div>
+                          <div className="text-center w-full mt-2">
+                            <p className="text-sm font-medium text-primary truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <div>
-              <h3 className="text-lg font-semibold text-primary mb-3">Test Kits</h3>
-              <div className="space-y-3">
-                {testKits.map((kit) => (
-                  <Card key={kit.id} className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-3 flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <FlaskConical className="h-6 w-6 text-accent" />
-                        <p className="text-sm font-medium text-primary">{kit.name}</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Plus className="h-4 w-4 mr-1" /> Add
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+              <AccordionItem value="test-kits" className="border-b-0 rounded-lg overflow-hidden mt-3">
+                <AccordionTrigger className="bg-muted/20 hover:bg-muted/40 text-primary font-semibold p-3 data-[state=open]:bg-muted/30">
+                  <h3 className="text-lg font-semibold text-primary">Test Kits</h3>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-2 px-1">
+                  <div className="space-y-3">
+                    {testKits.map((kit) => (
+                      <Card key={kit.id} className="shadow-sm hover:shadow-md transition-shadow">
+                        <CardContent className="p-3 flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FlaskConical className="h-6 w-6 text-accent" />
+                            <p className="text-sm font-medium text-primary">{kit.name}</p>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            <Plus className="h-4 w-4 mr-1" /> Add
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </div>
