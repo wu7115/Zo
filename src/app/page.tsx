@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, CheckCircle2, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
-import { RecommendedLearningCard } from './components/RecommendedLearningCard'; // Keep this as it's in the mock
+import { RecommendedLearningCard } from './components/RecommendedLearningCard'; 
 
 // Placeholder data for Home Feed
 const homeFeedData = {
@@ -115,7 +115,7 @@ export default function HomePage() {
           {/* Quick Add Teaser to full Track Page */}
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
-                <Link href="/track" className="flex items-center justify-center text-primary hover:text-accent font-semibold">
+                <Link href="/track#diary" className="flex items-center justify-center text-primary hover:text-accent font-semibold">
                     <ListChecks className="mr-2 h-5 w-5" />
                     View Full Daily Diary / Log More
                 </Link>
