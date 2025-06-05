@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ClipboardList, ShoppingCart, Menu as MenuIcon, BookOpenText, HeartPulse, Activity, User as UserIcon } from 'lucide-react';
+import { Home, ClipboardList, ShoppingCart, Menu as MenuIcon, BookOpenText, HeartPulse, Activity, User as UserIcon, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SVGProps } from 'react';
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import * as React from 'react'; // Added React import
+import * as React from 'react';
 
 // Custom Labubu-inspired SVG Icon
 const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
 const moreMenuItems = [
   { id: 'learn', href: '/learn', label: 'Learn', icon: BookOpenText },
   { id: 'diagnose', href: '/diagnose', label: 'Diagnose', icon: HeartPulse },
+  { id: 'journey', href: '/journey', label: 'Journey', icon: Map },
   { id: 'gut-health', href: '/diagnose', label: 'Gut Health Score', icon: Activity }, // Placeholder link
   { id: 'profile', href: '/profile', label: 'Profile', icon: UserIcon },
 ];
@@ -101,7 +102,9 @@ export function BottomNavigationBar() {
                           {menuItem.label}
                         </Link>
                       </DropdownMenuItem>
-                      {index < moreMenuItems.length -1 && menuItem.id === 'diagnose' && <DropdownMenuSeparator />}
+                      {/* Dynamic separator logic: add after 'diagnose' and 'journey' if they are not the last item */}
+                      {(menuItem.id === 'diagnose' || menuItem.id === 'journey') && index < moreMenuItems.length -1 &&
+                       (moreMenuItems[index+1].id !== 'profile' || (menuItem.id === 'diagnose' && moreMenuItems[index+1].id !== 'journey')) && <DropdownMenuSeparator />}
                     </React.Fragment>
                   ))}
                 </DropdownMenuContent>
@@ -151,4 +154,3 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
-

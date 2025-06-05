@@ -21,11 +21,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   ArrowLeft,
   UserCircle2,
   Edit3,
@@ -50,13 +45,14 @@ import {
   Dumbbell,
   Droplets,
   WifiOff,
-  Apple, // Using Apple for Mindful Eating
+  Apple as MindfulEatingIcon, // Using Apple for Mindful Eating
   CheckCircle,
+  Map, // For Journey navigation
 } from 'lucide-react';
 import * as React from 'react';
 import type { SVGProps } from 'react';
 
-// LabubuIcon copied from BottomNavigationBar.tsx
+// LabubuIcon definition
 const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -89,6 +85,7 @@ interface Journey {
   icon: React.ElementType;
 }
 
+// Sample journey data, assuming one is "active" for display purposes
 const allJourneys: Journey[] = [
   {
     id: 'mindful-mover',
@@ -151,7 +148,7 @@ const allJourneys: Journey[] = [
     progress: 5,
     daysCompleted: 1,
     totalDays: 14,
-    icon: Apple,
+    icon: MindfulEatingIcon,
   },
 ];
 
@@ -209,23 +206,8 @@ const SettingsListItem: React.FC<{ label: string; icon: React.ElementType; href?
 
 
 export default function ProfilePage() {
-  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id); 
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-
-  const activeJourney = allJourneys.find(j => j.id === activeJourneyId) || allJourneys[0];
-  const otherJourneys = allJourneys.filter(j => j.id !== activeJourneyId);
-
-  const handleSelectJourney = (journeyId: string) => {
-    setActiveJourneyId(journeyId);
-    setIsPopoverOpen(false); 
-  };
-
-  const handleAskAiToSuggest = () => {
-    console.log("Ask AI to suggest a journey clicked");
-    // Here you would typically dispatch an event or call a function to open the AI chat panel
-    // For example: window.dispatchEvent(new CustomEvent('toggleAiChatPanel'));
-    setIsPopoverOpen(false);
-  };
+  // Assume 'mindful-mover' is the current active journey for display purposes
+  const activeJourney = allJourneys.find(j => j.id === 'mindful-mover') || allJourneys[0];
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -311,60 +293,16 @@ export default function ProfilePage() {
                   {activeJourney.progress}% ({activeJourney.daysCompleted}/{activeJourney.totalDays} days)
                 </p>
                 <div className="mt-3 flex space-x-2">
-                  <Button variant="outline" size="sm" className="flex-1">Modify Journey</Button>
-                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="secondary" size="sm" className="flex-1">Choose Another</Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="grid gap-4">
-                        <div className="space-y-2">
-                          <h4 className="font-medium leading-none text-primary">Prioritized Journeys for you</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Select a journey or have Ask AI help based on your latest progress
-                          </p>
-                        </div>
-                        <div className="grid gap-2">
-                           <Button
-                            variant="ghost"
-                            className="justify-start p-2 h-auto text-left"
-                            onClick={handleAskAiToSuggest}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <LabubuIcon className="h-5 w-5 text-accent mt-0.5 shrink-0" />
-                              <div>
-                                <p className="text-sm font-medium text-primary">Ask AI to suggest</p>
-                                <p className="text-xs text-muted-foreground leading-tight">Let AI find the best journey for you.</p>
-                              </div>
-                            </div>
-                          </Button>
-                          <Separator className="my-1" />
-                          {otherJourneys.map((journey) => {
-                            const JourneyIcon = journey.icon;
-                            return (
-                              <Button
-                                key={journey.id}
-                                variant="ghost"
-                                className="justify-start p-2 h-auto text-left"
-                                onClick={() => handleSelectJourney(journey.id)}
-                              >
-                                <div className="flex items-start space-x-3">
-                                  <JourneyIcon className="h-5 w-5 text-accent mt-0.5 shrink-0" />
-                                  <div>
-                                    <p className="text-sm font-medium text-primary">{journey.name}</p>
-                                    <p className="text-xs text-muted-foreground leading-tight">{journey.description}</p>
-                                  </div>
-                                </div>
-                              </Button>
-                            );
-                          })}
-                           {otherJourneys.length === 0 && (
-                            <p className="text-sm text-muted-foreground p-2 text-center">No other journeys available.</p>
-                           )}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                     <Link href="/journey">
+                        <Map className="mr-2 h-4 w-4" /> Modify Journey
+                     </Link>
+                  </Button>
+                  <Button variant="secondary" size="sm" className="flex-1" asChild>
+                    <Link href="/journey">
+                        <Map className="mr-2 h-4 w-4" /> Choose Another
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -423,4 +361,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-    
