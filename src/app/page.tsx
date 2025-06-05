@@ -1,11 +1,16 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TrendingUp, CheckCircle2, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
-import { RecommendedLearningCard } from './components/RecommendedLearningCard'; 
+import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
+import { RecommendedLearningCard } from './components/RecommendedLearningCard';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+
 
 // Placeholder data for Home Feed
 const homeFeedData = {
@@ -15,6 +20,43 @@ const homeFeedData = {
 };
 
 export default function HomePage() {
+  const [selectedSleepQuality, setSelectedSleepQuality] = useState<number | null>(null);
+  const [napsTaken, setNapsTaken] = useState<string | null>("No"); // Default based on mockup
+  const [morningMood, setMorningMood] = useState<string | null>("Good"); // Default based on mockup
+  const [waterIntake, setWaterIntake] = useState<string>("16oz"); // Default based on mockup
+
+  const handleSleepQualitySelect = (rating: number) => {
+    setSelectedSleepQuality(rating);
+    // In a real app, you would log this data
+    console.log(`Sleep quality rated: ${rating}`);
+  };
+
+  const handleNapSelect = (option: 'Yes' | 'No') => {
+    setNapsTaken(option);
+    // In a real app, log this
+    console.log(`Naps taken: ${option}`);
+  };
+  
+  const moodOptions = [
+    { emoji: '😊', label: 'Excellent' },
+    { emoji: '🙂', label: 'Good' },
+    { emoji: '😐', label: 'Neutral' },
+    { emoji: '😟', label: 'Low' },
+    { emoji: '😩', label: 'Very Low' },
+  ];
+
+  const handleMoodSelect = (mood: string) => {
+    setMorningMood(mood);
+    console.log(`Morning mood: ${mood}`);
+  };
+
+  const handleWaterIntake = (amount: string) => {
+    // This is simplified; a real app might parse and sum amounts
+    setWaterIntake(amount); 
+    console.log(`Water intake: ${amount}`);
+  };
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-6 sm:py-12">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,22 +84,37 @@ export default function HomePage() {
               <div>
                 <p className="text-foreground/90 mb-2">How would you rate your sleep quality? (Ref: 3.5)</p>
                 <div className="flex space-x-1 justify-center">
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <Button key={rating} variant="ghost" size="icon" className="p-0 text-muted-foreground hover:text-yellow-400">
-                      <Star className="h-6 w-6" />
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <Button
+                      key={`sleep-rating-${rating}`}
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "p-0 text-muted-foreground hover:text-yellow-500",
+                        selectedSleepQuality !== null && rating <= selectedSleepQuality ? "text-yellow-400" : ""
+                      )}
+                      onClick={() => handleSleepQualitySelect(rating)}
+                    >
+                      <Star className={cn("h-6 w-6", selectedSleepQuality !== null && rating <= selectedSleepQuality ? "fill-yellow-400" : "fill-transparent")} />
                     </Button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">Sleep Quality: Pending</p>
+                <p className="text-xs text-muted-foreground mt-1 text-right">
+                  Sleep Quality: {selectedSleepQuality ? `${selectedSleepQuality}/5 ⭐` : 'Pending'}
+                  {selectedSleepQuality && ' ✅'}
+                </p>
               </div>
               <Separator />
               <div>
                 <p className="text-foreground/90 mb-2">Did you take any naps or rest periods yesterday? (Ref: 3.6)</p>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" className="flex-1">Yes</Button>
-                  <Button variant="outline" size="sm" className="flex-1">No</Button> {/* Defaulted to No outline, can be changed */}
+                  <Button variant={napsTaken === 'Yes' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => handleNapSelect('Yes')}>Yes</Button>
+                  <Button variant={napsTaken === 'No' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => handleNapSelect('No')}>No</Button>
                 </div>
-                 <p className="text-xs text-muted-foreground mt-1 text-right">Naps Yesterday: No ✅</p>
+                 <p className="text-xs text-muted-foreground mt-1 text-right">
+                  Naps Yesterday: {napsTaken || 'Pending'}
+                  {napsTaken && ' ✅'}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -73,23 +130,37 @@ export default function HomePage() {
               <div>
                 <p className="text-foreground/90 mb-2">How would you rate your mood this morning? (Ref: 4.4)</p>
                 <div className="flex justify-around text-2xl">
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😊</Button>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">🙂</Button>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😐</Button>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😟</Button>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😩</Button>
+                    {moodOptions.map(opt => (
+                         <Button
+                            key={opt.label}
+                            variant="ghost"
+                            size="icon"
+                            className={cn("hover:bg-accent/10", morningMood === opt.label ? "bg-accent/20 ring-2 ring-accent" : "")}
+                            onClick={() => handleMoodSelect(opt.label)}
+                            title={opt.label}
+                         >
+                            {opt.emoji}
+                        </Button>
+                    ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">Mood: Good ✅</p>
+                <p className="text-xs text-muted-foreground mt-1 text-right">
+                  Mood: {morningMood || 'Pending'}
+                  {morningMood && ' ✅'}
+                </p>
               </div>
               <Separator />
               <div>
                 <p className="text-foreground/90 mb-2">Let's start tracking your hydration: How much water did you drink so far today? (Ref: 1.1)</p>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">+8oz</Button>
-                  <Button variant="outline" size="sm">+16oz</Button>
-                  {/* Placeholder for input field */}
+                  <Button variant={waterIntake === '8oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('8oz')}>+8oz</Button>
+                  <Button variant={waterIntake === '16oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('16oz')}>+16oz</Button>
+                  {/* Basic input for custom amount - can be enhanced */}
+                  {/* <Input type="text" placeholder="Or enter amount" className="flex-1 h-9 text-sm" onChange={(e) => handleWaterIntake(e.target.value)} /> */}
                 </div>
-                 <p className="text-xs text-muted-foreground mt-1 text-right">Water: 16oz ✅</p>
+                 <p className="text-xs text-muted-foreground mt-1 text-right">
+                  Water: {waterIntake || 'Pending'}
+                  {waterIntake && ' ✅'}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -132,3 +203,4 @@ export default function HomePage() {
     </div>
   );
 }
+
