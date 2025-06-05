@@ -1,35 +1,47 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, SVGProps } from 'react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Lightbulb, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// LabubuIcon copied from BottomNavigationBar.tsx
+const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="14" r="3.5" />
+    <path d="M9.5 11.5C9 8 7 6.5 8.5 4.5S12 6 12 6" />
+    <path d="M14.5 11.5C15 8 17 6.5 15.5 4.5S12 6 12 6" />
+    <circle cx="10.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+    <circle cx="13.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 export function ContextualHelpFab() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnreadTips, setHasUnreadTips] = useState(false);
   const pathname = usePathname();
+  const userName = "Alex"; // Mock user name
 
-  const togglePanel = () => {
-    setIsPanelOpen(!isPanelOpen);
-    if (!isPanelOpen && !recommendations) {
-      fetchRecommendations();
-    }
-  };
-
-  const fetchRecommendations = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
-
+  const getMockRecommendations = useCallback((currentPath: string): string => {
     let content = "";
-    const userName = "Alex"; // Mock user name
-
-    switch (pathname) {
+    switch (currentPath) {
       case '/':
         content = `${userName}, welcome back!
 - You've logged your sleep! How about adding a quick mood entry from the '+' icon to see how they correlate?
@@ -67,7 +79,7 @@ export function ContextualHelpFab() {
 - Check your 'Notification Preferences' in Settings.`;
         break;
       case '/journey':
-        content = `${userName}, focus on your journey:
+         content = `${userName}, focus on your journey:
 - Deep dive into your 'Mindful Mover Challenge' protocol. Focus on today's tasks.
 - Explore 'Recommended Journeys'. Perhaps 'Sleep Improvement' could complement your current one?
 - Remember, consistency over a few weeks in a journey yields the best results!`;
@@ -78,7 +90,7 @@ export function ContextualHelpFab() {
 - Logging consistently helps the AI provide better recommendations for you.`;
         break;
       case '/ask':
-        content = `${userName}, how can I help you today?
+         content = `${userName}, how can I help you today?
 - Ask me about the benefits of mindful movement or how to improve sleep quality!
 - I can help you brainstorm healthy meal ideas or find information on supplements.`;
         break;
@@ -89,32 +101,55 @@ export function ContextualHelpFab() {
 - Discover new groups based on your interests.`;
         break;
       default:
-        content = `${userName}, explore this section to discover new features and tips to support your wellness journey.
-- Tip 1: Consider exploring related topics.
-- Tip 2: Check out the latest updates in this section.`;
+        // No specific recommendations for this path
+        return "";
     }
-    setRecommendations(content);
+    return content;
+  }, [userName]);
+
+
+  const checkForNewTips = useCallback((currentPath: string): boolean => {
+    const availableRecommendations = getMockRecommendations(currentPath);
+    return availableRecommendations.trim().length > 0;
+  }, [getMockRecommendations]);
+
+  useEffect(() => {
+    if (!isPanelOpen) {
+      setHasUnreadTips(checkForNewTips(pathname));
+    }
+  }, [pathname, isPanelOpen, checkForNewTips]);
+
+
+  const fetchRecommendations = async () => {
+    setIsLoading(true);
+    setRecommendations(null); // Clear old recommendations
+    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
+    
+    const content = getMockRecommendations(pathname);
+    setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    // Reset recommendations if the panel is open and path changes, or if panel is closed
-    if (isPanelOpen && recommendations) {
-        // If panel is open and path changes, refetch
-        fetchRecommendations();
-    } else if (!isPanelOpen) {
-      setRecommendations(null); // Clear recommendations when panel closes
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, isPanelOpen]); // Watch pathname and isPanelOpen
+  const togglePanel = () => {
+    const nextPanelOpenState = !isPanelOpen;
+    setIsPanelOpen(nextPanelOpenState);
 
-  useEffect(() => {
-    // Fetch recommendations when panel opens for the first time on a page or if it was previously closed
-    if (isPanelOpen && !recommendations && !isLoading) {
+    if (nextPanelOpenState) { // Panel is opening
       fetchRecommendations();
+      setHasUnreadTips(false); // Tips are now "read"
+    } else { // Panel is closing
+      // Re-check for tips for the current page if panel is closed, in case it should re-appear for same page later (optional)
+      // For now, badge will only reappear on path change if panel is closed.
+    }
+  };
+  
+  useEffect(() => {
+    // Initial check for tips on mount
+    if (!isPanelOpen) {
+      setHasUnreadTips(checkForNewTips(pathname));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPanelOpen]); // Only re-run if isPanelOpen changes
+  }, []); // Run once on mount
 
 
   return (
@@ -122,11 +157,14 @@ export function ContextualHelpFab() {
       <Button
         variant="default"
         size="icon"
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-xl z-30 animate-pulse bg-accent hover:bg-accent/90 text-accent-foreground"
+        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-xl z-30 bg-accent hover:bg-accent/90 text-accent-foreground"
         onClick={togglePanel}
         aria-label="Toggle AI Recommendations"
       >
-        <Lightbulb className="h-7 w-7" />
+        <LabubuIcon className="h-7 w-7" />
+        {hasUnreadTips && (
+           <span className="absolute top-1 right-1 block h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-background border-2 border-white" />
+        )}
       </Button>
 
       {isPanelOpen && (
@@ -139,14 +177,14 @@ export function ContextualHelpFab() {
       <Card
         className={cn(
           "fixed right-0 w-full max-w-md bg-sidebar shadow-2xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col",
-          "bottom-16",
+          "bottom-16 md:bottom-20", // Adjust bottom based on screen size
           "h-[33vh]",
           isPanelOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
         <CardHeader className="flex flex-row items-center justify-between p-3 border-b sticky top-0 bg-sidebar z-10">
           <CardTitle className="text-md font-semibold text-sidebar-primary flex items-center">
-            <Lightbulb className="mr-2 h-5 w-5 text-accent" /> AI Tips for Alex
+            <LabubuIcon className="mr-2 h-5 w-5 text-accent" /> AI Tips for {userName}
           </CardTitle>
           <Button variant="ghost" size="icon" onClick={togglePanel} className="h-8 w-8">
             <X className="h-4 w-4" />
@@ -164,7 +202,7 @@ export function ContextualHelpFab() {
               <p className="text-sm text-foreground whitespace-pre-wrap">{recommendations}</p>
             )}
             {!isLoading && !recommendations && (
-              <p className="text-sm text-muted-foreground text-center pt-4">No recommendations available at the moment.</p>
+               <p className="text-sm text-muted-foreground text-center pt-4">No recommendations available at the moment.</p>
             )}
           </ScrollArea>
         </CardContent>
