@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,13 +9,15 @@ body {
 
 @layer base {
   :root {
-    --background: 39 30% 92%; /* #F3EFE6 */
+    --background: 39 30% 92%; /* #F3EFE6 (Page Border Area) */
     --foreground: 10 44% 20%; /* #4A221C (Darker Maroon for text & icon strokes) */
+
+    --app-content-background: 48 67% 98%; /* #FDFCF8 (Main App Content Area) */
 
     --card: 48 67% 98%; /* #FDFCF8 - For cards, to contrast with page background */
     --card-foreground: 10 44% 20%; /* #4A221C (Dark Maroon text on cards) */
 
-    --popover: 39 30% 92%; /* #F3EFE6 - Matches new page background */
+    --popover: 48 67% 98%; /* #FDFCF8 - To match app content area */
     --popover-foreground: 10 44% 20%; /* #4A221C */
 
     --primary: 10 44% 25%; /* #5d2a23 (Brand Maroon for primary actions, filled icon bg - icon sheet col 2 bg) */
@@ -44,7 +47,7 @@ body {
     --radius: 0.5rem;
 
     /* Sidebar specific colors */
-    --sidebar-background: 39 30% 92%; /* #F3EFE6 - Matches new page background */
+    --sidebar-background: 48 67% 98%; /* #FDFCF8 - To match app content area */
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -56,13 +59,15 @@ body {
 
   .dark {
     /* Dark theme to complement the new light theme */
-    --background: 10 10% 10%; /* Dark Brownish Black */
+    --background: 10 10% 10%; /* Dark Brownish Black (Page Border Area) */
     --foreground: 30 30% 90%; /* Light Beige */
+
+    --app-content-background: 10 10% 12%; /* Slightly darker than main dark bg (Main App Content Area) */
 
     --card: 10 10% 12%; /* Slightly darker than background for cards in dark mode */
     --card-foreground: 30 30% 90%;
 
-    --popover: 10 10% 10%;
+    --popover: 10 10% 12%; /* To match dark app content area */
     --popover-foreground: 30 30% 90%;
 
     --primary: 10 44% 65%; /* Lighter Maroon for dark mode */
@@ -84,7 +89,7 @@ body {
     --input: 10 20% 35%; /* Darker input */
     --ring: 10 44% 65%; /* Lighter Maroon ring for dark mode */
 
-    --sidebar-background: 240 5.9% 10%;
+    --sidebar-background: 10 10% 12%; /* To match dark app content area */
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -100,6 +105,15 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground; /* This applies --background (Page Border: #F3EFE6) */
+  }
+}
+
+@layer utilities {
+  .bg-app-content {
+    background-color: hsl(var(--app-content-background));
+  }
+  .dark .bg-app-content {
+    background-color: hsl(var(--app-content-background)); /* Uses the dark theme's --app-content-background */
   }
 }
