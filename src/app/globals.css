@@ -8,13 +8,13 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* #FAFAFA (very light beige/off-white, like icon sheet col 3 bg) */
+    --background: 48 67% 98%; /* #FDFCF8 */
     --foreground: 10 44% 20%; /* #4A221C (Darker Maroon for text & icon strokes) */
 
     --card: 39 29% 92%; /* #EDE5DA (Light beige for cards, from icon sheet col 4 bg) */
     --card-foreground: 10 44% 20%; /* #4A221C (Dark Maroon text on cards) */
 
-    --popover: 0 0% 98%; /* #FAFAFA */
+    --popover: 48 67% 98%; /* #FDFCF8 */
     --popover-foreground: 10 44% 20%; /* #4A221C */
 
     --primary: 10 44% 25%; /* #5d2a23 (Brand Maroon for primary actions, filled icon bg - icon sheet col 2 bg) */
@@ -44,7 +44,7 @@ body {
     --radius: 0.5rem;
 
     /* Sidebar specific colors - can remain as default or be themed if a sidebar is added later */
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 48 67% 98%; /* #FDFCF8 */
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
