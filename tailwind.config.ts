@@ -65,7 +65,7 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-        softHighlight: '#e6f5ff', // hsl(205, 100%, 95%)
+        // softHighlight is removed as its function is covered by theme variables like 'secondary'
       },
       borderRadius: {
         lg: 'var(--radius)',

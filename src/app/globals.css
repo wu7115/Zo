@@ -8,25 +8,34 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* #ffffff */
-    --foreground: 0 0% 3.9%; /* Near black for text on light background */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 10 44% 25%; /* #5d2a23 */
-    --primary-foreground: 10 20% 92%; /* Light beige for text on primary */
-    --secondary: 202 100% 85%; /* #B2E5FF */
-    --secondary-foreground: 202 70% 25%; /* Darker blue for text on secondary */
-    --muted: 39 29% 81%; /* #DDD3BF - Alternate Background */
-    --muted-foreground: 39 30% 20%; /* Darker text for muted */
-    --accent: 353 55% 19%; /* #49171B */
-    --accent-foreground: 10 20% 92%; /* Light beige for text on accent */
+    --background: 0 0% 98%; /* #FAFAFA (very light beige/off-white, like icon sheet col 3 bg) */
+    --foreground: 10 44% 20%; /* #4A221C (Darker Maroon for text & icon strokes) */
+
+    --card: 39 29% 92%; /* #EDE5DA (Light beige for cards, from icon sheet col 4 bg) */
+    --card-foreground: 10 44% 20%; /* #4A221C (Dark Maroon text on cards) */
+
+    --popover: 0 0% 98%; /* #FAFAFA */
+    --popover-foreground: 10 44% 20%; /* #4A221C */
+
+    --primary: 10 44% 25%; /* #5d2a23 (Brand Maroon for primary actions, filled icon bg - icon sheet col 2 bg) */
+    --primary-foreground: 30 30% 92%; /* #F0EBE5 (Light beige for text/icons on primary bg) */
+
+    --secondary: 202 100% 85%; /* #B2E5FF (Brand Light Blue for icon highlights - icon sheet col 1 bg) */
+    --secondary-foreground: 10 44% 25%; /* #5d2a23 (Maroon text/icons on light blue bg) */
+
+    --muted: 39 29% 92%; /* #EDE5DA (Light beige for less prominent elements, same as card) */
+    --muted-foreground: 10 44% 35%; /* #7B4B42 (Slightly lighter maroon for text on muted) */
+
+    --accent: 353 55% 30%; /* #6E2A30 (A slightly brighter/different maroon for accents if needed) */
+    --accent-foreground: 30 30% 92%; /* #F0EBE5 */
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 39 29% 75%; /* #CEC3AE */
-    --input: 39 29% 70%; /* #C6BBA9 */
-    --ring: 10 44% 25%; /* Primary color for rings */
+
+    --border: 10 30% 75%; /* #C8B6B2 (Subtle maroon-tinted border) */
+    --input: 10 30% 85%; /* #DCCCBA (Lighter maroon-tinted for input backgrounds/borders) */
+    --ring: 10 44% 25%; /* #5d2a23 (Primary color for rings) */
+    
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -46,26 +55,34 @@ body {
   }
 
   .dark {
-    /* Dark theme is not specified, provide a basic inversion or keep as is */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 10 44% 75%; /* Lighter version of primary for dark mode */
-    --primary-foreground: 10 44% 15%; /* Darker for text on light primary */
-    --secondary: 202 100% 35%; /* Darker version of secondary */
-    --secondary-foreground: 202 100% 85%; /* Lighter for text on dark secondary */
-    --muted: 39 29% 20%; /* Darker muted */
-    --muted-foreground: 39 29% 70%; /* Lighter text for dark muted */
-    --accent: 353 55% 70%; /* Lighter accent */
+    /* Dark theme to complement the new light theme */
+    --background: 10 10% 10%; /* Dark Brownish Black */
+    --foreground: 30 30% 90%; /* Light Beige */
+
+    --card: 10 10% 15%; /* Darker Brown */
+    --card-foreground: 30 30% 90%;
+
+    --popover: 10 10% 10%;
+    --popover-foreground: 30 30% 90%;
+
+    --primary: 10 44% 65%; /* Lighter Maroon for dark mode */
+    --primary-foreground: 10 44% 15%; /* Dark for text on light primary */
+
+    --secondary: 202 100% 45%; /* Darker Blue for dark mode */
+    --secondary-foreground: 202 100% 90%; /* Lighter text on dark secondary */
+
+    --muted: 10 10% 20%; /* Darker muted for dark mode */
+    --muted-foreground: 30 30% 70%; /* Lighter text on dark muted */
+
+    --accent: 353 55% 60%; /* Lighter accent maroon for dark mode */
     --accent-foreground: 353 55% 15%; /* Darker text for light accent */
+    
     --destructive: 0 74.2% 50.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 39 29% 25%;
-    --input: 39 29% 30%;
-    --ring: 10 44% 75%;
+
+    --border: 10 20% 30%; /* Darker border */
+    --input: 10 20% 35%; /* Darker input */
+    --ring: 10 44% 65%; /* Lighter Maroon ring for dark mode */
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
