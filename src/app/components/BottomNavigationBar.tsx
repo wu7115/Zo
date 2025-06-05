@@ -53,8 +53,15 @@ export function BottomNavigationBar() {
   const [showTipsBadge, setShowTipsBadge] = React.useState(false);
   const [hasMounted, setHasMounted] = React.useState(false);
 
+  // State for "Ask AI" button's dynamic attributes
+  const [askAiIsDisabled, setAskAiIsDisabled] = React.useState(true);
+  const [askAiDynamicClasses, setAskAiDynamicClasses] = React.useState("cursor-default opacity-75");
+
+
   React.useEffect(() => {
     setHasMounted(true);
+    setAskAiIsDisabled(false);
+    setAskAiDynamicClasses("hover:text-primary cursor-pointer");
   }, []);
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
@@ -67,9 +74,10 @@ export function BottomNavigationBar() {
   }, [hasMounted]);
 
   React.useEffect(() => {
-    if (!hasMounted) return; 
+    if (!hasMounted) return;
 
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
+    // Request initial status only after mount
     window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
 
     return () => {
@@ -80,6 +88,7 @@ export function BottomNavigationBar() {
   React.useEffect(() => {
     if (!hasMounted) return;
     
+    // Delay slightly to ensure ContextualHelpFab might have mounted and registered its listener
     const timer = setTimeout(() => {
         window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
     }, 100); 
@@ -125,7 +134,7 @@ export function BottomNavigationBar() {
             return (
               <a
                 key={item.id}
-                href={item.href} // This is '#'
+                href={item.href} 
                 onClick={(e) => {
                   e.preventDefault();
                   if (hasMounted && item.action) {
@@ -134,9 +143,9 @@ export function BottomNavigationBar() {
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
-                  hasMounted ? "hover:text-primary cursor-pointer" : "cursor-default opacity-75" // More subtle indication if not interactive yet
+                  askAiDynamicClasses 
                 )}
-                aria-disabled={!hasMounted}
+                aria-disabled={askAiIsDisabled}
               >
                 <div className="relative"> {/* Container for icon and badge */}
                   <item.icon className={cn("h-6 w-6 mb-0.5")} />
@@ -209,4 +218,3 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
-
