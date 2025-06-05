@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TopHeader } from '@/app/components/TopHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 import { AiAgentFab } from '@/app/components/AiAgentFab';
-import { ContextualHelpFab } from '@/app/components/ContextualHelpFab';
+import { ContextualHelpFab } from '@/app/components/ContextualHelpFab'; // Will render null if panel closed, no direct FAB
 
 export const metadata: Metadata = {
   title: 'Podium',
@@ -32,7 +32,7 @@ export default function RootLayout({
         </div>
         <BottomNavigationBar />
         <AiAgentFab /> {/* For the main Gemini chat */}
-        <ContextualHelpFab /> {/* For contextual recommendations */}
+        <ContextualHelpFab /> {/* Renders the panel logic, but panel is hidden by default and no FAB */}
         <Toaster />
       </body>
     </html>

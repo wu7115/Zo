@@ -43,35 +43,69 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  action?: () => void;
+  action?: (hasTips: boolean) => void;
   isMoreMenu?: boolean;
 }
-
-const navItems: NavItem[] = [
-  { id: 'home', href: '/', label: 'Home', icon: Home },
-  { id: 'marketplace', href: '/buy', label: 'Market', icon: ShoppingCart },
-  { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
-  {
-    id: 'ask',
-    href: '#',
-    label: 'Ask AI',
-    icon: LabubuIcon,
-    action: () => window.dispatchEvent(new CustomEvent('toggleAiChatPanel'))
-  },
-  { id: 'more', href: '#', label: 'More', icon: MenuIcon, isMoreMenu: true },
-];
-
-const moreMenuItems = [
-  { id: 'learn', href: '/learn', label: 'Learn', icon: BookOpenText },
-  { id: 'diagnose', href: '/diagnose', label: 'Diagnose', icon: HeartPulse },
-  { id: 'journey', href: '/journey', label: 'Journey', icon: Map },
-  { id: 'gut-health', href: '/diagnose', label: 'Gut Health Score', icon: Activity }, // Placeholder link
-  { id: 'profile', href: '/profile', label: 'Profile', icon: UserIcon },
-];
 
 
 export function BottomNavigationBar() {
   const pathname = usePathname();
+  const [showTipsBadge, setShowTipsBadge] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleStatusUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
+      if (typeof customEvent.detail?.hasUnread === 'boolean') {
+        setShowTipsBadge(customEvent.detail.hasUnread);
+      }
+    };
+    window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
+    // Initial check by asking ContextualHelpFab to dispatch its current status
+    // This assumes ContextualHelpFab on mount will dispatch its state.
+    return () => {
+      window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
+    };
+  }, []);
+
+  // Effect to re-check badge status when pathname changes,
+  // by prompting ContextualHelpFab to re-evaluate and dispatch.
+  React.useEffect(() => {
+    // A slight delay to ensure ContextualHelpFab's own pathname effect might have run
+    setTimeout(() => {
+        // This is a bit of a hack. A more robust solution might involve a shared state/context.
+        // For now, we rely on ContextualHelpFab's pathname listener to re-dispatch.
+        // If ContextualHelpFab isn't re-dispatching on pathname change, this won't update the badge perfectly.
+    }, 100);
+  }, [pathname]);
+
+
+  const navItems: NavItem[] = [
+    { id: 'home', href: '/', label: 'Home', icon: Home },
+    { id: 'marketplace', href: '/buy', label: 'Market', icon: ShoppingCart },
+    { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
+    {
+      id: 'ask',
+      href: '#',
+      label: 'Ask AI',
+      icon: LabubuIcon,
+      action: (hasTips) => { // hasTips is showTipsBadge
+        if (hasTips) {
+          window.dispatchEvent(new CustomEvent('toggleAiTipsPanel'));
+        } else {
+          window.dispatchEvent(new CustomEvent('toggleAiChatPanel'));
+        }
+      }
+    },
+    { id: 'more', href: '#', label: 'More', icon: MenuIcon, isMoreMenu: true },
+  ];
+  
+  const moreMenuItems = [
+    { id: 'learn', href: '/learn', label: 'Learn', icon: BookOpenText },
+    { id: 'diagnose', href: '/diagnose', label: 'Diagnose', icon: HeartPulse },
+    { id: 'journey', href: '/journey', label: 'Journey', icon: Map },
+    { id: 'gut-health', href: '/diagnose', label: 'Gut Health Score', icon: Activity }, 
+    { id: 'profile', href: '/profile', label: 'Profile', icon: UserIcon },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 h-16 w-full max-w-md bg-background/80 backdrop-blur-sm shadow-t-md border-t border-border">
@@ -102,7 +136,6 @@ export function BottomNavigationBar() {
                           {menuItem.label}
                         </Link>
                       </DropdownMenuItem>
-                      {/* Dynamic separator logic: add after 'diagnose' and 'journey' if they are not the last item */}
                       {(menuItem.id === 'diagnose' || menuItem.id === 'journey') && index < moreMenuItems.length -1 &&
                        (moreMenuItems[index+1].id !== 'profile' || (menuItem.id === 'diagnose' && moreMenuItems[index+1].id !== 'journey')) && <DropdownMenuSeparator />}
                     </React.Fragment>
@@ -119,14 +152,19 @@ export function BottomNavigationBar() {
                 href={item.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (item.action) item.action();
+                  if (item.action) item.action(showTipsBadge);
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
                 )}
               >
-                <item.icon className={cn("h-6 w-6 mb-0.5", isActive ? "text-primary" : "")} />
-                <span className={cn("text-xs font-medium", isActive ? "text-primary" : "")}>{item.label}</span>
+                <div className="relative"> {/* Container for icon and badge */}
+                  <item.icon className={cn("h-6 w-6 mb-0.5", item.id === 'ask' && isActive ? "text-primary" : "")} />
+                  {item.id === 'ask' && showTipsBadge && (
+                    <span className="absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background" />
+                  )}
+                </div>
+                <span className={cn("text-xs font-medium", item.id ==='ask' && isActive ? "text-primary" : "")}>{item.label}</span>
               </a>
             );
           }

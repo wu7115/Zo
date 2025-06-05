@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback, SVGProps } from 'react';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button'; // Re-add for close button
 
-// LabubuIcon copied from BottomNavigationBar.tsx
+// LabubuIcon
 const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -35,9 +35,9 @@ export function ContextualHelpFab() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasUnreadTips, setHasUnreadTips] = useState(false);
+  // No direct hasUnreadTips state for badge here, BottomNav will handle it based on event
   const pathname = usePathname();
-  const userName = "Alex"; // Mock user name
+  const userName = "Alex";
 
   const getMockRecommendations = useCallback((currentPath: string): string => {
     let content = "";
@@ -101,83 +101,66 @@ export function ContextualHelpFab() {
 - Discover new groups based on your interests.`;
         break;
       default:
-        // No specific recommendations for this path
         return "";
     }
     return content;
   }, [userName]);
 
-
   const checkForNewTips = useCallback((currentPath: string): boolean => {
-    const availableRecommendations = getMockRecommendations(currentPath);
-    return availableRecommendations.trim().length > 0;
+    return getMockRecommendations(currentPath).trim().length > 0;
   }, [getMockRecommendations]);
 
+  const fetchRecommendations = useCallback(async () => {
+    setIsLoading(true);
+    setRecommendations(null);
+    await new Promise(resolve => setTimeout(resolve, 700));
+    const content = getMockRecommendations(pathname);
+    setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
+    setIsLoading(false);
+  }, [pathname, getMockRecommendations]);
+
+  const handleTogglePanel = useCallback(() => {
+    setIsPanelOpen(prevIsPanelOpen => {
+      const nextPanelOpenState = !prevIsPanelOpen;
+      if (nextPanelOpenState) {
+        fetchRecommendations();
+      }
+      // Inform BottomNav about tip status change due to panel open/close
+      window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: !nextPanelOpenState && checkForNewTips(pathname) } }));
+      return nextPanelOpenState;
+    });
+  }, [fetchRecommendations, pathname, checkForNewTips]);
+
   useEffect(() => {
+    window.addEventListener('toggleAiTipsPanel', handleTogglePanel);
+    return () => {
+      window.removeEventListener('toggleAiTipsPanel', handleTogglePanel);
+    };
+  }, [handleTogglePanel]);
+
+  useEffect(() => {
+    // Dispatch status on mount and pathname change, only if panel is closed
     if (!isPanelOpen) {
-      setHasUnreadTips(checkForNewTips(pathname));
+      const newStatus = checkForNewTips(pathname);
+      window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: newStatus } }));
     }
   }, [pathname, isPanelOpen, checkForNewTips]);
 
 
-  const fetchRecommendations = async () => {
-    setIsLoading(true);
-    setRecommendations(null); // Clear old recommendations
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
-    
-    const content = getMockRecommendations(pathname);
-    setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
-    setIsLoading(false);
-  };
-
-  const togglePanel = () => {
-    const nextPanelOpenState = !isPanelOpen;
-    setIsPanelOpen(nextPanelOpenState);
-
-    if (nextPanelOpenState) { // Panel is opening
-      fetchRecommendations();
-      setHasUnreadTips(false); // Tips are now "read"
-    } else { // Panel is closing
-      // Re-check for tips for the current page if panel is closed
-      setHasUnreadTips(checkForNewTips(pathname));
-    }
-  };
-  
-  useEffect(() => {
-    // Initial check for tips on mount
-    if (!isPanelOpen) {
-      setHasUnreadTips(checkForNewTips(pathname));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
-
+  if (!isPanelOpen) {
+    return null; // Panel is hidden, no FAB
+  }
 
   return (
     <>
-      <Button
-        variant="default"
-        size="icon"
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-xl z-30 bg-accent hover:bg-accent/90 text-accent-foreground"
-        onClick={togglePanel}
-        aria-label="Toggle AI Recommendations"
-      >
-        <LabubuIcon className="h-7 w-7" />
-        {hasUnreadTips && (
-           <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-600 ring-2 ring-background" />
-        )}
-      </Button>
-
-      {isPanelOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300 ease-in-out md:hidden"
-          onClick={togglePanel}
-        />
-      )}
-
+      <div
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300 ease-in-out md:hidden"
+        onClick={handleTogglePanel} // Close by clicking overlay
+      />
       <Card
         className={cn(
           "fixed right-0 w-full max-w-md bg-sidebar shadow-2xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col",
-          "bottom-16 md:bottom-20", // Adjust bottom based on screen size
+          "bottom-16 md:bottom-20",
           "h-[33vh]",
           isPanelOpen ? "translate-y-0" : "translate-y-full"
         )}
@@ -186,7 +169,7 @@ export function ContextualHelpFab() {
           <CardTitle className="text-md font-semibold text-sidebar-primary flex items-center">
             <LabubuIcon className="mr-2 h-5 w-5 text-accent" /> AI Tips for {userName}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={togglePanel} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={handleTogglePanel} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
