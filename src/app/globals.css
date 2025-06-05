@@ -11,7 +11,7 @@ body {
     --background: 48 67% 98%; /* #FDFCF8 */
     --foreground: 10 44% 20%; /* #4A221C (Darker Maroon for text & icon strokes) */
 
-    --card: 39 29% 92%; /* #EDE5DA (Light beige for cards, from icon sheet col 4 bg) */
+    --card: 48 67% 98%; /* #FDFCF8 - Updated to match page background */
     --card-foreground: 10 44% 20%; /* #4A221C (Dark Maroon text on cards) */
 
     --popover: 48 67% 98%; /* #FDFCF8 */
@@ -23,7 +23,7 @@ body {
     --secondary: 202 100% 85%; /* #B2E5FF (Brand Light Blue for icon highlights - icon sheet col 1 bg) */
     --secondary-foreground: 10 44% 25%; /* #5d2a23 (Maroon text/icons on light blue bg) */
 
-    --muted: 39 29% 92%; /* #EDE5DA (Light beige for less prominent elements, same as card) */
+    --muted: 39 29% 92%; /* #EDE5DA (Light beige for less prominent elements) */
     --muted-foreground: 10 44% 35%; /* #7B4B42 (Slightly lighter maroon for text on muted) */
 
     --accent: 353 55% 30%; /* #6E2A30 (A slightly brighter/different maroon for accents if needed) */
@@ -59,7 +59,7 @@ body {
     --background: 10 10% 10%; /* Dark Brownish Black */
     --foreground: 30 30% 90%; /* Light Beige */
 
-    --card: 10 10% 15%; /* Darker Brown */
+    --card: 10 10% 12%; /* Slightly darker than background for cards in dark mode */
     --card-foreground: 30 30% 90%;
 
     --popover: 10 10% 10%;
