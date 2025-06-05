@@ -68,23 +68,23 @@ export default function GutHealthScoreBreakdownPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <ScoreCategoryCard title="ZoGut Score" score={28} bgColorClass="bg-orange-100">
-              <div className="grid grid-cols-3 gap-3"> {/* Standardized to 3 columns */}
-                <SubCategoryBlock name="Microbial Diversity" color="bg-orange-400" className="h-20 flex items-center justify-center col-span-3" /> {/* Spans all 3 columns */}
+              <div className="grid grid-cols-3 gap-3 items-end"> {/* Added items-end for consistency */}
+                <SubCategoryBlock name="Microbial Diversity" color="bg-orange-400" className="h-20 flex items-center justify-center col-span-3" />
               </div>
             </ScoreCategoryCard>
 
             <ScoreCategoryCard title="Hydration & Diet" score={11} bgColorClass="bg-stone-100">
-              <div className="grid grid-cols-3 gap-3"> {/* Remains 3 columns */}
+              <div className="grid grid-cols-3 gap-3 items-end"> {/* Added items-end */}
                 <SubCategoryBlock name="Diet" color="bg-stone-300" className="h-24 flex items-center justify-center" />
-                <SubCategoryBlock name="Water Intake" color="bg-stone-300" className="h-16 self-end flex items-center justify-center" />
-                <SubCategoryBlock name="Alcohol Consumption" color="bg-stone-300" className="h-20 self-center flex items-center justify-center"/>
+                <SubCategoryBlock name="Water Intake" color="bg-stone-300" className="h-16 flex items-center justify-center" />
+                <SubCategoryBlock name="Alcohol Consumption" color="bg-stone-300" className="h-20 flex items-center justify-center"/>
               </div>
             </ScoreCategoryCard>
 
             <ScoreCategoryCard title="Lifestyle & Environment" score={8} bgColorClass="bg-blue-100">
-              <div className="grid grid-cols-3 gap-3"> {/* Standardized to 3 columns */}
-                <SubCategoryBlock name="Exercise" color="bg-blue-300" className="h-20 flex items-center justify-center" /> {/* Occupies 1st column */}
-                <SubCategoryBlock name="Sleep" color="bg-blue-300" className="h-28 flex items-center justify-center" />   {/* Occupies 2nd column, 3rd is empty */}
+              <div className="grid grid-cols-3 gap-3 items-end"> {/* Added items-end */}
+                <SubCategoryBlock name="Exercise" color="bg-blue-300" className="h-20 flex items-center justify-center" />
+                <SubCategoryBlock name="Sleep" color="bg-blue-300" className="h-28 flex items-center justify-center" />
               </div>
             </ScoreCategoryCard>
 
