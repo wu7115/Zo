@@ -37,6 +37,11 @@ export function ContextualHelpFab() {
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
   const userName = "Alex"; // Mock user name
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const getMockRecommendations = useCallback((currentPath: string): string => {
     let content = "";
@@ -100,41 +105,43 @@ export function ContextualHelpFab() {
 - Discover new groups based on your interests.`;
         break;
       default:
-        // No specific tip, or a generic one
-        return ""; // Return empty string if no tips, so checkForNewTips can correctly assess
+        return ""; 
     }
     return content;
   }, [userName]);
 
   const checkForNewTips = useCallback((currentPath: string): boolean => {
-    // Check if getMockRecommendations returns a non-empty string for the current path
     return getMockRecommendations(currentPath).trim().length > 0;
   }, [getMockRecommendations]);
 
   const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
-    setRecommendations(null); // Clear previous recommendations
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate delay
+    setRecommendations(null); 
+    await new Promise(resolve => setTimeout(resolve, 700)); 
     const content = getMockRecommendations(pathname);
     setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
     setIsLoading(false);
   }, [pathname, getMockRecommendations]);
 
+  const dispatchUnreadStatus = useCallback(() => {
+    if (!hasMounted) return; // Only dispatch if this component itself is mounted
+    const newStatus = !isPanelOpen && checkForNewTips(pathname);
+    window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: newStatus } }));
+  }, [isPanelOpen, checkForNewTips, pathname, hasMounted]);
+
   const handleTogglePanel = useCallback(() => {
     setIsPanelOpen(prevIsPanelOpen => {
       const nextPanelOpenState = !prevIsPanelOpen;
-      if (nextPanelOpenState) { // Panel is opening
+      if (nextPanelOpenState) { 
         fetchRecommendations();
       }
-      // Inform BottomNav about tip status change due to panel open/close
-      // If panel is closing, then it means tips were "read", so hasUnread should be false for this context.
-      // If it's opening, it also means tips are being "read".
-      // The badge should only show if tips are available AND panel is closed.
-      window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: !nextPanelOpenState && checkForNewTips(pathname) } }));
+      // Defer dispatchUnreadStatus until after this state update completes
+      // This helps ensure BottomNav gets the most up-to-date status after panel interaction
+      setTimeout(() => dispatchUnreadStatus(), 0);
       return nextPanelOpenState;
     });
-  }, [fetchRecommendations, pathname, checkForNewTips]);
+  }, [fetchRecommendations, dispatchUnreadStatus]);
+
 
   useEffect(() => {
     window.addEventListener('toggleAiTipsPanel', handleTogglePanel);
@@ -143,46 +150,41 @@ export function ContextualHelpFab() {
     };
   }, [handleTogglePanel]);
   
-  const dispatchUnreadStatus = useCallback(() => {
-    // Only dispatch if panel is closed, otherwise tips are "read" or being read
-    const newStatus = !isPanelOpen && checkForNewTips(pathname);
-    window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: newStatus } }));
-  }, [isPanelOpen, checkForNewTips, pathname]);
-
   useEffect(() => {
-    dispatchUnreadStatus(); // Dispatch on mount and pathname change
-  }, [pathname, dispatchUnreadStatus]);
+    if (hasMounted) { // Dispatch on mount (if mounted) and pathname change
+      dispatchUnreadStatus();
+    }
+  }, [pathname, hasMounted, dispatchUnreadStatus]); // dispatchUnreadStatus dependency is important if its definition relies on hasMounted
   
   useEffect(() => {
     // Listen for requests to dispatch current status
-    window.addEventListener('requestUnreadTipsStatus', dispatchUnreadStatus);
-    return () => {
-      window.removeEventListener('requestUnreadTipsStatus', dispatchUnreadStatus);
+    const requestListener = () => {
+      if (hasMounted) { // Only respond if mounted
+        dispatchUnreadStatus();
+      }
     };
-  }, [dispatchUnreadStatus]);
+    window.addEventListener('requestUnreadTipsStatus', requestListener);
+    return () => {
+      window.removeEventListener('requestUnreadTipsStatus', requestListener);
+    };
+  }, [dispatchUnreadStatus, hasMounted]);
 
 
   if (!isPanelOpen) {
-    return null; // Panel is hidden, no FAB
+    return null; 
   }
 
   return (
     <>
-      {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300 ease-in-out md:hidden" // Only show overlay on mobile-sized screens
-        onClick={handleTogglePanel} // Close by clicking overlay
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300 ease-in-out md:hidden" 
+        onClick={handleTogglePanel} 
       />
-      {/* Panel */}
       <Card
         className={cn(
           "fixed right-0 w-full max-w-md bg-sidebar shadow-2xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col",
-          // Positioned above the BottomNavigationBar (h-16 or 4rem)
-          // Add some margin from bottom nav: bottom-[calc(4rem+0.5rem)] md:bottom-[calc(4rem+0.5rem)]
-          // Or from very bottom if BottomNav not present: bottom-4 md:bottom-4
-           "bottom-16 md:bottom-20", // Assuming bottom nav is 16 units high
-           // Height of the panel itself
-          "h-[33vh]", // approx 1/3 of viewport height
+           "bottom-16 md:bottom-20", 
+          "h-[33vh]", 
           isPanelOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
@@ -214,4 +216,3 @@ export function ContextualHelpFab() {
     </>
   );
 }
-

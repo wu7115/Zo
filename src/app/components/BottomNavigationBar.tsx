@@ -57,33 +57,37 @@ export function BottomNavigationBar() {
     setHasMounted(true);
   }, []);
 
+  const handleStatusUpdate = React.useCallback((event: Event) => {
+    if (!hasMounted) return; // Only update if component is mounted
+
+    const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
+    if (typeof customEvent.detail?.hasUnread === 'boolean') {
+      setShowTipsBadge(customEvent.detail.hasUnread);
+    }
+  }, [hasMounted]);
+
   React.useEffect(() => {
-    const handleStatusUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
-      if (typeof customEvent.detail?.hasUnread === 'boolean') {
-        setShowTipsBadge(customEvent.detail.hasUnread);
-      }
-    };
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
-    // Initial check by asking ContextualHelpFab to dispatch its current status
-    // This assumes ContextualHelpFab on mount will dispatch its state.
-    // Dispatch an event to prompt ContextualHelpFab to send its current status
-    window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
+    
+    // Request initial status only after this component has mounted
+    if (hasMounted) {
+      window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
+    }
 
     return () => {
       window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     };
-  }, []);
+  }, [hasMounted, handleStatusUpdate]); // Rerun if hasMounted changes or handleStatusUpdate definition changes
 
   // Effect to re-check badge status when pathname changes,
   // by prompting ContextualHelpFab to re-evaluate and dispatch.
   React.useEffect(() => {
-    // A slight delay to ensure ContextualHelpFab's own pathname effect might have run
     if (hasMounted) {
-      setTimeout(() => {
-          // This prompts ContextualHelpFab to re-evaluate and dispatch its current status.
+      // A slight delay to ensure ContextualHelpFab's own pathname effect might have run
+      const timer = setTimeout(() => {
           window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
-      }, 100);
+      }, 50); // Reduced delay, 50ms should be enough
+      return () => clearTimeout(timer);
     }
   }, [pathname, hasMounted]);
 
@@ -97,8 +101,8 @@ export function BottomNavigationBar() {
       href: '#',
       label: 'Ask AI',
       icon: LabubuIcon,
-      action: (hasTips) => { // hasTips is showTipsBadge
-        if (hasTips) {
+      action: (hasTipsFromClick) => { // Renamed param to avoid confusion
+        if (hasTipsFromClick) {
           window.dispatchEvent(new CustomEvent('toggleAiTipsPanel'));
         } else {
           window.dispatchEvent(new CustomEvent('toggleAiChatPanel'));
@@ -161,7 +165,7 @@ export function BottomNavigationBar() {
                 href={item.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Pass the current state of showTipsBadge to the action
+                  // Pass the current state of showTipsBadge to the action, only if mounted
                   if (item.action) item.action(hasMounted && showTipsBadge);
                 }}
                 className={cn(
@@ -202,4 +206,3 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
-
