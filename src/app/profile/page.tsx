@@ -31,7 +31,6 @@ import {
   MapPin,
   CreditCard,
   Rocket,
-  BarChartBig,
   Bookmark,
   History,
   Settings2,
@@ -48,7 +47,6 @@ import {
   Droplets,
   WifiOff,
   Apple as MindfulEatingIcon, 
-  CheckCircle,
   Map, 
 } from 'lucide-react';
 import * as React from 'react';
@@ -396,11 +394,11 @@ export default function ProfilePage() {
                 <Settings2 className="mr-2 h-5 w-5 text-accent" /> Settings
               </h3>
               <div className="space-y-0.5">
-                <SettingsListItem label="Subscription Management" icon={Gift} />
-                <SettingsListItem label="Manage Apps and Devices" icon={AppWindow} />
-                <SettingsListItem label="Notification Preferences" icon={Bell} />
-                <SettingsListItem label="Profile Privacy Settings" icon={ShieldCheck} />
-                <SettingsListItem label="Help & Support" icon={HelpCircle} />
+                <SettingsListItem label="Subscription" icon={Gift} href="/profile/subscription" />
+                <SettingsListItem label="Integrations" icon={AppWindow} href="/profile/integrations" />
+                <SettingsListItem label="Notification Preferences" icon={Bell} href="/profile/notifications" />
+                <SettingsListItem label="Profile Privacy Settings" icon={ShieldCheck} href="/profile/privacy" />
+                <SettingsListItem label="Help & Support" icon={HelpCircle} href="/profile/help" />
               </div>
             </div>
 
@@ -409,7 +407,7 @@ export default function ProfilePage() {
             </Button>
 
             <CardDescription className="text-xs text-center text-muted-foreground pt-4">
-              Note: Editable fields will have an edit icon. Full edit functionality is under development.
+              Note: Editable fields will have an edit icon. Full edit functionality is under development. Some links are placeholders.
             </CardDescription>
 
           </CardContent>
@@ -418,5 +416,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-
-    
