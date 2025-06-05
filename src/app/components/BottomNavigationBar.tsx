@@ -58,7 +58,7 @@ export function BottomNavigationBar() {
   }, []);
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
-    if (!hasMounted) return; 
+    if (!hasMounted) return;
 
     const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
     if (typeof customEvent.detail?.hasUnread === 'boolean') {
@@ -67,11 +67,12 @@ export function BottomNavigationBar() {
   }, [hasMounted]);
 
   React.useEffect(() => {
+    if (!hasMounted) return; 
+
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     
-    if (hasMounted) {
-      window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
-    }
+    // Initial request for status if already mounted
+    window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
 
     return () => {
       window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
@@ -80,6 +81,7 @@ export function BottomNavigationBar() {
 
   React.useEffect(() => {
     if (hasMounted) {
+      // Request status on pathname change too, after a short delay to allow ContextualHelpFab to process potential path changes
       const timer = setTimeout(() => {
           window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
       }, 100); 
@@ -94,7 +96,7 @@ export function BottomNavigationBar() {
     { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
     {
       id: 'ask',
-      href: '#',
+      href: '#', // Stays '#' as it's handled by action
       label: 'Ask AI',
       icon: LabubuIcon,
       action: (hasTipsFromClick) => { 
@@ -122,6 +124,49 @@ export function BottomNavigationBar() {
         {navItems.map((item) => {
           const isActive = !item.isMoreMenu && item.id !== 'ask' && pathname === item.href;
 
+          if (item.id === 'ask') {
+            if (!hasMounted) {
+              // Render a placeholder for the "Ask AI" button to prevent layout shift
+              // and ensure consistent server/client initial render.
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col items-center justify-center w-1/5 h-full p-2"
+                  aria-hidden="true" // Hide from assistive technologies as it's just a placeholder
+                />
+              );
+            }
+            // If mounted, render the actual "Ask AI" button
+            return (
+              <a
+                key={item.id}
+                href={item.href} // This is '#'
+                onClick={(e) => {
+                  e.preventDefault();
+                  // The action now correctly uses `hasMounted && showTipsBadge` which are up-to-date client-side states
+                  if (item.action) item.action(hasMounted && showTipsBadge);
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
+                  // `isActive` for 'ask' item might need specific logic if it should highlight,
+                  // for now, it won't highlight based on original `isActive`
+                )}
+              >
+                <div className="relative"> {/* Container for icon and badge */}
+                  <item.icon className={cn("h-6 w-6 mb-0.5" /* isActive for ask removed for simplicity here, can be added if needed */)} />
+                  {/* Badge is always rendered, visibility controlled by opacity */}
+                  <span
+                    className={cn(
+                      "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
+                      (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </div>
+                <span className={cn("text-xs font-medium" /* isActive for ask removed */)}>{item.label}</span>
+              </a>
+            );
+          }
+          
           if (item.isMoreMenu) {
             return (
               <DropdownMenu key={item.id}>
@@ -153,36 +198,8 @@ export function BottomNavigationBar() {
               </DropdownMenu>
             );
           }
-          
-          if (item.action) {
-            return (
-              <a
-                key={item.id}
-                href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (item.action) item.action(hasMounted && showTipsBadge);
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
-                )}
-              >
-                <div className="relative"> {/* Container for icon and badge */}
-                  <item.icon className={cn("h-6 w-6 mb-0.5", item.id === 'ask' && isActive ? "text-primary" : "")} />
-                  {item.id === 'ask' && (
-                    <span
-                      className={cn(
-                        "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
-                        (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                  )}
-                </div>
-                <span className={cn("text-xs font-medium", item.id ==='ask' && isActive ? "text-primary" : "")}>{item.label}</span>
-              </a>
-            );
-          }
 
+          // Default link items
           return (
             <Link key={item.id} href={item.href} legacyBehavior>
               <a
@@ -206,4 +223,3 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
-
