@@ -15,17 +15,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export function TopHeader() {
   const [sleepRating, setSleepRating] = useState<number | null>(null);
   const [mood, setMood] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSleepRate = (rating: number) => {
     setSleepRating(rating);
     // In a real app, you would call a function here to log the rating
     console.log(`Sleep rated: ${rating} stars`);
-    // To provide feedback, you might show a toast or briefly change UI
-    // For now, it just updates the state for visual feedback in the dropdown
   };
 
   const handleMoodSelect = (selectedMoodEmoji: string) => {
@@ -45,7 +45,7 @@ export function TopHeader() {
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-md bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
       <div className="flex h-full items-center justify-between px-4">
-        <Link href="/" className="text-2xl font-bold text-primary flex items-baseline" style={{ fontFamily: 'serif' }}>
+        <Link href="/" className="text-2xl font-bold text-primary flex items-baseline" style={{ fontFamily: 'Inter' }}>
           Podium <span className="text-xs text-muted-foreground ml-1 font-sans">(this is not the right style)</span>
         </Link>
         <div className="flex items-center space-x-3">
@@ -71,7 +71,6 @@ export function TopHeader() {
                         size="icon"
                         className={cn(
                           "h-7 w-7 p-0 rounded-full",
-                           // Visual feedback for current selection and hover
                           sleepRating === rating ? "text-yellow-500 bg-yellow-100" : "text-muted-foreground hover:text-yellow-500 hover:bg-yellow-50"
                         )}
                         onClick={() => handleSleepRate(rating)}
@@ -94,7 +93,7 @@ export function TopHeader() {
                                 variant="ghost"
                                 size="icon"
                                 className={cn(
-                                    "h-8 w-8 p-0 text-xl rounded-full", // Slightly larger for emojis
+                                    "h-8 w-8 p-0 text-xl rounded-full", 
                                     mood === opt.emoji ? "bg-accent/20 ring-2 ring-accent" : "hover:bg-accent/10"
                                 )}
                                 onClick={() => handleMoodSelect(opt.emoji)}
@@ -109,11 +108,17 @@ export function TopHeader() {
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/track#diary-medication-&-supplement-use" className="w-full cursor-pointer">Log supplements</Link>
+              <DropdownMenuItem 
+                onClick={() => router.push('/track#diary-medication-&-supplement-use')} 
+                className="w-full cursor-pointer"
+              >
+                Log supplements
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/track#diary" className="w-full cursor-pointer">Log other (Diary)</Link>
+              <DropdownMenuItem 
+                onClick={() => router.push('/track#diary')} 
+                className="w-full cursor-pointer"
+              >
+                Log other (Diary)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
