@@ -8,13 +8,13 @@ body {
 
 @layer base {
   :root {
-    --background: 48 67% 98%; /* #FDFCF8 */
+    --background: 39 30% 92%; /* #F3EFE6 */
     --foreground: 10 44% 20%; /* #4A221C (Darker Maroon for text & icon strokes) */
 
-    --card: 48 67% 98%; /* #FDFCF8 - Updated to match page background */
+    --card: 48 67% 98%; /* #FDFCF8 - For cards, to contrast with page background */
     --card-foreground: 10 44% 20%; /* #4A221C (Dark Maroon text on cards) */
 
-    --popover: 48 67% 98%; /* #FDFCF8 */
+    --popover: 39 30% 92%; /* #F3EFE6 - Matches new page background */
     --popover-foreground: 10 44% 20%; /* #4A221C */
 
     --primary: 10 44% 25%; /* #5d2a23 (Brand Maroon for primary actions, filled icon bg - icon sheet col 2 bg) */
@@ -23,7 +23,7 @@ body {
     --secondary: 202 100% 85%; /* #B2E5FF (Brand Light Blue for icon highlights - icon sheet col 1 bg) */
     --secondary-foreground: 10 44% 25%; /* #5d2a23 (Maroon text/icons on light blue bg) */
 
-    --muted: 39 29% 92%; /* #EDE5DA (Light beige for less prominent elements) */
+    --muted: 39 29% 92%; /* #EDE5DA (Light beige for less prominent elements, can be same as background or slightly different) */
     --muted-foreground: 10 44% 35%; /* #7B4B42 (Slightly lighter maroon for text on muted) */
 
     --accent: 353 55% 30%; /* #6E2A30 (A slightly brighter/different maroon for accents if needed) */
@@ -43,8 +43,8 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    /* Sidebar specific colors - can remain as default or be themed if a sidebar is added later */
-    --sidebar-background: 48 67% 98%; /* #FDFCF8 */
+    /* Sidebar specific colors */
+    --sidebar-background: 39 30% 92%; /* #F3EFE6 - Matches new page background */
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
