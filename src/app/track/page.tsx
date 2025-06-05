@@ -9,7 +9,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
 } from '@/components/ui/card';
 import {
   Tabs,
@@ -21,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, BookOpen, Activity, Star } from 'lucide-react';
+import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, Activity, Star } from 'lucide-react';
 
 interface TrackingQuestion {
   id: string;
@@ -30,7 +29,7 @@ interface TrackingQuestion {
   inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time' | 'duration';
   options?: string[];
   placeholder?: string;
-  status: string; // e.g., "Pending", "16oz ✅", "Good ⭐⭐⭐⭐ ✅"
+  status: string; 
   value?: string | number | string[];
 }
 
@@ -131,6 +130,7 @@ const trackingData: TrackingCategory[] = [
   },
 ];
 
+
 const renderInputType = (question: TrackingQuestion) => {
   switch (question.inputType) {
     case 'number':
@@ -148,7 +148,7 @@ const renderInputType = (question: TrackingQuestion) => {
         </div>
       );
     case 'options':
-    case 'bristol': // Bristol can use Select for now
+    case 'bristol': 
       return (
         <Select defaultValue={question.value?.toString()}>
           <SelectTrigger className="w-full mt-1">
@@ -162,9 +162,9 @@ const renderInputType = (question: TrackingQuestion) => {
     case 'rating-5':
       return (
         <div className="mt-1 flex space-x-1">
-          {[1, 2, 3, 4, 5].map(star => (
-            <Button key={star} variant="ghost" size="icon" className="p-1">
-              <Star className={`h-6 w-6 ${ (question.value && parseInt(question.value.toString()) >= star) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+          {[1, 2, 3, 4, 5].map(starRating => ( // Renamed star to starRating to avoid conflict
+            <Button key={starRating} variant="ghost" size="icon" className="p-1">
+              <Star className={`h-6 w-6 ${ (question.value && parseInt(question.value.toString()) >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
             </Button>
           ))}
         </div>
@@ -177,6 +177,22 @@ const renderInputType = (question: TrackingQuestion) => {
 
 export default function TrackPage() {
   const [activeTab, setActiveTab] = React.useState("dashboard");
+
+  React.useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, '');
+    if (hash === 'diary' || trackingData.some(cat => `diary-${cat.id}` === hash)) {
+      setActiveTab('diary');
+      if (trackingData.some(cat => `diary-${cat.id}` === hash)) {
+        setTimeout(() => { 
+            const element = document.getElementById(hash);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+      }
+    }
+  }, []);
+
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-background overflow-y-auto">
@@ -234,7 +250,7 @@ export default function TrackPage() {
                  <Card>
                   <CardHeader><CardTitle className="text-md">Water Intake Progress</CardTitle></CardHeader>
                   <CardContent className="h-20 flex items-center justify-center bg-muted/30 rounded-md">
-                    <Utensils className="h-10 w-10 text-primary/30" /> {/* Using Utensils as a stand-in */}
+                    <Utensils className="h-10 w-10 text-primary/30" /> 
                     <p className="ml-2 text-muted-foreground">Progress Placeholder</p>
                   </CardContent>
                 </Card>

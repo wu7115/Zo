@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle, User } from 'lucide-react';
+import { PlusCircle, User, Star as StarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +13,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export function TopHeader() {
+  const [sleepRating, setSleepRating] = useState<number | null>(null);
+  const [mood, setMood] = useState<string | null>(null);
+
+  const handleSleepRate = (rating: number) => {
+    setSleepRating(rating);
+    // In a real app, you would call a function here to log the rating
+    console.log(`Sleep rated: ${rating} stars`);
+    // To provide feedback, you might show a toast or briefly change UI
+    // For now, it just updates the state for visual feedback in the dropdown
+  };
+
+  const handleMoodSelect = (selectedMoodEmoji: string) => {
+    setMood(selectedMoodEmoji);
+    // In a real app, you would call a function here to log the mood
+    console.log(`Mood selected: ${selectedMoodEmoji}`);
+  };
+
+  const moodOptions = [
+    { emoji: '😊', label: 'Excellent' },
+    { emoji: '🙂', label: 'Good' },
+    { emoji: '😐', label: 'Neutral' },
+    { emoji: '😟', label: 'Low' },
+    { emoji: '😩', label: 'Very Low' },
+  ];
+
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-md bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
       <div className="flex h-full items-center justify-between px-4">
@@ -29,21 +56,64 @@ export function TopHeader() {
                 <span className="sr-only">Log Activity or Quick Updates</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Quick Updates</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/track#diary-sleep-&-rest">Rate your sleep</Link>
+
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
+                <div className="w-full">
+                  <p className="text-sm mb-1.5 text-foreground">Rate your sleep</p>
+                  <div className="flex justify-between items-center px-1">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Button
+                        key={`sleep-${rating}`}
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 p-0 rounded-full",
+                           // Visual feedback for current selection and hover
+                          sleepRating === rating ? "text-yellow-500 bg-yellow-100" : "text-muted-foreground hover:text-yellow-500 hover:bg-yellow-50"
+                        )}
+                        onClick={() => handleSleepRate(rating)}
+                        aria-label={`Rate ${rating} stars`}
+                      >
+                        <StarIcon className={cn("h-5 w-5", sleepRating !== null && rating <= sleepRating ? "fill-yellow-400 text-yellow-500" : "fill-transparent" )}/>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/track#diary-stress-&-relaxation">Rate your mood</Link>
+
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default mt-1">
+                 <div className="w-full">
+                    <p className="text-sm mb-1.5 text-foreground">Rate your mood</p>
+                    <div className="flex justify-between items-center px-1">
+                        {moodOptions.map((opt) => (
+                            <Button
+                                key={`mood-${opt.label}`}
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    "h-8 w-8 p-0 text-xl rounded-full", // Slightly larger for emojis
+                                    mood === opt.emoji ? "bg-accent/20 ring-2 ring-accent" : "hover:bg-accent/10"
+                                )}
+                                onClick={() => handleMoodSelect(opt.emoji)}
+                                title={opt.label}
+                                aria-label={opt.label}
+                            >
+                                {opt.emoji}
+                            </Button>
+                        ))}
+                    </div>
+                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/track#diary-medication-&-supplement-use">Log supplements</Link>
-              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/track">Log other</Link>
+                <Link href="/track#diary-medication-&-supplement-use" className="w-full cursor-pointer">Log supplements</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/track#diary" className="w-full cursor-pointer">Log other (Diary)</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
