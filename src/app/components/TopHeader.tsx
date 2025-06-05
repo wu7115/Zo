@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PlusCircle, User, Star as StarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,9 +46,22 @@ export function TopHeader() {
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-md bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
       <div className="flex h-full items-center justify-between px-4">
+        {/* Left: Logo */}
         <Link href="/" className="text-2xl font-bold text-primary flex items-baseline" style={{ fontFamily: 'Inter' }}>
           Podium
         </Link>
+
+        {/* Center: Score and Points */}
+        <div className="flex items-center space-x-2">
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs cursor-pointer">
+            Score 55/100
+          </Badge>
+          <Badge variant="secondary" className="px-3 py-1.5 text-xs cursor-pointer">
+            Points 421
+          </Badge>
+        </div>
+
+        {/* Right: Icons */}
         <div className="flex items-center space-x-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
