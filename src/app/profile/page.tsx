@@ -21,6 +21,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   ArrowLeft,
   UserCircle2,
   Edit3,
@@ -40,11 +45,63 @@ import {
   HelpCircle,
   Camera,
   ChevronRight,
+  HeartPulse, // For Gut Health
+  BedDouble,  // For Sleep
+  Dumbbell,   // For Strength
+  CheckCircle,
 } from 'lucide-react';
 import * as React from 'react';
 
-// Placeholder data
-const profileData = {
+interface Journey {
+  id: string;
+  name: string;
+  description: string;
+  progress: number;
+  daysCompleted: number;
+  totalDays: number;
+  icon: React.ElementType;
+}
+
+const allJourneys: Journey[] = [
+  {
+    id: 'mindful-mover',
+    name: 'Mindful Mover Challenge',
+    description: '30 days of integrating movement and mindfulness.',
+    progress: 60,
+    daysCompleted: 18,
+    totalDays: 30,
+    icon: Rocket,
+  },
+  {
+    id: 'gut-reset',
+    name: 'Gut Health Reset',
+    description: 'Focus on diet and lifestyle for a healthier gut.',
+    progress: 25, // Example progress
+    daysCompleted: 5,
+    totalDays: 21,
+    icon: HeartPulse,
+  },
+  {
+    id: 'sleep-plan',
+    name: 'Sleep Improvement Plan',
+    description: 'Strategies for better sleep hygiene and duration.',
+    progress: 10, // Example progress
+    daysCompleted: 1,
+    totalDays: 14,
+    icon: BedDouble,
+  },
+  {
+    id: 'strength-builder',
+    name: 'Strength Builder Series',
+    description: 'Progressive workouts to build strength over 6 weeks.',
+    progress: 0,
+    daysCompleted: 0,
+    totalDays: 42,
+    icon: Dumbbell,
+  },
+];
+
+const initialProfileData = {
   user: {
     name: 'Alex Podium',
     bio: 'Passionate about wellness and achieving peak performance. Join me on my journey to a healthier life!',
@@ -56,12 +113,6 @@ const profileData = {
   followingCount: 300,
   addresses: ['123 Wellness Lane, Fitville, CA 90210'],
   paymentMethod: 'Visa **** 1234',
-  currentJourney: {
-    name: 'Mindful Mover Challenge',
-    progress: 60,
-    daysCompleted: 18,
-    totalDays: 30,
-  },
 };
 
 const SectionTitle: React.FC<{ title: string; onEdit?: () => void }> = ({ title, onEdit }) => (
@@ -104,6 +155,17 @@ const SettingsListItem: React.FC<{ label: string; icon: React.ElementType; href?
 
 
 export default function ProfilePage() {
+  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id);
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
+  const activeJourney = allJourneys.find(j => j.id === activeJourneyId) || allJourneys[0];
+  const otherJourneys = allJourneys.filter(j => j.id !== activeJourneyId);
+
+  const handleSelectJourney = (journeyId: string) => {
+    setActiveJourneyId(journeyId);
+    setIsPopoverOpen(false); // Close popover after selection
+  };
+
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
@@ -127,15 +189,15 @@ export default function ProfilePage() {
             <div className="text-center">
               <div className="relative inline-block mb-3">
                 <Avatar className="w-24 h-24 border-2 border-primary">
-                  <AvatarImage src={profileData.user.avatarUrl} alt={profileData.user.name} data-ai-hint={profileData.user.avatarHint} />
-                  <AvatarFallback className="text-3xl">{profileData.user.avatarFallback}</AvatarFallback>
+                  <AvatarImage src={initialProfileData.user.avatarUrl} alt={initialProfileData.user.name} data-ai-hint={initialProfileData.user.avatarHint} />
+                  <AvatarFallback className="text-3xl">{initialProfileData.user.avatarFallback}</AvatarFallback>
                 </Avatar>
                 <Button variant="outline" size="icon" className="absolute bottom-0 right-0 rounded-full h-8 w-8 bg-background hover:bg-muted border-primary text-primary">
                   <Camera className="h-4 w-4" />
                 </Button>
               </div>
-              <h2 className="text-xl font-semibold text-primary">{profileData.user.name}</h2>
-              <p className="text-sm text-muted-foreground px-4">{profileData.user.bio}</p>
+              <h2 className="text-xl font-semibold text-primary">{initialProfileData.user.name}</h2>
+              <p className="text-sm text-muted-foreground px-4">{initialProfileData.user.bio}</p>
               <Button variant="outline" size="sm" className="mt-3">
                 <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
               </Button>
@@ -148,7 +210,7 @@ export default function ProfilePage() {
               <AccordionItem value="followers">
                 <AccordionTrigger className="text-md font-semibold text-primary hover:no-underline">
                   <div className="flex items-center">
-                    <Users className="mr-2 h-5 w-5 text-accent" /> Followers ({profileData.followersCount})
+                    <Users className="mr-2 h-5 w-5 text-accent" /> Followers ({initialProfileData.followersCount})
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground p-2">
@@ -158,7 +220,7 @@ export default function ProfilePage() {
               <AccordionItem value="following">
                 <AccordionTrigger className="text-md font-semibold text-primary hover:no-underline">
                   <div className="flex items-center">
-                    <UserPlus className="mr-2 h-5 w-5 text-accent" /> Following ({profileData.followingCount})
+                    <UserPlus className="mr-2 h-5 w-5 text-accent" /> Following ({initialProfileData.followingCount})
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground p-2">
@@ -172,9 +234,9 @@ export default function ProfilePage() {
             {/* Account Details Section */}
             <div>
               <SectionTitle title="Account Details" />
-              <InfoRow label="Addresses" value={profileData.addresses[0] || 'No address on file'} onEdit={() => {}} icon={MapPin} />
+              <InfoRow label="Addresses" value={initialProfileData.addresses[0] || 'No address on file'} onEdit={() => {}} icon={MapPin} />
               <Separator className="my-1" />
-              <InfoRow label="Payment Method" value={profileData.paymentMethod} onEdit={() => {}} icon={CreditCard} />
+              <InfoRow label="Payment Method" value={initialProfileData.paymentMethod} onEdit={() => {}} icon={CreditCard} />
             </div>
 
             <Separator />
@@ -184,16 +246,54 @@ export default function ProfilePage() {
               <SectionTitle title="Current Journey" />
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-between mb-1">
-                    <p className="text-md font-semibold text-primary">{profileData.currentJourney.name}</p>
-                    <Rocket className="h-5 w-5 text-accent"/>
+                    <p className="text-md font-semibold text-primary">{activeJourney.name}</p>
+                    <activeJourney.icon className="h-5 w-5 text-accent"/>
                 </div>
-                <Progress value={profileData.currentJourney.progress} className="w-full h-3 mb-1" />
+                <Progress value={activeJourney.progress} className="w-full h-3 mb-1" />
                 <p className="text-xs text-muted-foreground text-right">
-                  {profileData.currentJourney.progress}% ({profileData.currentJourney.daysCompleted}/{profileData.currentJourney.totalDays} days)
+                  {activeJourney.progress}% ({activeJourney.daysCompleted}/{activeJourney.totalDays} days)
                 </p>
                 <div className="mt-3 flex space-x-2">
                   <Button variant="outline" size="sm" className="flex-1">Modify Journey</Button>
-                  <Button variant="secondary" size="sm" className="flex-1">Choose Another</Button>
+                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="secondary" size="sm" className="flex-1">Choose Another</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="grid gap-4">
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none text-primary">Available Journeys</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Select a new journey to embark on.
+                          </p>
+                        </div>
+                        <div className="grid gap-2">
+                          {otherJourneys.map((journey) => {
+                            const JourneyIcon = journey.icon;
+                            return (
+                              <Button
+                                key={journey.id}
+                                variant="ghost"
+                                className="justify-start p-2 h-auto"
+                                onClick={() => handleSelectJourney(journey.id)}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <JourneyIcon className="h-5 w-5 text-accent" />
+                                  <div>
+                                    <p className="text-sm font-medium text-primary">{journey.name}</p>
+                                    <p className="text-xs text-muted-foreground">{journey.description}</p>
+                                  </div>
+                                </div>
+                              </Button>
+                            );
+                          })}
+                           {otherJourneys.length === 0 && (
+                            <p className="text-sm text-muted-foreground p-2 text-center">No other journeys available.</p>
+                           )}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -254,5 +354,4 @@ export default function ProfilePage() {
     </main>
   );
 }
-
     
