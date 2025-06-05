@@ -162,7 +162,7 @@ const renderInputType = (question: TrackingQuestion) => {
     case 'rating-5':
       return (
         <div className="mt-1 flex space-x-1">
-          {[1, 2, 3, 4, 5].map(starRating => ( // Renamed star to starRating to avoid conflict
+          {[1, 2, 3, 4, 5].map(starRating => ( 
             <Button key={starRating} variant="ghost" size="icon" className="p-1">
               <Star className={`h-6 w-6 ${ (question.value && parseInt(question.value.toString()) >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
             </Button>
@@ -211,8 +211,8 @@ export default function TrackPage() {
               </Button>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-sm border-primary text-primary">Score: 55/100</Badge>
-              <Badge variant="outline" className="text-sm border-primary text-primary">Points: 421</Badge>
+              <Badge variant="secondary" className="text-sm">Score: 55/100</Badge>
+              <Badge variant="secondary" className="text-sm">Points: 421</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-1 pb-4">

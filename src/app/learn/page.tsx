@@ -103,8 +103,8 @@ export default function LearnPage() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-sm border-primary text-primary bg-blue-100">ZoGut Score 55/100</Badge>
-              <Badge variant="outline" className="text-sm border-primary text-primary bg-blue-100">ZoPoints 431</Badge>
+              <Badge variant="secondary" className="text-sm">ZoGut Score 55/100</Badge>
+              <Badge variant="secondary" className="text-sm">ZoPoints 431</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-1 pb-4">
@@ -142,5 +142,4 @@ export default function LearnPage() {
     </main>
   );
 }
-
     

@@ -80,8 +80,8 @@ export default function ShopPage() {
               </Button>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-sm border-primary text-primary">Score: 55/100</Badge>
-              <Badge variant="outline" className="text-sm border-primary text-primary">Points: 421</Badge>
+              <Badge variant="secondary" className="text-sm">Score: 55/100</Badge>
+              <Badge variant="secondary" className="text-sm">Points: 421</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">

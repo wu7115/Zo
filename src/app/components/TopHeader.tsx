@@ -46,7 +46,7 @@ export function TopHeader() {
     <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-md bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
       <div className="flex h-full items-center justify-between px-4">
         <Link href="/" className="text-2xl font-bold text-primary flex items-baseline" style={{ fontFamily: 'Inter' }}>
-          Podium <span className="text-xs text-muted-foreground ml-1 font-sans">(this is not the right style)</span>
+          Podium
         </Link>
         <div className="flex items-center space-x-3">
           <DropdownMenu>
