@@ -138,8 +138,8 @@ export function ContextualHelpFab() {
       fetchRecommendations();
       setHasUnreadTips(false); // Tips are now "read"
     } else { // Panel is closing
-      // Re-check for tips for the current page if panel is closed, in case it should re-appear for same page later (optional)
-      // For now, badge will only reappear on path change if panel is closed.
+      // Re-check for tips for the current page if panel is closed
+      setHasUnreadTips(checkForNewTips(pathname));
     }
   };
   
@@ -163,7 +163,7 @@ export function ContextualHelpFab() {
       >
         <LabubuIcon className="h-7 w-7" />
         {hasUnreadTips && (
-           <span className="absolute top-1 right-1 block h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-background border-2 border-white" />
+           <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-600 ring-2 ring-background" />
         )}
       </Button>
 
