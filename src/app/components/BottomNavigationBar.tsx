@@ -53,28 +53,21 @@ export function BottomNavigationBar() {
   const [showTipsBadge, setShowTipsBadge] = React.useState(false);
   const [hasMounted, setHasMounted] = React.useState(false);
 
-  // State for "Ask AI" button's dynamic attributes
-  const [askAiIsDisabled, setAskAiIsDisabled] = React.useState(true);
-  const [askAiDynamicClasses, setAskAiDynamicClasses] = React.useState("cursor-default opacity-75");
-
-
   React.useEffect(() => {
     setHasMounted(true);
-    setAskAiIsDisabled(false);
-    setAskAiDynamicClasses("hover:text-primary cursor-pointer");
   }, []);
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
-    if (!hasMounted) return;
+    if (!hasMounted) return; // Only update if mounted
 
     const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
     if (typeof customEvent.detail?.hasUnread === 'boolean') {
       setShowTipsBadge(customEvent.detail.hasUnread);
     }
-  }, [hasMounted]);
+  }, [hasMounted]); // Dependency on hasMounted
 
   React.useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted) return; // Only add/remove listener if mounted
 
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     // Request initial status only after mount
@@ -83,17 +76,17 @@ export function BottomNavigationBar() {
     return () => {
       window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     };
-  }, [hasMounted, handleStatusUpdate]);
+  }, [hasMounted, handleStatusUpdate]); // Dependency on hasMounted and handleStatusUpdate
 
   React.useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted) return; // Only dispatch if mounted
     
     // Delay slightly to ensure ContextualHelpFab might have mounted and registered its listener
     const timer = setTimeout(() => {
         window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
     }, 100); 
     return () => clearTimeout(timer);
-  }, [pathname, hasMounted]);
+  }, [pathname, hasMounted]); // Dependency on pathname and hasMounted
 
 
   const navItems: NavItem[] = [
@@ -137,15 +130,15 @@ export function BottomNavigationBar() {
                 href={item.href} 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (hasMounted && item.action) {
+                  if (hasMounted && typeof item.action === 'function') {
                     item.action(showTipsBadge);
                   }
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
-                  askAiDynamicClasses 
+                  hasMounted ? "hover:text-primary cursor-pointer" : "cursor-default opacity-75 pointer-events-none"
                 )}
-                aria-disabled={askAiIsDisabled}
+                // Removed aria-disabled to avoid hydration mismatch
               >
                 <div className="relative"> {/* Container for icon and badge */}
                   <item.icon className={cn("h-6 w-6 mb-0.5")} />
@@ -218,3 +211,4 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
+
