@@ -67,13 +67,13 @@ export default function GutHealthScoreBreakdownPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScoreCategoryCard title="ZoGut Score" score={28} bgColorClass="bg-orange-100">
+            <ScoreCategoryCard title="ZoGut Score" score={28} bgColorClass="bg-amber-100">
               <div className="grid grid-cols-3 gap-3 items-end">
                 <SubCategoryBlock name="Microbial Diversity" color="bg-orange-400" className="h-20 flex items-center justify-center" />
               </div>
             </ScoreCategoryCard>
 
-            <ScoreCategoryCard title="Hydration & Diet" score={11} bgColorClass="bg-stone-100">
+            <ScoreCategoryCard title="Hydration & Diet" score={11} bgColorClass="bg-neutral-100">
               <div className="grid grid-cols-3 gap-3 items-end">
                 <SubCategoryBlock name="Diet" color="bg-stone-300" className="h-24 flex items-center justify-center" />
                 <SubCategoryBlock name="Water Intake" color="bg-stone-300" className="h-16 flex items-center justify-center" />
@@ -81,7 +81,7 @@ export default function GutHealthScoreBreakdownPage() {
               </div>
             </ScoreCategoryCard>
 
-            <ScoreCategoryCard title="Lifestyle & Environment" score={8} bgColorClass="bg-blue-100">
+            <ScoreCategoryCard title="Lifestyle & Environment" score={8} bgColorClass="bg-sky-100">
               <div className="grid grid-cols-3 gap-3 items-end">
                 <SubCategoryBlock name="Exercise" color="bg-blue-300" className="h-20 flex items-center justify-center" />
                 <SubCategoryBlock name="Sleep" color="bg-blue-300" className="h-28 flex items-center justify-center" />
@@ -97,3 +97,4 @@ export default function GutHealthScoreBreakdownPage() {
     </main>
   );
 }
+
