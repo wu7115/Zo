@@ -58,7 +58,7 @@ export function BottomNavigationBar() {
   }, []);
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
-    if (!hasMounted) return; // Only update if component is mounted
+    if (!hasMounted) return; 
 
     const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
     if (typeof customEvent.detail?.hasUnread === 'boolean') {
@@ -69,7 +69,6 @@ export function BottomNavigationBar() {
   React.useEffect(() => {
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     
-    // Request initial status only after this component has mounted
     if (hasMounted) {
       window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
     }
@@ -77,16 +76,13 @@ export function BottomNavigationBar() {
     return () => {
       window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     };
-  }, [hasMounted, handleStatusUpdate]); // Rerun if hasMounted changes or handleStatusUpdate definition changes
+  }, [hasMounted, handleStatusUpdate]);
 
-  // Effect to re-check badge status when pathname changes,
-  // by prompting ContextualHelpFab to re-evaluate and dispatch.
   React.useEffect(() => {
     if (hasMounted) {
-      // A slight delay to ensure ContextualHelpFab's own pathname effect might have run
       const timer = setTimeout(() => {
           window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
-      }, 50); // Reduced delay, 50ms should be enough
+      }, 100); 
       return () => clearTimeout(timer);
     }
   }, [pathname, hasMounted]);
@@ -101,7 +97,7 @@ export function BottomNavigationBar() {
       href: '#',
       label: 'Ask AI',
       icon: LabubuIcon,
-      action: (hasTipsFromClick) => { // Renamed param to avoid confusion
+      action: (hasTipsFromClick) => { 
         if (hasTipsFromClick) {
           window.dispatchEvent(new CustomEvent('toggleAiTipsPanel'));
         } else {
@@ -165,7 +161,6 @@ export function BottomNavigationBar() {
                 href={item.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Pass the current state of showTipsBadge to the action, only if mounted
                   if (item.action) item.action(hasMounted && showTipsBadge);
                 }}
                 className={cn(
@@ -174,8 +169,13 @@ export function BottomNavigationBar() {
               >
                 <div className="relative"> {/* Container for icon and badge */}
                   <item.icon className={cn("h-6 w-6 mb-0.5", item.id === 'ask' && isActive ? "text-primary" : "")} />
-                  {item.id === 'ask' && hasMounted && showTipsBadge && (
-                    <span className="absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background" />
+                  {item.id === 'ask' && (
+                    <span
+                      className={cn(
+                        "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
+                        (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
                   )}
                 </div>
                 <span className={cn("text-xs font-medium", item.id ==='ask' && isActive ? "text-primary" : "")}>{item.label}</span>
@@ -206,3 +206,4 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
+

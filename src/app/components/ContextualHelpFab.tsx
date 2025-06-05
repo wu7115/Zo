@@ -36,7 +36,7 @@ export function ContextualHelpFab() {
   const [recommendations, setRecommendations] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
-  const userName = "Alex"; // Mock user name
+  const userName = "Alex"; 
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
@@ -117,14 +117,14 @@ export function ContextualHelpFab() {
   const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
     setRecommendations(null); 
-    await new Promise(resolve => setTimeout(resolve, 700)); 
+    await new Promise(resolve => setTimeout(resolve, 300)); 
     const content = getMockRecommendations(pathname);
     setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
     setIsLoading(false);
   }, [pathname, getMockRecommendations]);
 
   const dispatchUnreadStatus = useCallback(() => {
-    if (!hasMounted) return; // Only dispatch if this component itself is mounted
+    if (!hasMounted) return;
     const newStatus = !isPanelOpen && checkForNewTips(pathname);
     window.dispatchEvent(new CustomEvent('unreadTipsStatusChanged', { detail: { hasUnread: newStatus } }));
   }, [isPanelOpen, checkForNewTips, pathname, hasMounted]);
@@ -135,8 +135,6 @@ export function ContextualHelpFab() {
       if (nextPanelOpenState) { 
         fetchRecommendations();
       }
-      // Defer dispatchUnreadStatus until after this state update completes
-      // This helps ensure BottomNav gets the most up-to-date status after panel interaction
       setTimeout(() => dispatchUnreadStatus(), 0);
       return nextPanelOpenState;
     });
@@ -151,15 +149,14 @@ export function ContextualHelpFab() {
   }, [handleTogglePanel]);
   
   useEffect(() => {
-    if (hasMounted) { // Dispatch on mount (if mounted) and pathname change
+    if (hasMounted) { 
       dispatchUnreadStatus();
     }
-  }, [pathname, hasMounted, dispatchUnreadStatus]); // dispatchUnreadStatus dependency is important if its definition relies on hasMounted
+  }, [pathname, hasMounted, dispatchUnreadStatus]); 
   
   useEffect(() => {
-    // Listen for requests to dispatch current status
     const requestListener = () => {
-      if (hasMounted) { // Only respond if mounted
+      if (hasMounted) { 
         dispatchUnreadStatus();
       }
     };
@@ -216,3 +213,4 @@ export function ContextualHelpFab() {
     </>
   );
 }
+
