@@ -70,8 +70,6 @@ export function BottomNavigationBar() {
     if (!hasMounted) return; 
 
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
-    
-    // Initial request for status if already mounted
     window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
 
     return () => {
@@ -80,13 +78,12 @@ export function BottomNavigationBar() {
   }, [hasMounted, handleStatusUpdate]);
 
   React.useEffect(() => {
-    if (hasMounted) {
-      // Request status on pathname change too, after a short delay to allow ContextualHelpFab to process potential path changes
-      const timer = setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
-      }, 100); 
-      return () => clearTimeout(timer);
-    }
+    if (!hasMounted) return;
+    
+    const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
+    }, 100); 
+    return () => clearTimeout(timer);
   }, [pathname, hasMounted]);
 
 
@@ -96,7 +93,7 @@ export function BottomNavigationBar() {
     { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
     {
       id: 'ask',
-      href: '#', // Stays '#' as it's handled by action
+      href: '#', 
       label: 'Ask AI',
       icon: LabubuIcon,
       action: (hasTipsFromClick) => { 
@@ -123,37 +120,26 @@ export function BottomNavigationBar() {
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
           const isActive = !item.isMoreMenu && item.id !== 'ask' && pathname === item.href;
-
+          
           if (item.id === 'ask') {
-            if (!hasMounted) {
-              // Render a placeholder for the "Ask AI" button to prevent layout shift
-              // and ensure consistent server/client initial render.
-              return (
-                <div
-                  key={item.id}
-                  className="flex flex-col items-center justify-center w-1/5 h-full p-2"
-                  aria-hidden="true" // Hide from assistive technologies as it's just a placeholder
-                />
-              );
-            }
-            // If mounted, render the actual "Ask AI" button
             return (
               <a
                 key={item.id}
                 href={item.href} // This is '#'
                 onClick={(e) => {
                   e.preventDefault();
-                  // The action now correctly uses `hasMounted && showTipsBadge` which are up-to-date client-side states
-                  if (item.action) item.action(hasMounted && showTipsBadge);
+                  if (hasMounted && item.action) {
+                    item.action(showTipsBadge);
+                  }
                 }}
                 className={cn(
-                  "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150 cursor-pointer",
-                  // `isActive` for 'ask' item might need specific logic if it should highlight,
-                  // for now, it won't highlight based on original `isActive`
+                  "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
+                  hasMounted ? "hover:text-primary cursor-pointer" : "cursor-default opacity-75" // More subtle indication if not interactive yet
                 )}
+                aria-disabled={!hasMounted}
               >
                 <div className="relative"> {/* Container for icon and badge */}
-                  <item.icon className={cn("h-6 w-6 mb-0.5" /* isActive for ask removed for simplicity here, can be added if needed */)} />
+                  <item.icon className={cn("h-6 w-6 mb-0.5")} />
                   {/* Badge is always rendered, visibility controlled by opacity */}
                   <span
                     className={cn(
@@ -162,7 +148,7 @@ export function BottomNavigationBar() {
                     )}
                   />
                 </div>
-                <span className={cn("text-xs font-medium" /* isActive for ask removed */)}>{item.label}</span>
+                <span className={cn("text-xs font-medium")}>{item.label}</span>
               </a>
             );
           }
@@ -223,3 +209,4 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
+
