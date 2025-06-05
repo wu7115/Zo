@@ -26,8 +26,8 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background"> {/* body bg-background applies Page Border color #F3EFE6 */}
         <TopHeader />
-        {/* This div is the main app content area */}
-        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16"> {/* Uses new bg-app-content for #FDFCF8 */}
+        {/* This div is the main app content area, its background is #FDFCF8 */}
+        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16">
           {children}
         </div>
         <BottomNavigationBar />
