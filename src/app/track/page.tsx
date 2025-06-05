@@ -16,10 +16,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, Activity, Star, Edit3, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +36,7 @@ interface TrackingQuestion {
   options?: string[];
   placeholder?: string;
   status: string;
-  value?: string | number | string[];
+  value?: string | number | string[] | boolean;
 }
 
 interface TrackingCategory {
@@ -48,15 +53,15 @@ const trackingData: TrackingCategory[] = [
     icon: Utensils,
     questions: [
       { id: 'q1.1', ref: '1.1', text: 'How much water did you drink today?', inputType: 'text', placeholder: 'e.g., 64 oz or 2 liters', status: '16oz ✅', value: '16oz' },
-      { id: 'q1.2', ref: '1.2', text: 'Did you take any supplements today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q1.2', ref: '1.2', text: 'Did you take any supplements today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
       { id: 'q1.3', ref: '1.3', text: 'How many servings of fruits and vegetables did you eat today?', inputType: 'number', placeholder: 'e.g., 5', status: 'Pending' },
       { id: 'q1.4', ref: '1.4', text: 'Approximate fiber intake today (grams):', inputType: 'number', placeholder: 'e.g., 25', status: 'Pending' },
-      { id: 'q1.5', ref: '1.5', text: 'Did you consume fermented foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q1.6', ref: '1.6', text: 'Did you consume processed foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q1.7', ref: '1.7', text: 'Did you avoid your known trigger foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q1.5', ref: '1.5', text: 'Did you consume fermented foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q1.6', ref: '1.6', text: 'Did you consume processed foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q1.7', ref: '1.7', text: 'Did you avoid your known trigger foods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
       { id: 'q1.8', ref: '1.8', text: 'How many meals did you have today?', inputType: 'number', placeholder: 'e.g., 3', status: 'Pending' },
-      { id: 'q1.9', ref: '1.9', text: 'Did you consume any alcohol today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q1.10', ref: '1.10', text: 'Did you consume caffeine today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q1.9', ref: '1.9', text: 'Did you consume any alcohol today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q1.10', ref: '1.10', text: 'Did you consume caffeine today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
     ],
   },
   {
@@ -80,7 +85,7 @@ const trackingData: TrackingCategory[] = [
       { id: 'q3.3', ref: '3.3', text: 'What time did you wake up today?', inputType: 'time', status: '6:30 AM ✅', value: '6:30 AM' },
       { id: 'q3.4', ref: '3.4', text: 'Total hours of sleep:', inputType: 'duration', placeholder: 'e.g., 7h 15m', status: '7h 15m ✅ (Synced)', value: '7h 15m' },
       { id: 'q3.5', ref: '3.5', text: 'How would you rate your sleep quality?', inputType: 'rating-5', status: 'Good ⭐⭐⭐⭐ ✅', value: 4 },
-      { id: 'q3.6', ref: '3.6', text: 'Did you take any naps or rest periods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'No ✅', value: 'No' },
+      { id: 'q3.6', ref: '3.6', text: 'Did you take any naps or rest periods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'No ✅', value: false },
     ],
   },
   {
@@ -89,8 +94,8 @@ const trackingData: TrackingCategory[] = [
     icon: Smile,
     questions: [
       { id: 'q4.1', ref: '4.1', text: 'How would you rate your stress level today?', inputType: 'rating-5', status: 'Pending' },
-      { id: 'q4.2', ref: '4.2', text: 'Did you engage in any mindfulness or meditation practices today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q4.3', ref: '4.3', text: 'Did you do any breathing exercises or relaxation activities?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q4.2', ref: '4.2', text: 'Did you engage in any mindfulness or meditation practices today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q4.3', ref: '4.3', text: 'Did you do any breathing exercises or relaxation activities?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
       { id: 'q4.4', ref: '4.4', text: 'How would you rate your mood today?', inputType: 'options', options: ['Excellent', 'Good', 'Neutral', 'Low', 'Very Low'], status: 'Good ✅', value: 'good' },
       { id: 'q4.5', ref: '4.5', text: 'How would you rate your work-life balance today?', inputType: 'rating-5', status: 'Pending' },
     ],
@@ -114,12 +119,12 @@ const trackingData: TrackingCategory[] = [
         status: 'Normal (1-3 times per day) ✅',
         value: 'normal'
       },
-      { id: 'q5.2', ref: '5.2', text: 'Did you feel any urgency or need to rush to the bathroom today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q5.3', ref: '5.3', text: 'Did you have any difficulty passing stools today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q5.2', ref: '5.2', text: 'Did you feel any urgency or need to rush to the bathroom today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q5.3', ref: '5.3', text: 'Did you have any difficulty passing stools today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
       { id: 'q5.4', ref: '5.4', text: 'Were your bowel movements easy or did you strain?', inputType: 'options', options: ['Easy', 'Strained'], status: 'Pending' },
-      { id: 'q5.5', ref: '5.5', text: 'Did you feel like you completely emptied your bowels?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q5.6', ref: '5.6', text: 'Did you have any incomplete bowel movements today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q5.7', ref: '5.7', text: 'Did you notice any unusual color in your stools today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q5.5', ref: '5.5', text: 'Did you feel like you completely emptied your bowels?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q5.6', ref: '5.6', text: 'Did you have any incomplete bowel movements today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q5.7', ref: '5.7', text: 'Did you notice any unusual color in your stools today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
       {
         id: 'q5.8',
         ref: '5.8',
@@ -137,7 +142,7 @@ const trackingData: TrackingCategory[] = [
         status: 'Type 4 ✅',
         value: 'type-4'
       },
-      { id: 'q5.9', ref: '5.9', text: 'Did you experience bloating, gas, or digestive discomfort today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q5.9', ref: '5.9', text: 'Did you experience bloating, gas, or digestive discomfort today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
     ],
   },
   {
@@ -153,9 +158,9 @@ const trackingData: TrackingCategory[] = [
     title: 'Personalized Goals & Achievements',
     icon: Target,
     questions: [
-      { id: 'q7.1', ref: '7.1', text: 'Did you complete your daily gut-health goals today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q7.2', ref: '7.2', text: 'Did you participate in any weekly gut health challenges?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q7.3', ref: '7.3', text: 'Did you achieve any new wellness milestones or rewards?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
+      { id: 'q7.1', ref: '7.1', text: 'Did you complete your daily gut-health goals today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q7.2', ref: '7.2', text: 'Did you participate in any weekly gut health challenges?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
+      { id: 'q7.3', ref: '7.3', text: 'Did you achieve any new wellness milestones or rewards?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
     ],
   },
 ];
@@ -179,13 +184,13 @@ const renderInputType = (question: TrackingQuestion) => {
         <div className="mt-1 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
           <Button
             variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", question.value === 'Yes' ? selectedButtonClass : unselectedButtonClass)}
+            className={cn(baseButtonClass, "flex-1 justify-center", question.value === true ? selectedButtonClass : unselectedButtonClass)}
           >
             Yes
           </Button>
           <Button
             variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", question.value === 'No' ? selectedButtonClass : unselectedButtonClass)}
+            className={cn(baseButtonClass, "flex-1 justify-center", question.value === false ? selectedButtonClass : unselectedButtonClass)}
           >
             No
           </Button>
@@ -201,8 +206,6 @@ const renderInputType = (question: TrackingQuestion) => {
             if (isBristol) {
               optionValue = opt.split(':')[0].toLowerCase().replace(' ', '-');
             } else {
-              // For general options, derive a value, e.g., the first word or a slug.
-              // For simplicity, let's use the first word in lowercase for matching `question.value`
               optionValue = opt.split(' ')[0].toLowerCase().replace(/[(),]/g, '');
             }
             const isSelected = question.value === optionValue;
@@ -223,7 +226,7 @@ const renderInputType = (question: TrackingQuestion) => {
         <div className="mt-1 flex space-x-1 justify-center">
           {[1, 2, 3, 4, 5].map(starRating => (
             <Button key={starRating} variant="ghost" size="icon" className="p-1">
-              <Star className={`h-6 w-6 ${ (question.value && parseInt(question.value.toString()) >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+              <Star className={`h-6 w-6 ${ (question.value && typeof question.value === 'number' && question.value >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
             </Button>
           ))}
         </div>
@@ -254,7 +257,7 @@ export default function TrackPage() {
 
 
   return (
-    <main className="flex flex-1 flex-col p-4 md:p-6 bg-background overflow-y-auto">
+    <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
         <Card className="shadow-xl">
           <CardHeader>
@@ -324,30 +327,32 @@ export default function TrackPage() {
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
                     </Button>
                 </div>
-                <div className="space-y-6">
+                <Accordion type="multiple" defaultValue={trackingData.length > 0 ? [trackingData[0].id] : []} className="w-full space-y-3">
                   {trackingData.map((category) => (
-                    <Card key={category.id} id={`diary-${category.id}`} className="shadow-md">
-                      <CardHeader className="bg-muted/20 p-3">
-                        <CardTitle className="text-md font-semibold text-primary flex items-center">
+                    <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
+                      <AccordionTrigger className="bg-muted/20 hover:bg-muted/30 p-3 text-md font-semibold text-primary data-[state=open]:bg-muted/40 data-[state=open]:border-b">
+                        <div className="flex items-center flex-1 text-left">
                           <category.icon className="h-5 w-5 mr-2 text-accent" />
                           {category.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-3">
-                        {category.questions.map((question) => (
-                          <div key={question.id} className="py-2 border-b border-border last:border-b-0">
-                            <div className="flex justify-between items-start mb-2">
-                                <p className="text-sm text-primary font-medium pr-2">{question.text} <span className="text-xs text-muted-foreground font-normal">({question.ref})</span></p>
-                                {question.status !== 'Pending' && question.status.includes('✅') && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-0">
+                        <div className="p-3 space-y-3 bg-card">
+                          {category.questions.map((question) => (
+                            <div key={question.id} className="py-2 border-b border-border last:border-b-0">
+                              <div className="flex justify-between items-start mb-2">
+                                  <p className="text-sm text-primary font-medium pr-2">{question.text} <span className="text-xs text-muted-foreground font-normal">({question.ref})</span></p>
+                                  {question.status !== 'Pending' && question.status.includes('✅') && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
+                              </div>
+                              {renderInputType(question)}
+                              <p className="text-xs text-primary mt-1 text-right">{question.status}</p>
                             </div>
-                            {renderInputType(question)}
-                            <p className="text-xs text-primary mt-1 text-right">{question.status}</p>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </TabsContent>
             </Tabs>
           </CardContent>
