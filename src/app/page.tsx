@@ -41,22 +41,21 @@ export default function HomePage() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-foreground/90 mb-2">How would you rate your sleep quality? (Ref: 3.5)</p>
-                <div className="flex space-x-2">
-                  {[5, 4, 3, 2, 1].map(rating => (
-                    <Button key={rating} variant="outline" size="sm" className="flex-1">
-                      {Array(rating).fill(0).map((_, i) => <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}
-                      {Array(5-rating).fill(0).map((_, i) => <Star key={i+rating} className="h-4 w-4 text-muted-foreground" />)}
+                <div className="flex space-x-1 justify-center">
+                  {[1, 2, 3, 4, 5].map(rating => (
+                    <Button key={rating} variant="ghost" size="icon" className="p-0 text-muted-foreground hover:text-yellow-400">
+                      <Star className="h-6 w-6" />
                     </Button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">Sleep Quality: Good ✅</p>
+                <p className="text-xs text-muted-foreground mt-1 text-right">Sleep Quality: Pending</p>
               </div>
               <Separator />
               <div>
                 <p className="text-foreground/90 mb-2">Did you take any naps or rest periods yesterday? (Ref: 3.6)</p>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" className="flex-1">Yes</Button>
-                  <Button variant="default" size="sm" className="flex-1">No</Button>
+                  <Button variant="outline" size="sm" className="flex-1">No</Button> {/* Defaulted to No outline, can be changed */}
                 </div>
                  <p className="text-xs text-muted-foreground mt-1 text-right">Naps Yesterday: No ✅</p>
               </div>
@@ -73,9 +72,12 @@ export default function HomePage() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-foreground/90 mb-2">How would you rate your mood this morning? (Ref: 4.4)</p>
-                {/* Placeholder for emoji scale or options */}
-                <div className="flex justify-around">
-                    <span>😊</span><span>🙂</span><span>😐</span><span>😟</span><span>😩</span>
+                <div className="flex justify-around text-2xl">
+                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😊</Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">🙂</Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😐</Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😟</Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-accent/10">😩</Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 text-right">Mood: Good ✅</p>
               </div>
