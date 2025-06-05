@@ -53,9 +53,11 @@ export function TopHeader() {
 
         {/* Center: Score and Points */}
         <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className="px-3 py-1.5 text-xs cursor-pointer">
-            Score 55/100
-          </Badge>
+          <Button variant="secondary" size="sm" className="px-3 py-1.5 text-xs h-auto" asChild>
+            <Link href="/gut-health-score">
+              Score 55/100
+            </Link>
+          </Button>
           <Badge variant="secondary" className="px-3 py-1.5 text-xs cursor-pointer">
             Points 421
           </Badge>

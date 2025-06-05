@@ -273,7 +273,9 @@ export default function TrackPage() {
               </Button>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="text-sm">Score: 55/100</Badge>
+              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
+                <Link href="/gut-health-score">Score: 55/100</Link>
+              </Button>
               <Badge variant="secondary" className="text-sm">Points: 421</Badge>
             </div>
           </CardHeader>
@@ -327,7 +329,7 @@ export default function TrackPage() {
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
                     </Button>
                 </div>
-                <Accordion type="multiple" defaultValue={trackingData.length > 0 ? [trackingData[0].id] : []} className="w-full space-y-3">
+                <Accordion type="multiple" defaultValue={trackingData.length > 0 ? ['nutrition-&-diet-habits'] : []} className="w-full space-y-3">
                   {trackingData.map((category) => (
                     <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
                       <AccordionTrigger className="bg-muted/20 hover:bg-muted/30 p-3 text-md font-semibold text-primary data-[state=open]:bg-muted/40 data-[state=open]:border-b">

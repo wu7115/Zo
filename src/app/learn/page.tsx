@@ -103,7 +103,9 @@ export default function LearnPage() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="text-sm">ZoGut Score 55/100</Badge>
+              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
+                 <Link href="/gut-health-score">ZoGut Score 55/100</Link>
+              </Button>
               <Badge variant="secondary" className="text-sm">ZoPoints 431</Badge>
             </div>
           </CardHeader>

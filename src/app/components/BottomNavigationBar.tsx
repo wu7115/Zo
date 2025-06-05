@@ -52,41 +52,50 @@ export function BottomNavigationBar() {
   const pathname = usePathname();
   const [showTipsBadge, setShowTipsBadge] = React.useState(false);
   const [hasMounted, setHasMounted] = React.useState(false);
+  
+  const [askAiIsDisabled, setAskAiIsDisabled] = React.useState(true);
+  const [askAiDynamicClasses, setAskAiDynamicClasses] = React.useState("cursor-default opacity-75 pointer-events-none");
+
 
   React.useEffect(() => {
     setHasMounted(true);
+    setAskAiIsDisabled(false);
+    setAskAiDynamicClasses("hover:text-primary cursor-pointer");
+
+    // Initial request for status after mount
+    const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
-    if (!hasMounted) return; // Only update if mounted
+    if (!hasMounted) return; 
 
     const customEvent = event as CustomEvent<{ hasUnread: boolean }>;
     if (typeof customEvent.detail?.hasUnread === 'boolean') {
       setShowTipsBadge(customEvent.detail.hasUnread);
     }
-  }, [hasMounted]); // Dependency on hasMounted
+  }, [hasMounted]); 
 
   React.useEffect(() => {
-    if (!hasMounted) return; // Only add/remove listener if mounted
+    if (!hasMounted) return; 
 
     window.addEventListener('unreadTipsStatusChanged', handleStatusUpdate);
-    // Request initial status only after mount
-    window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
-
+    
     return () => {
       window.removeEventListener('unreadTipsStatusChanged', handleStatusUpdate);
     };
-  }, [hasMounted, handleStatusUpdate]); // Dependency on hasMounted and handleStatusUpdate
+  }, [hasMounted, handleStatusUpdate]); 
 
   React.useEffect(() => {
-    if (!hasMounted) return; // Only dispatch if mounted
+    if (!hasMounted) return; 
     
-    // Delay slightly to ensure ContextualHelpFab might have mounted and registered its listener
     const timer = setTimeout(() => {
         window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
     }, 100); 
     return () => clearTimeout(timer);
-  }, [pathname, hasMounted]); // Dependency on pathname and hasMounted
+  }, [pathname, hasMounted]);
 
 
   const navItems: NavItem[] = [
@@ -113,7 +122,7 @@ export function BottomNavigationBar() {
     { id: 'learn', href: '/learn', label: 'Learn', icon: BookOpenText },
     { id: 'diagnose', href: '/diagnose', label: 'Diagnose', icon: HeartPulse },
     { id: 'journey', href: '/journey', label: 'Journey', icon: Map },
-    { id: 'gut-health', href: '/diagnose', label: 'Gut Health Score', icon: Activity }, 
+    { id: 'gut-health', href: '/gut-health-score', label: 'Gut Health Score', icon: Activity }, 
     { id: 'profile', href: '/profile', label: 'Profile', icon: UserIcon },
   ];
 
@@ -136,9 +145,8 @@ export function BottomNavigationBar() {
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
-                  hasMounted ? "hover:text-primary cursor-pointer" : "cursor-default opacity-75 pointer-events-none"
+                  askAiDynamicClasses
                 )}
-                // Removed aria-disabled to avoid hydration mismatch
               >
                 <div className="relative"> {/* Container for icon and badge */}
                   <item.icon className={cn("h-6 w-6 mb-0.5")} />
@@ -146,7 +154,7 @@ export function BottomNavigationBar() {
                   <span
                     className={cn(
                       "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
-                      (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0"
+                      (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                   />
                 </div>
@@ -178,8 +186,13 @@ export function BottomNavigationBar() {
                           {menuItem.label}
                         </Link>
                       </DropdownMenuItem>
-                      {(menuItem.id === 'diagnose' || menuItem.id === 'journey') && index < moreMenuItems.length -1 &&
-                       (moreMenuItems[index+1].id !== 'profile' || (menuItem.id === 'diagnose' && moreMenuItems[index+1].id !== 'journey')) && <DropdownMenuSeparator />}
+                      {/* Logic for separators between specific items */}
+                      {(menuItem.id === 'diagnose' || menuItem.id === 'journey' || menuItem.id === 'gut-health') && 
+                       index < moreMenuItems.length - 1 && 
+                       (moreMenuItems[index+1].id !== 'profile') && 
+                       !((menuItem.id === 'diagnose' && moreMenuItems[index+1].id === 'journey') || 
+                         (menuItem.id === 'journey' && moreMenuItems[index+1].id === 'gut-health')) 
+                         && <DropdownMenuSeparator />}
                     </React.Fragment>
                   ))}
                 </DropdownMenuContent>
