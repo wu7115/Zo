@@ -104,6 +104,18 @@ export function ContextualHelpFab() {
 - Connect with others who are on similar journeys for motivation and support.
 - Discover new groups based on your interests.`;
         break;
+      case '/gut-health-score':
+        content = `${userName}, your Gut Health Score is a great snapshot!
+- Tap the chart to see a detailed breakdown of what contributes to your score.
+- Remember, your 'Today's Focus' on the home page often aligns with improving areas of your score.
+- Consistent tracking in the 'Diary' helps make this score even more accurate over time.`;
+        break;
+      case '/gut-health-score/breakdown':
+        content = `${userName}, viewing your score breakdown is insightful!
+- Notice how 'Microbial Diversity' and 'Diet' play significant roles. Small adjustments here can make a big difference.
+- Compare these details with your current 'Journey' – are there overlapping goals you can focus on?
+- Use these insights to ask the main AI assistant for specific tips, like 'How can I improve my microbial diversity?'`;
+        break;
       default:
         return ""; 
     }
@@ -111,17 +123,19 @@ export function ContextualHelpFab() {
   }, [userName]);
 
   const checkForNewTips = useCallback((currentPath: string): boolean => {
+    if (!hasMounted) return false;
     return getMockRecommendations(currentPath).trim().length > 0;
-  }, [getMockRecommendations]);
+  }, [getMockRecommendations, hasMounted]);
 
   const fetchRecommendations = useCallback(async () => {
+    if (!hasMounted) return;
     setIsLoading(true);
     setRecommendations(null); 
     await new Promise(resolve => setTimeout(resolve, 300)); 
     const content = getMockRecommendations(pathname);
     setRecommendations(content || "No specific tips for this page right now, but feel free to explore!");
     setIsLoading(false);
-  }, [pathname, getMockRecommendations]);
+  }, [pathname, getMockRecommendations, hasMounted]);
 
   const dispatchUnreadStatus = useCallback(() => {
     if (!hasMounted) return;
@@ -135,6 +149,7 @@ export function ContextualHelpFab() {
       if (nextPanelOpenState) { 
         fetchRecommendations();
       }
+      // Defer dispatch until after the state update has likely completed
       setTimeout(() => dispatchUnreadStatus(), 0);
       return nextPanelOpenState;
     });
@@ -142,11 +157,12 @@ export function ContextualHelpFab() {
 
 
   useEffect(() => {
+    if (!hasMounted) return;
     window.addEventListener('toggleAiTipsPanel', handleTogglePanel);
     return () => {
       window.removeEventListener('toggleAiTipsPanel', handleTogglePanel);
     };
-  }, [handleTogglePanel]);
+  }, [handleTogglePanel, hasMounted]);
   
   useEffect(() => {
     if (hasMounted) { 
