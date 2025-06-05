@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User, Bot, Loader2, AlertTriangle } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar'; // Assuming Avatar can take children for icons
+import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { askGemini, AskGeminiInput } from '@/ai/flows/ask-gemini-flow';
 
@@ -83,13 +83,23 @@ export function AiAgentFab() {
         text: aiResponse.response,
       };
       setChatHistory((prev) => [...prev, newAiMessage]);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error calling AI:', e);
-      setError('Sorry, I encountered an error. Please try again.');
+      let errorMessage = 'Sorry, I encountered an error. Please try again.';
+      let errorAiText = errorMessage;
+
+      if (e && e.message) {
+        const errorString = String(e.message).toLowerCase();
+        if (errorString.includes("503") || errorString.includes("overloaded") || errorString.includes("service unavailable")) {
+          errorMessage = "The AI model is currently busy. Please try again in a few moments.";
+          errorAiText = "I'm currently experiencing high demand. Could you try asking again in a few moments?";
+        }
+      }
+      setError(errorMessage);
       const errorAiMessage: ChatMessage = {
         id: Date.now().toString() + '-error',
         sender: 'ai',
-        text: 'Sorry, I encountered an error. Please try again.',
+        text: errorAiText,
       };
       setChatHistory((prev) => [...prev, errorAiMessage]);
     } finally {
@@ -99,11 +109,10 @@ export function AiAgentFab() {
 
   return (
     <>
-      {/* The FAB button is removed, panel is controlled by event */}
       {isPanelOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out"
-          onClick={togglePanel} // Allow closing by clicking overlay
+          onClick={togglePanel}
         />
       )}
 
@@ -143,7 +152,7 @@ export function AiAgentFab() {
                       message.sender === 'user'
                         ? 'bg-primary text-primary-foreground rounded-br-none'
                         : 'bg-muted text-foreground rounded-bl-none',
-                      message.id.includes('-error') ? 'bg-destructive text-destructive-foreground' : ''
+                      message.id.includes('-error') && message.sender === 'ai' ? 'bg-destructive/20 text-destructive-foreground border border-destructive/50' : ''
                     )}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.text}</p>

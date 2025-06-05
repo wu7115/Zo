@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,13 +17,21 @@ export function TodaysGoalCard() {
     try {
       setIsLoading(true);
       setError(null);
+      setGoalData(null); // Clear previous goal data
       const userProfile = "Loves cardio, wants to improve stamina, busy schedule on weekdays. Prefers outdoor activities.";
       const pastActivity = "Last week: 2x 30min runs, 1x 45min cycling. Average sleep 6 hours. Reported feeling tired on Wednesday.";
       const result = await suggestDailyGoal({ userProfile, pastActivity });
       setGoalData(result);
-    } catch (e) {
-      setError("Failed to suggest a goal. Please try again later.");
-      console.error(e);
+    } catch (e: any) {
+      let errorMessage = "Failed to suggest a goal. Please try again later.";
+      if (e && e.message) {
+        const errorString = String(e.message).toLowerCase();
+        if (errorString.includes("503") || errorString.includes("overloaded") || errorString.includes("service unavailable")) {
+          errorMessage = "The AI model is currently busy. Please try again in a few moments.";
+        }
+      }
+      setError(errorMessage);
+      console.error("Error fetching daily goal:", e);
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +49,7 @@ export function TodaysGoalCard() {
           <CardTitle className="text-xl font-headline">Today's Focus</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 min-h-[100px]">
         {isLoading && (
           <>
             <Skeleton className="h-6 w-3/4 bg-primary-foreground/30" />
