@@ -8,9 +8,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Lightbulb, Loader2, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import * as React from 'react';
+import { personalizeGutScoreInsight, type PersonalizeGutScoreInsightOutput } from '@/ai/flows/personalize-gut-score-insight-flow';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const scoreData = [
   { name: 'Lifestyle & Environment', value: 20, color: '#8884d8' }, // Light Blueish
@@ -19,7 +23,7 @@ const scoreData = [
   { name: 'Hydration & Diet', value: 30, color: '#FF8042' },      // Orange
 ];
 
-const totalScore = 55;
+const totalScore = scoreData.reduce((acc, curr) => acc + curr.value, 0);
 
 const legendItems = [
   { name: 'Lifestyle & Environment', color: 'bg-[#8884d8]' },
@@ -29,6 +33,35 @@ const legendItems = [
 ];
 
 export default function GutHealthScorePage() {
+  const [insight, setInsight] = React.useState<PersonalizeGutScoreInsightOutput | null>(null);
+  const [isLoadingInsight, setIsLoadingInsight] = React.useState(true);
+  const [insightError, setInsightError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchInsight = async () => {
+      try {
+        setIsLoadingInsight(true);
+        setInsightError(null);
+        const scoresInput = {
+          lifestyleScore: scoreData.find(s => s.name === 'Lifestyle & Environment')?.value || 0,
+          trackingScore: scoreData.find(s => s.name === 'Health Tracking')?.value || 0,
+          microbiomeScore: scoreData.find(s => s.name === 'Microbiome')?.value || 0,
+          hydrationDietScore: scoreData.find(s => s.name === 'Hydration & Diet')?.value || 0,
+          overallScore: totalScore,
+        };
+        const result = await personalizeGutScoreInsight(scoresInput);
+        setInsight(result);
+      } catch (e: any) {
+        console.error("Error fetching gut score insight:", e);
+        setInsightError("Sorry, I couldn't get a personalized tip right now. Please try again later.");
+      } finally {
+        setIsLoadingInsight(false);
+      }
+    };
+    fetchInsight();
+  }, []);
+
+
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
@@ -59,7 +92,7 @@ export default function GutHealthScorePage() {
                       outerRadius="100%"
                       fill="#8884d8"
                       dataKey="value"
-                      stroke="hsl(var(--app-content-background))" // Use app content background for stroke to create separation
+                      stroke="hsl(var(--app-content-background))" 
                       strokeWidth={4}
                     >
                       {scoreData.map((entry, index) => (
@@ -79,20 +112,64 @@ export default function GutHealthScorePage() {
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-4">
               {legendItems.map((item) => (
                 <div key={item.name} className="flex items-center">
-                  <span className={`w-3 h-3 rounded-full mr-2 ${item.color}`}></span>
+                  <span className={`w-3 h-3 rounded-full mr-2 ${item.color.replace('[', '').replace(']', '')}`}></span>
                   <span className="text-xs text-foreground">{item.name}</span>
                 </div>
               ))}
             </div>
+            
+            {isLoadingInsight && (
+              <Card className="bg-secondary/20 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-md font-semibold text-primary flex items-center">
+                    <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Zoe's Quick Tip
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-4 w-3/4 bg-muted" />
+                  <Skeleton className="h-4 w-full bg-muted" />
+                  <Skeleton className="h-4 w-5/6 bg-muted" />
+                </CardContent>
+              </Card>
+            )}
+
+            {insightError && !isLoadingInsight && (
+              <Card className="bg-destructive/10 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-md font-semibold text-destructive flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2" /> Uh oh!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive-foreground">{insightError}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!isLoadingInsight && !insightError && insight && (
+               <Card className="bg-secondary/20 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-md font-semibold text-primary flex items-center">
+                     <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Zoe's Quick Tip
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-secondary-foreground">{insight.personalizedAdvice}</p>
+                </CardContent>
+              </Card>
+            )}
+
 
             <div className="space-y-3 pt-4">
               <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50">
                 Access your full Results now
                 <FileText className="h-5 w-5" />
               </Button>
-              <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50">
-                Access your full 90-day Journey options
-                <FileText className="h-5 w-5" />
+              <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50" asChild>
+                <Link href="/journey">
+                  Access your full 90-day Journey options
+                  <FileText className="h-5 w-5" />
+                </Link>
               </Button>
             </div>
           </CardContent>
