@@ -46,8 +46,8 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    /* Sidebar specific colors */
-    --sidebar-background: 48 67% 98%; /* #FDFCF8 - For floating elements, to match Page Border */
+    /* Sidebar specific colors for floating elements like AI FABs should align with page border/card */
+    --sidebar-background: 48 67% 98%; /* #FDFCF8 */
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -59,15 +59,15 @@ body {
 
   .dark {
     /* Dark theme to complement the new light theme */
-    --background: 10 10% 10%; /* Dark Brownish Black (Page Border Area) */
+    --background: 10 10% 8%; /* Darkest for Page Border */
     --foreground: 30 30% 90%; /* Light Beige */
 
-    --app-content-background: 10 10% 12%; /* Slightly darker than main dark bg (Main App Content Area) */
+    --app-content-background: 10 10% 12%; /* Slightly lighter for Main App Content Area */
 
-    --card: 10 10% 12%; /* Slightly darker than background for cards in dark mode */
+    --card: 10 10% 8%; /* Matches Page Border in dark mode for cards */
     --card-foreground: 30 30% 90%;
 
-    --popover: 10 10% 12%; /* To match dark app content area */
+    --popover: 10 10% 8%; /* Matches Page Border */
     --popover-foreground: 30 30% 90%;
 
     --primary: 10 44% 65%; /* Lighter Maroon for dark mode */
@@ -89,7 +89,7 @@ body {
     --input: 10 20% 35%; /* Darker input */
     --ring: 10 44% 65%; /* Lighter Maroon ring for dark mode */
 
-    --sidebar-background: 10 10% 12%; /* To match dark app content area */
+    --sidebar-background: 10 10% 8%; /* Matches Page Border in dark mode */
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;

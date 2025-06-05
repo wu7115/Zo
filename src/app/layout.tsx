@@ -24,10 +24,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased bg-background"> {/* body bg-background applies Page Border color #F3EFE6 */}
+      <body className="font-body antialiased bg-background"> {/* Page Border color via --background */}
         <TopHeader />
-        {/* This div is the main app content area, its background is #FDFCF8 */}
-        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16">
+        {/* This div is the main app content area */}
+        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16"> {/* Main content area color via --app-content-background */}
           {children}
         </div>
         <BottomNavigationBar />
