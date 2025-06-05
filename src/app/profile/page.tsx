@@ -54,6 +54,30 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import * as React from 'react';
+import type { SVGProps } from 'react';
+
+// LabubuIcon copied from BottomNavigationBar.tsx
+const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="14" r="3.5" />
+    <path d="M9.5 11.5C9 8 7 6.5 8.5 4.5S12 6 12 6" />
+    <path d="M14.5 11.5C15 8 17 6.5 15.5 4.5S12 6 12 6" />
+    <circle cx="10.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+    <circle cx="13.5" cy="14" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 
 interface Journey {
   id: string;
@@ -185,7 +209,7 @@ const SettingsListItem: React.FC<{ label: string; icon: React.ElementType; href?
 
 
 export default function ProfilePage() {
-  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id); // Default to first journey
+  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id); 
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
   const activeJourney = allJourneys.find(j => j.id === activeJourneyId) || allJourneys[0];
@@ -194,6 +218,13 @@ export default function ProfilePage() {
   const handleSelectJourney = (journeyId: string) => {
     setActiveJourneyId(journeyId);
     setIsPopoverOpen(false); 
+  };
+
+  const handleAskAiToSuggest = () => {
+    console.log("Ask AI to suggest a journey clicked");
+    // Here you would typically dispatch an event or call a function to open the AI chat panel
+    // For example: window.dispatchEvent(new CustomEvent('toggleAiChatPanel'));
+    setIsPopoverOpen(false);
   };
 
   return (
@@ -290,10 +321,24 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none text-primary">Prioritized Journeys for you</h4>
                           <p className="text-sm text-muted-foreground">
-                            Select a new journey to embark on.
+                            Select a journey or have Ask AI help based on your latest progress
                           </p>
                         </div>
                         <div className="grid gap-2">
+                           <Button
+                            variant="ghost"
+                            className="justify-start p-2 h-auto text-left"
+                            onClick={handleAskAiToSuggest}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <LabubuIcon className="h-5 w-5 text-accent mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-primary">Ask AI to suggest</p>
+                                <p className="text-xs text-muted-foreground leading-tight">Let AI find the best journey for you.</p>
+                              </div>
+                            </div>
+                          </Button>
+                          <Separator className="my-1" />
                           {otherJourneys.map((journey) => {
                             const JourneyIcon = journey.icon;
                             return (
