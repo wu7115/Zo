@@ -45,9 +45,12 @@ import {
   HelpCircle,
   Camera,
   ChevronRight,
-  HeartPulse, // For Gut Health
-  BedDouble,  // For Sleep
-  Dumbbell,   // For Strength
+  HeartPulse,
+  BedDouble,
+  Dumbbell,
+  Droplets,
+  WifiOff,
+  Apple, // Using Apple for Mindful Eating
   CheckCircle,
 } from 'lucide-react';
 import * as React from 'react';
@@ -66,7 +69,7 @@ const allJourneys: Journey[] = [
   {
     id: 'mindful-mover',
     name: 'Mindful Mover Challenge',
-    description: '30 days of integrating movement and mindfulness.',
+    description: '30 days of integrating movement and mindfulness for a holistic boost.',
     progress: 60,
     daysCompleted: 18,
     totalDays: 30,
@@ -75,8 +78,8 @@ const allJourneys: Journey[] = [
   {
     id: 'gut-reset',
     name: 'Gut Health Reset',
-    description: 'Focus on diet and lifestyle for a healthier gut.',
-    progress: 25, // Example progress
+    description: '21 days focusing on diet and lifestyle for a healthier gut microbiome.',
+    progress: 25,
     daysCompleted: 5,
     totalDays: 21,
     icon: HeartPulse,
@@ -84,8 +87,8 @@ const allJourneys: Journey[] = [
   {
     id: 'sleep-plan',
     name: 'Sleep Improvement Plan',
-    description: 'Strategies for better sleep hygiene and duration.',
-    progress: 10, // Example progress
+    description: '14-day plan with strategies for better sleep hygiene and duration.',
+    progress: 10,
     daysCompleted: 1,
     totalDays: 14,
     icon: BedDouble,
@@ -93,11 +96,38 @@ const allJourneys: Journey[] = [
   {
     id: 'strength-builder',
     name: 'Strength Builder Series',
-    description: 'Progressive workouts to build strength over 6 weeks.',
+    description: 'A 6-week program with progressive workouts to build foundational strength.',
     progress: 0,
     daysCompleted: 0,
     totalDays: 42,
     icon: Dumbbell,
+  },
+  {
+    id: 'hydration-hero',
+    name: 'Hydration Hero',
+    description: '7 days to establish consistent and optimal hydration habits.',
+    progress: 75,
+    daysCompleted: 5,
+    totalDays: 7,
+    icon: Droplets,
+  },
+  {
+    id: 'digital-detox',
+    name: 'Digital Detox Challenge',
+    description: '10-day challenge to reduce screen time and improve mental clarity.',
+    progress: 30,
+    daysCompleted: 3,
+    totalDays: 10,
+    icon: WifiOff,
+  },
+  {
+    id: 'mindful-eating',
+    name: 'Mindful Eating Kickstart',
+    description: '14 days to cultivate mindful eating practices for better digestion and awareness.',
+    progress: 5,
+    daysCompleted: 1,
+    totalDays: 14,
+    icon: Apple,
   },
 ];
 
@@ -155,7 +185,7 @@ const SettingsListItem: React.FC<{ label: string; icon: React.ElementType; href?
 
 
 export default function ProfilePage() {
-  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id);
+  const [activeJourneyId, setActiveJourneyId] = React.useState<string>(allJourneys[0].id); // Default to first journey
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
   const activeJourney = allJourneys.find(j => j.id === activeJourneyId) || allJourneys[0];
@@ -163,7 +193,7 @@ export default function ProfilePage() {
 
   const handleSelectJourney = (journeyId: string) => {
     setActiveJourneyId(journeyId);
-    setIsPopoverOpen(false); // Close popover after selection
+    setIsPopoverOpen(false); 
   };
 
   return (
@@ -185,7 +215,6 @@ export default function ProfilePage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* User Info Section */}
             <div className="text-center">
               <div className="relative inline-block mb-3">
                 <Avatar className="w-24 h-24 border-2 border-primary">
@@ -205,7 +234,6 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {/* Followers/Following Section */}
             <Accordion type="multiple" className="w-full">
               <AccordionItem value="followers">
                 <AccordionTrigger className="text-md font-semibold text-primary hover:no-underline">
@@ -231,7 +259,6 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {/* Account Details Section */}
             <div>
               <SectionTitle title="Account Details" />
               <InfoRow label="Addresses" value={initialProfileData.addresses[0] || 'No address on file'} onEdit={() => {}} icon={MapPin} />
@@ -241,7 +268,6 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {/* Journey Section */}
             <div>
               <SectionTitle title="Current Journey" />
               <div className="p-3 bg-muted/50 rounded-lg">
@@ -262,7 +288,7 @@ export default function ProfilePage() {
                     <PopoverContent className="w-80">
                       <div className="grid gap-4">
                         <div className="space-y-2">
-                          <h4 className="font-medium leading-none text-primary">Available Journeys</h4>
+                          <h4 className="font-medium leading-none text-primary">Prioritized Journeys for you</h4>
                           <p className="text-sm text-muted-foreground">
                             Select a new journey to embark on.
                           </p>
@@ -274,14 +300,14 @@ export default function ProfilePage() {
                               <Button
                                 key={journey.id}
                                 variant="ghost"
-                                className="justify-start p-2 h-auto"
+                                className="justify-start p-2 h-auto text-left"
                                 onClick={() => handleSelectJourney(journey.id)}
                               >
-                                <div className="flex items-center space-x-3">
-                                  <JourneyIcon className="h-5 w-5 text-accent" />
+                                <div className="flex items-start space-x-3">
+                                  <JourneyIcon className="h-5 w-5 text-accent mt-0.5 shrink-0" />
                                   <div>
                                     <p className="text-sm font-medium text-primary">{journey.name}</p>
-                                    <p className="text-xs text-muted-foreground">{journey.description}</p>
+                                    <p className="text-xs text-muted-foreground leading-tight">{journey.description}</p>
                                   </div>
                                 </div>
                               </Button>
@@ -300,7 +326,6 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {/* Bookmarks & History Section */}
              <Accordion type="multiple" className="w-full">
               <AccordionItem value="bookmarks">
                 <AccordionTrigger className="text-md font-semibold text-primary hover:no-underline">
@@ -326,7 +351,6 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {/* Settings Section */}
             <div>
               <h3 className="text-lg font-semibold text-primary mb-2 flex items-center">
                 <Settings2 className="mr-2 h-5 w-5 text-accent" /> Settings
