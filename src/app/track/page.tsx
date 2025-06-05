@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, BookOpen, Activity } from 'lucide-react';
+import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, BookOpen, Activity, Star } from 'lucide-react';
 
 interface TrackingQuestion {
   id: string;
@@ -47,7 +47,7 @@ const trackingData: TrackingCategory[] = [
     title: 'Nutrition & Diet Habits',
     icon: Utensils,
     questions: [
-      { id: 'q1.1', ref: '1.1', text: 'How much water did you drink today?', inputType: 'text', placeholder: 'e.g., 64 oz or 2 liters', status: '16oz ✅' },
+      { id: 'q1.1', ref: '1.1', text: 'How much water did you drink today?', inputType: 'text', placeholder: 'e.g., 64 oz or 2 liters', status: '16oz ✅', value: '16oz' },
       { id: 'q1.2', ref: '1.2', text: 'Did you take any supplements today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
       { id: 'q1.3', ref: '1.3', text: 'How many servings of fruits and vegetables did you eat today?', inputType: 'number', placeholder: 'e.g., 5', status: 'Pending' },
       { id: 'q1.4', ref: '1.4', text: 'Approximate fiber intake today (grams):', inputType: 'number', placeholder: 'e.g., 25', status: 'Pending' },
@@ -75,12 +75,12 @@ const trackingData: TrackingCategory[] = [
     title: 'Sleep & Rest',
     icon: BedDouble,
     questions: [
-      { id: 'q3.1', ref: '3.1', text: 'What time did you go to bed last night?', inputType: 'time', status: '11:15 PM ✅' },
-      { id: 'q3.2', ref: '3.2', text: 'How long did it take you to fall asleep last night? (minutes)', inputType: 'number', placeholder: 'e.g., 15', status: '15 min ✅ (Manually Entered)' },
-      { id: 'q3.3', ref: '3.3', text: 'What time did you wake up today?', inputType: 'time', status: '6:30 AM ✅' },
-      { id: 'q3.4', ref: '3.4', text: 'Total hours of sleep:', inputType: 'duration', placeholder: 'e.g., 7h 15m', status: '7h 15m ✅ (Synced)' },
-      { id: 'q3.5', ref: '3.5', text: 'How would you rate your sleep quality?', inputType: 'rating-5', status: 'Good ⭐⭐⭐⭐ ✅' },
-      { id: 'q3.6', ref: '3.6', text: 'Did you take any naps or rest periods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'No ✅' },
+      { id: 'q3.1', ref: '3.1', text: 'What time did you go to bed last night?', inputType: 'time', status: '11:15 PM ✅', value: '11:15 PM' },
+      { id: 'q3.2', ref: '3.2', text: 'How long did it take you to fall asleep last night? (minutes)', inputType: 'number', placeholder: 'e.g., 15', status: '15 min ✅ (Manually Entered)', value: 15 },
+      { id: 'q3.3', ref: '3.3', text: 'What time did you wake up today?', inputType: 'time', status: '6:30 AM ✅', value: '6:30 AM' },
+      { id: 'q3.4', ref: '3.4', text: 'Total hours of sleep:', inputType: 'duration', placeholder: 'e.g., 7h 15m', status: '7h 15m ✅ (Synced)', value: '7h 15m' },
+      { id: 'q3.5', ref: '3.5', text: 'How would you rate your sleep quality?', inputType: 'rating-5', status: 'Good ⭐⭐⭐⭐ ✅', value: '4' },
+      { id: 'q3.6', ref: '3.6', text: 'Did you take any naps or rest periods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'No ✅', value: 'No' },
     ],
   },
   {
@@ -91,7 +91,7 @@ const trackingData: TrackingCategory[] = [
       { id: 'q4.1', ref: '4.1', text: 'How would you rate your stress level today?', inputType: 'rating-5', status: 'Pending' },
       { id: 'q4.2', ref: '4.2', text: 'Did you engage in any mindfulness or meditation practices today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
       { id: 'q4.3', ref: '4.3', text: 'Did you do any breathing exercises or relaxation activities?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending' },
-      { id: 'q4.4', ref: '4.4', text: 'How would you rate your mood today?', inputType: 'options', options: ['Excellent', 'Good', 'Neutral', 'Low', 'Very Low'], status: 'Good ✅' },
+      { id: 'q4.4', ref: '4.4', text: 'How would you rate your mood today?', inputType: 'options', options: ['Excellent', 'Good', 'Neutral', 'Low', 'Very Low'], status: 'Good ✅', value: 'good' },
       { id: 'q4.5', ref: '4.5', text: 'How would you rate your work-life balance today?', inputType: 'rating-5', status: 'Pending' },
     ],
   },
@@ -155,7 +155,7 @@ const renderInputType = (question: TrackingQuestion) => {
             <SelectValue placeholder={question.placeholder || "Select an option"} />
           </SelectTrigger>
           <SelectContent>
-            {question.options?.map(opt => <SelectItem key={opt} value={opt.toLowerCase().replace(' ', '-')}>{opt}</SelectItem>)}
+            {question.options?.map(opt => <SelectItem key={opt} value={opt.toLowerCase().replace(/ /g, '-')}>{opt}</SelectItem>)}
           </SelectContent>
         </Select>
       );
