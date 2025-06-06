@@ -79,7 +79,7 @@ const sections: AccordionSection[] = [
     id: 'upload',
     icon: UploadCloud,
     title: 'Upload from 3rd Party',
-    content: <p className="text-sm text-muted-foreground p-3">Upload test results from other providers here.</p>,
+    content: <p className="text-sm text-muted-foreground p-3">drop result here (PDF up to 20 pages)</p>,
   },
 ];
 
