@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
 import { RecommendedLearningCard } from './components/RecommendedLearningCard';
 import { ProductRecommendationsCard } from './components/ProductRecommendationsCard';
-import { FriendActivityCard } from './components/FriendActivityCard'; // Added import
+import { FriendActivityCard } from './components/FriendActivityCard';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
