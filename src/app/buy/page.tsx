@@ -113,7 +113,7 @@ export default function ShopPage() {
                         </div>
                         <CardContent className="p-2 text-center flex-grow flex flex-col justify-center">
                           <div>
-                            <p className="text-sm font-medium text-primary truncate">{product.name}</p>
+                            <p className="text-base font-semibold text-primary truncate">{product.name}</p>
                             <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
                           </div>
                         </CardContent>
@@ -143,7 +143,7 @@ export default function ShopPage() {
                         </div>
                         <CardContent className="p-2 text-center flex-grow flex flex-col justify-between">
                            <div>
-                            <p className="text-sm font-medium text-primary truncate">{kit.name}</p>
+                            <p className="text-base font-semibold text-primary truncate">{kit.name}</p>
                            </div>
                            <Button variant="outline" size="sm" className="mt-1 w-full h-8 text-sm">
                             <Plus className="h-4 w-4 mr-1" /> Add

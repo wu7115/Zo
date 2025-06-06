@@ -130,7 +130,7 @@ export default function LearnPage() {
                     <div className="flex overflow-x-auto space-x-3 p-3">
                       {category.items.length > 0 ? category.items.map((item, index) => (
                         <Link href={item.link || '#'} key={index} className="block w-[343px] h-[200px] flex-shrink-0">
-                          <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow w-full h-full flex flex-col">
+                          <Card className="w-full h-full flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                             <div className="relative w-full h-[150px]">
                               <Image
                                 src={item.imageUrl}
@@ -142,7 +142,7 @@ export default function LearnPage() {
                               />
                             </div>
                             <CardContent className="p-2 flex-grow flex flex-col justify-center items-center">
-                              <h4 className="font-semibold text-sm text-primary line-clamp-2 text-center">{item.title}</h4>
+                              <h4 className="font-semibold text-base text-primary line-clamp-2 text-center">{item.title}</h4>
                             </CardContent>
                           </Card>
                         </Link>
