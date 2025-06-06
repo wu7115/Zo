@@ -18,42 +18,43 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'coffee sachet',
   },
   {
     name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'supplement packet beige',
   },
   {
     name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'hydration sachet blue',
   },
 ];
@@ -97,26 +98,32 @@ export default function ShopPage() {
                 <AccordionContent className="bg-background p-0">
                   <div className="flex overflow-x-auto space-x-3 p-3">
                     {products.map((product, index) => (
-                      <Card key={index} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-                        <div className="relative w-full h-[130px]">
-                           <Image
+                      <Card
+                        key={index}
+                        className="w-[343px] h-[200px] flex-shrink-0 rounded-xl border flex flex-row overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                      >
+                        {/* Left: Image part */}
+                        <div className="w-[200px] h-full relative">
+                          <Image
                             src={product.imageUrl}
                             alt={product.name}
                             layout="fill"
                             objectFit="cover"
                             data-ai-hint={product.imageHint}
-                            className="rounded-t-lg"
                           />
-                          <Button variant="outline" size="icon" className="absolute top-1 right-1 h-7 w-7 bg-background/80 hover:bg-background">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="absolute bottom-2 right-2 h-6 w-6 bg-white hover:bg-gray-100 text-primary rounded-md p-1"
+                          >
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <CardContent className="p-2 text-center flex-grow flex flex-col justify-center">
-                          <div>
-                            <p className="text-base font-semibold text-primary truncate">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
-                          </div>
-                        </CardContent>
+                        {/* Right: Text part */}
+                        <div className="w-[143px] h-full flex flex-col items-center justify-center text-center p-3 space-y-1">
+                          <p className="text-sm font-semibold text-primary line-clamp-3">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -161,6 +168,3 @@ export default function ShopPage() {
     </main>
   );
 }
-
-
-    
