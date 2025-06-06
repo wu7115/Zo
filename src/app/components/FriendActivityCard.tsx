@@ -15,6 +15,9 @@ const friendActivity = {
   timestamp: "Yesterday, 6:30 PM",
   activityDetails: "Just crushed a 20km bike ride! Feeling fantastic. 🚴‍♀️ #CyclingLife",
   activityIcon: Bike,
+  activityImageUrl: "https://placehold.co/600x400.png", // Added image for the post
+  activityImageAlt: "Friend's cycling activity post",    // Added alt text
+  activityImageHint: "cycling landscape",                // Added AI hint for the image
   likes: 15,
   comments: 3,
 };
@@ -36,7 +39,18 @@ export function FriendActivityCard() {
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="pb-4">
+      <CardContent className="pb-4 space-y-3">
+        {friendActivity.activityImageUrl && (
+          <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-3 shadow-sm">
+            <Image
+              src={friendActivity.activityImageUrl}
+              alt={friendActivity.activityImageAlt}
+              layout="fill"
+              objectFit="cover"
+              data-ai-hint={friendActivity.activityImageHint}
+            />
+          </div>
+        )}
         <div className="flex items-start space-x-3">
           <ActivityIcon className="h-6 w-6 text-accent mt-1 shrink-0" />
           <p className="text-foreground/90">{friendActivity.activityDetails}</p>
