@@ -23,45 +23,45 @@ const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'coffee sachet',
   },
   {
     name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'supplement packet beige',
   },
   {
     name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'hydration sachet blue',
   },
 ];
 
 const testKits = [
-  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit zobiome' },
-  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit viome' },
-  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit mbt' },
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' },
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },
 ];
 
 export default function ShopPage() {
@@ -97,22 +97,25 @@ export default function ShopPage() {
                 <AccordionContent className="bg-background p-0">
                   <div className="flex overflow-x-auto space-x-3 p-3">
                     {products.map((product, index) => (
-                      <Card key={index} className="w-36 flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                        <div className="relative w-full aspect-square">
+                      <Card key={index} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+                        <div className="relative w-full h-[130px]">
                            <Image
                             src={product.imageUrl}
                             alt={product.name}
                             layout="fill"
                             objectFit="cover"
                             data-ai-hint={product.imageHint}
+                            className="rounded-t-lg"
                           />
                           <Button variant="outline" size="icon" className="absolute top-1 right-1 h-7 w-7 bg-background/80 hover:bg-background">
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <CardContent className="p-2 text-center">
-                          <p className="text-xs font-medium text-primary truncate">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                        <CardContent className="p-2 text-center flex-grow flex flex-col justify-center">
+                          <div>
+                            <p className="text-sm font-medium text-primary truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -127,20 +130,23 @@ export default function ShopPage() {
                 <AccordionContent className="bg-background p-0">
                    <div className="flex overflow-x-auto space-x-3 p-3">
                     {testKits.map((kit) => (
-                      <Card key={kit.id} className="w-36 flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                        <div className="relative w-full aspect-square">
+                      <Card key={kit.id} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+                        <div className="relative w-full h-[130px]">
                            <Image
                             src={kit.imageUrl}
                             alt={kit.name}
                             layout="fill"
                             objectFit="cover"
                             data-ai-hint={kit.imageHint}
+                            className="rounded-t-lg"
                           />
                         </div>
-                        <CardContent className="p-2 text-center">
-                          <p className="text-xs font-medium text-primary truncate">{kit.name}</p>
-                           <Button variant="outline" size="xs" className="mt-1 w-full h-7 text-xs">
-                            <Plus className="h-3 w-3 mr-1" /> Add
+                        <CardContent className="p-2 text-center flex-grow flex flex-col justify-between">
+                           <div>
+                            <p className="text-sm font-medium text-primary truncate">{kit.name}</p>
+                           </div>
+                           <Button variant="outline" size="sm" className="mt-1 w-full h-8 text-sm">
+                            <Plus className="h-4 w-4 mr-1" /> Add
                           </Button>
                         </CardContent>
                       </Card>
@@ -155,3 +161,4 @@ export default function ShopPage() {
     </main>
   );
 }
+
