@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
 import { RecommendedLearningCard } from './components/RecommendedLearningCard';
+import { ProductRecommendationsCard } from './components/ProductRecommendationsCard'; // Added import
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -168,8 +169,10 @@ export default function HomePage() {
           {/* Card 4: Learning Recommendation */}
           <RecommendedLearningCard />
 
+          {/* Card 5: Product Recommendations */}
+          <ProductRecommendationsCard />
 
-          {/* Card 5: Gentle Reminder - Supplements */}
+          {/* Card 6: Gentle Reminder - Supplements */}
           <Card className="shadow-lg bg-secondary/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -203,4 +206,3 @@ export default function HomePage() {
     </div>
   );
 }
-
