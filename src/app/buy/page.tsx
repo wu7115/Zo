@@ -11,58 +11,57 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShoppingCart, Plus, FlaskConical } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { cn } from '@/lib/utils';
 
 const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'coffee sachet',
   },
   {
     name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'supplement packet beige',
   },
   {
     name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x200.png',
+    imageUrl: 'https://placehold.co/343x130.png', // Updated
     imageHint: 'hydration sachet blue',
   },
 ];
 
 const testKits = [
-  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' },
-  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },
-  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' }, // Updated
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },       // Updated
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },           // Updated
 ];
 
 export default function ShopPage() {
@@ -100,29 +99,30 @@ export default function ShopPage() {
                     {products.map((product, index) => (
                       <Card
                         key={index}
-                        className="w-[343px] h-[200px] flex-shrink-0 rounded-xl border flex flex-row overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                        className="w-[343px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
                       >
-                        {/* Left: Image part */}
-                        <div className="w-[200px] h-full relative">
+                        <div className="w-full h-[130px] relative">
                           <Image
                             src={product.imageUrl}
                             alt={product.name}
                             layout="fill"
                             objectFit="cover"
                             data-ai-hint={product.imageHint}
+                            className="rounded-t-xl"
                           />
+                        </div>
+                        <div className="p-3 flex-grow flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <p className="text-sm font-semibold text-primary line-clamp-2">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                          </div>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="absolute bottom-2 right-2 h-6 w-6 bg-white hover:bg-gray-100 text-primary rounded-full p-1"
+                            className="h-8 w-8 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
-                        </div>
-                        {/* Right: Text part */}
-                        <div className="w-[143px] h-full flex flex-col items-center justify-center text-center p-3 space-y-1">
-                          <p className="text-sm font-semibold text-primary line-clamp-3">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
                         </div>
                       </Card>
                     ))}
@@ -137,7 +137,7 @@ export default function ShopPage() {
                 <AccordionContent className="bg-background p-0">
                    <div className="flex overflow-x-auto space-x-3 p-3">
                     {testKits.map((kit) => (
-                      <Card key={kit.id} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+                      <Card key={kit.id} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col rounded-xl">
                         <div className="relative w-full h-[130px]">
                            <Image
                             src={kit.imageUrl}
@@ -145,15 +145,17 @@ export default function ShopPage() {
                             layout="fill"
                             objectFit="cover"
                             data-ai-hint={kit.imageHint}
-                            className="rounded-t-lg"
+                            className="rounded-t-xl"
                           />
                         </div>
-                        <CardContent className="p-2 text-center flex-grow flex flex-col justify-between">
-                           <div>
-                            <p className="text-base font-semibold text-primary truncate">{kit.name}</p>
-                           </div>
-                           <Button variant="outline" size="sm" className="mt-1 w-full h-8 text-sm">
-                            <Plus className="h-4 w-4 mr-1" /> Add
+                        <CardContent className="p-3 flex-grow flex items-center justify-between">
+                           <p className="text-base font-semibold text-primary truncate">{kit.name}</p>
+                           <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0"
+                           >
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </CardContent>
                       </Card>
