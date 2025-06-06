@@ -1,4 +1,6 @@
 
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -21,45 +23,45 @@ const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'coffee sachet',
   },
   {
-    name: 'Bone Broth',
+    name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'supplement packet beige',
   },
   {
-    name: 'Hydration Powder',
+    name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/200x250.png',
+    imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'hydration sachet blue',
   },
 ];
 
 const testKits = [
-  { name: 'ZoBiome', id: 'zobiome' },
-  { name: 'Viome', id: 'viome' },
-  { name: 'MBT', id: 'mbt' },
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit zobiome' },
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit viome' },
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/200x200.png', imageHint: 'test kit mbt' },
 ];
 
 export default function ShopPage() {
@@ -92,28 +94,25 @@ export default function ShopPage() {
                 <AccordionTrigger className="bg-muted/20 hover:bg-muted/40 text-primary font-semibold p-3 data-[state=open]:bg-muted/30">
                   <h3 className="text-lg font-semibold text-primary">Products</h3>
                 </AccordionTrigger>
-                <AccordionContent className="pt-4 pb-2 px-1">
-                  <div className="grid grid-cols-2 gap-4">
+                <AccordionContent className="bg-background p-0">
+                  <div className="flex overflow-x-auto space-x-3 p-3">
                     {products.map((product, index) => (
-                      <Card key={index} className="shadow-md hover:shadow-lg transition-shadow">
-                        <CardContent className="p-3 relative aspect-square flex flex-col justify-between items-center">
-                          <Button variant="outline" size="icon" className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background">
+                      <Card key={index} className="w-36 flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                        <div className="relative w-full aspect-square">
+                           <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint={product.imageHint}
+                          />
+                          <Button variant="outline" size="icon" className="absolute top-1 right-1 h-7 w-7 bg-background/80 hover:bg-background">
                             <Plus className="h-4 w-4" />
                           </Button>
-                          <div className="flex-grow flex items-center justify-center w-full pt-6">
-                            <Image
-                              src={product.imageUrl}
-                              alt={product.name}
-                              width={100}
-                              height={125}
-                              className="object-contain max-h-[100px]"
-                              data-ai-hint={product.imageHint}
-                            />
-                          </div>
-                          <div className="text-center w-full mt-2">
-                            <p className="text-sm font-medium text-primary truncate">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
-                          </div>
+                        </div>
+                        <CardContent className="p-2 text-center">
+                          <p className="text-xs font-medium text-primary truncate">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -125,17 +124,23 @@ export default function ShopPage() {
                 <AccordionTrigger className="bg-muted/20 hover:bg-muted/40 text-primary font-semibold p-3 data-[state=open]:bg-muted/30">
                   <h3 className="text-lg font-semibold text-primary">Test Kits</h3>
                 </AccordionTrigger>
-                <AccordionContent className="pt-4 pb-2 px-1">
-                  <div className="space-y-3">
+                <AccordionContent className="bg-background p-0">
+                   <div className="flex overflow-x-auto space-x-3 p-3">
                     {testKits.map((kit) => (
-                      <Card key={kit.id} className="shadow-sm hover:shadow-md transition-shadow">
-                        <CardContent className="p-3 flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <FlaskConical className="h-6 w-6 text-accent" />
-                            <p className="text-sm font-medium text-primary">{kit.name}</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            <Plus className="h-4 w-4 mr-1" /> Add
+                      <Card key={kit.id} className="w-36 flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                        <div className="relative w-full aspect-square">
+                           <Image
+                            src={kit.imageUrl}
+                            alt={kit.name}
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint={kit.imageHint}
+                          />
+                        </div>
+                        <CardContent className="p-2 text-center">
+                          <p className="text-xs font-medium text-primary truncate">{kit.name}</p>
+                           <Button variant="outline" size="xs" className="mt-1 w-full h-7 text-xs">
+                            <Plus className="h-3 w-3 mr-1" /> Add
                           </Button>
                         </CardContent>
                       </Card>
@@ -150,3 +155,4 @@ export default function ShopPage() {
     </main>
   );
 }
+

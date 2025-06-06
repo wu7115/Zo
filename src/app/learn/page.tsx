@@ -1,5 +1,8 @@
 
+'use client';
+
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,6 +25,9 @@ interface LearnItem {
   source?: string;
   duration?: string;
   type?: string;
+  imageUrl: string; // Added for consistency, though already present
+  imageHint: string; // Added for consistency, though already present
+  link: string; // Added for consistency
 }
 
 interface LearnCategory {
@@ -39,9 +45,10 @@ const learnCategories: LearnCategory[] = [
     icon: FileText,
     defaultOpen: true,
     items: [
-      { title: 'Understanding Your Microbiome', snippet: 'Learn the basics of gut health and its importance.', source: 'Wellness Digest' },
-      { title: 'Top 5 Probiotic Foods for a Healthy Gut', snippet: 'Discover natural food sources to boost your gut flora.', source: 'Nutrition Hub' },
-      { title: 'The Gut-Brain Axis: How Your Stomach and Mind Connect', snippet: 'An exploration of the communication between your digestive system and brain.', source: 'Mind & Body Journal' },
+      { title: 'Understanding Your Microbiome', snippet: 'Learn the basics of gut health and its importance.', source: 'Wellness Digest', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'microscope cells', link: '#' },
+      { title: 'Top 5 Probiotic Foods', snippet: 'Discover natural food sources to boost your gut flora.', source: 'Nutrition Hub', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'probiotic food', link: '#' },
+      { title: 'The Gut-Brain Axis', snippet: 'An exploration of the communication between your digestive system and brain.', source: 'Mind & Body Journal', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'brain connection', link: '#' },
+      { title: 'Benefits of Fiber', snippet: 'Why fiber is crucial for digestive health.', source: 'Healthy Living', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'fiber foods', link: '#' },
     ],
   },
   {
@@ -49,9 +56,9 @@ const learnCategories: LearnCategory[] = [
     title: 'Podcasts',
     icon: Podcast,
     items: [
-      { title: 'The Gut Health Podcast Ep. 12: Fermented Foods', snippet: 'Discussion with Dr. Anya Sharma on the benefits of fermentation.', duration: '45 min', source: 'Gut Talks' },
-      { title: 'Wellness Unpacked: Sleep and Digestion', snippet: 'Exploring the critical link between quality sleep and a healthy digestive system.', duration: '30 min', source: 'Holistic Health Radio' },
-      { title: 'Biohacking Your Gut for Optimal Performance', snippet: 'Tips and tricks from experts on optimizing your digestive health.', duration: '55 min', source: 'The Optimal Human' },
+      { title: 'The Gut Health Podcast Ep. 12', snippet: 'Discussion with Dr. Anya Sharma on fermented foods.', duration: '45 min', source: 'Gut Talks', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'podcast microphone', link: '#' },
+      { title: 'Wellness Unpacked: Sleep', snippet: 'Exploring the critical link between quality sleep and digestion.', duration: '30 min', source: 'Holistic Health Radio', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'sleep podcast', link: '#' },
+      { title: 'Biohacking Your Gut', snippet: 'Tips and tricks from experts on optimizing digestive health.', duration: '55 min', source: 'The Optimal Human', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'biohacking tech', link: '#' },
     ],
   },
   {
@@ -59,9 +66,9 @@ const learnCategories: LearnCategory[] = [
     title: 'Videos',
     icon: PlayCircle,
     items: [
-      { title: 'Animated Guide to the Digestive System', snippet: 'A visual journey through how your body processes food.', duration: '10 min', source: 'Science Explained YT' },
-      { title: 'Cooking for Gut Health: Easy Recipe Demo', snippet: 'Chef Leo prepares a delicious and gut-friendly meal.', duration: '15 min', source: 'HealthyEats TV' },
-      { title: 'Yoga for Digestion: A Gentle 20-Minute Flow', snippet: 'Follow along with this sequence to aid digestion and reduce bloating.', duration: '20 min', source: 'FlowWithGrace' },
+      { title: 'Animated Guide to Digestion', snippet: 'A visual journey through how your body processes food.', duration: '10 min', source: 'Science Explained YT', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'animation digestive system', link: '#' },
+      { title: 'Cooking for Gut Health Demo', snippet: 'Chef Leo prepares a delicious and gut-friendly meal.', duration: '15 min', source: 'HealthyEats TV', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'cooking show', link: '#' },
+      { title: 'Yoga for Digestion Flow', snippet: 'Follow along with this sequence to aid digestion and reduce bloating.', duration: '20 min', source: 'FlowWithGrace', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'yoga pose', link: '#' },
     ],
   },
   {
@@ -69,9 +76,9 @@ const learnCategories: LearnCategory[] = [
     title: 'Partner Content',
     icon: FileText,
     items: [
-      { title: "Exclusive: Viome's Guide to Personalized Nutrition", snippet: 'Learn how Viome tailors recommendations based on your unique biology.', type: 'Article Series', source: 'Viome' },
-      { title: 'ZoBiome Webinar: Decoding Your Gut Score', snippet: 'An expert-led session on understanding your ZoBiome test results.', type: 'Webinar Recording', source: 'ZoBiome Inc.' },
-      { title: 'Special Offer: 20% off MBT Test Kits', snippet: 'A limited-time promotion for Podium users on MBT diagnostic kits.', type: 'Promotion', source: 'MBT Labs' },
+      { title: "Viome's Guide to Nutrition", snippet: 'Learn how Viome tailors recommendations.', type: 'Article Series', source: 'Viome', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'nutrition science', link: '#' },
+      { title: 'ZoBiome Webinar: Gut Score', snippet: 'An expert-led session on understanding your results.', type: 'Webinar Recording', source: 'ZoBiome Inc.', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'webinar presentation', link: '#' },
+      { title: 'MBT Test Kits Offer', snippet: 'A limited-time promotion for Podium users.', type: 'Promotion', source: 'MBT Labs', imageUrl: 'https://placehold.co/300x200.png', imageHint: 'discount offer', link: '#' },
     ],
   },
 ];
@@ -119,21 +126,29 @@ export default function LearnPage() {
                       {category.title}
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="bg-background">
-                    <ul className="divide-y divide-border">
-                      {category.items.map((item, index) => (
-                        <li key={index} className="p-3 hover:bg-muted/30">
-                          <h4 className="font-semibold text-sm text-primary">{item.title}</h4>
-                          <p className="text-xs text-foreground/80 mt-0.5">{item.snippet}</p>
-                          {item.source && <p className="text-xs text-muted-foreground mt-1">Source: {item.source}</p>}
-                          {item.duration && <p className="text-xs text-muted-foreground mt-1">Duration: {item.duration}</p>}
-                          {item.type && <p className="text-xs text-muted-foreground mt-1">Type: {item.type}</p>}
-                        </li>
-                      ))}
-                       {category.items.length === 0 && (
-                        <li className="p-3 text-sm text-muted-foreground text-center">No items in this category yet.</li>
+                  <AccordionContent className="bg-background p-0">
+                    <div className="flex overflow-x-auto space-x-3 p-3">
+                      {category.items.length > 0 ? category.items.map((item, index) => (
+                        <Link href={item.link || '#'} key={index} className="block w-40 flex-shrink-0">
+                          <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+                            <div className="relative w-full aspect-video">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.title}
+                                layout="fill"
+                                objectFit="cover"
+                                data-ai-hint={item.imageHint}
+                              />
+                            </div>
+                            <CardContent className="p-2 flex-grow">
+                              <h4 className="font-semibold text-xs text-primary line-clamp-2">{item.title}</h4>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      )) : (
+                        <p className="p-3 text-sm text-muted-foreground text-center w-full">No items in this category yet.</p>
                       )}
-                    </ul>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               ))}
