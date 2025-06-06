@@ -71,13 +71,13 @@ const allJourneys: Journey[] = [
   {
     id: 'mindful-mover',
     name: 'Mindful Mover Challenge',
-    overallTargets: ['Integrate 30 minutes of mindful movement daily', 'Improve focus and reduce stress'],
-    description: 'A 30-day challenge to harmonize mind and body through daily movement and mindfulness practices. Enhance your physical well-being while cultivating mental clarity and emotional balance.',
+    overallTargets: ['Integrate 30 minutes of mindful movement daily', 'Improve focus and reduce stress', 'Build sustainable wellness habits'],
+    description: 'A 90-day challenge to harmonize mind and body through daily movement and mindfulness practices. Enhance your physical well-being while cultivating mental clarity, emotional balance, and sustainable habits.',
     icon: Rocket,
-    totalDays: 30,
+    totalDays: 90,
     protocol: [
       {
-        id: 'm1', month: 1, title: 'Month 1: Foundation & Awareness',
+        id: 'm1', month: 1, title: 'June (Days 1-30): Foundation & Awareness',
         targets: ['Establish a consistent daily movement routine (15-20 mins)', 'Practice 5-10 minutes of mindfulness daily', 'Track mood and energy levels'],
         tasks: [
           { id: 't1', name: 'Track daily activities (movement, mindfulness)' },
@@ -89,10 +89,24 @@ const allJourneys: Journey[] = [
         ],
       },
       {
-        id: 'm2', month: 2, title: 'Month 2: Deepening Practice (Applies if > 30 days, example)',
-        targets: ['Increase movement duration to 30 mins', 'Explore varied mindfulness techniques'],
-        tasks: [{ id: 't7', name: 'Advanced mindful movement routines' }],
+        id: 'm2', month: 2, title: 'July (Days 31-60): Deepening Practice',
+        targets: ['Increase movement duration to 30 mins', 'Explore varied mindfulness techniques', 'Identify personal motivation triggers'],
+        tasks: [
+          { id: 't7', name: 'Advanced mindful movement routines (30 mins)' },
+          { id: 't8', name: 'Try 2 new mindfulness techniques (e.g., body scan, loving-kindness)' },
+          { id: 't9', name: 'Weekly reflection on progress and challenges' },
+        ],
       },
+      {
+        id: 'm3', month: 3, title: 'August (Days 61-90): Integration & Lifestyle',
+        targets: ['Maintain 30+ minutes of mindful movement most days', 'Incorporate mindfulness into daily activities', 'Reflect on long-term wellness habits'],
+        tasks: [
+          { id: 't10', name: 'Plan weekly movement schedule independently' },
+          { id: 't11', name: 'Practice mindful eating for at least one meal a day' },
+          { id: 't12', name: 'Set a new 30-day wellness goal for after the challenge' },
+          { id: 't13', name: 'Review progress and celebrate achievements' },
+        ],
+      }
     ],
   },
   {
