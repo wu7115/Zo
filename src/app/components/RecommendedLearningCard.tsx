@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,37 +58,45 @@ export function RecommendedLearningCard() {
       <CardHeader>
         <CardTitle className="text-xl font-headline text-primary">Expand Your Knowledge</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {learningItems.map((item) => (
-          <a key={item.id} href={item.link} target="_blank" rel="noopener noreferrer" className="block hover:bg-muted/50 p-4 rounded-lg transition-colors -m-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <Image
-                src={item.imageUrl}
-                alt={item.title}
-                width={150}
-                height={100}
-                className="rounded-md object-cover sm:w-[150px] sm:h-[100px] w-full h-auto aspect-[3/2]"
-                data-ai-hint={item.imageHint}
-              />
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                   <h3 className="text-md font-semibold text-primary group-hover:text-accent transition-colors">{item.title}</h3>
-                   {item.type === 'article' ? <BookOpen className="h-5 w-5 text-secondary-foreground" /> : <Youtube className="h-5 w-5 text-red-600" />}
-                </div>
-                <p className="text-xs text-muted-foreground mb-1">From: {item.source}</p>
-                <p className="text-sm text-foreground/80 mb-2 leading-relaxed">{item.snippet}</p>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {item.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                  ))}
-                </div>
-                 <div className="text-xs text-primary hover:underline flex items-center">
+      <CardContent>
+        <div className="flex overflow-x-auto space-x-4 pb-2 -mx-4 px-4">
+          {learningItems.map((item) => (
+            <a
+              key={item.id}
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:bg-muted/50 p-4 rounded-lg transition-colors w-72 flex-shrink-0 border bg-card"
+            >
+              <div className="flex flex-col gap-4 items-start h-full">
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title}
+                  width={288} 
+                  height={192} 
+                  className="rounded-md object-cover w-full aspect-[3/2]"
+                  data-ai-hint={item.imageHint}
+                />
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-md font-semibold text-primary group-hover:text-accent transition-colors line-clamp-2">{item.title}</h3>
+                    {item.type === 'article' ? <BookOpen className="h-5 w-5 text-secondary-foreground shrink-0" /> : <Youtube className="h-5 w-5 text-red-600 shrink-0" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-1">From: {item.source}</p>
+                  <p className="text-sm text-foreground/80 mb-2 leading-relaxed line-clamp-3 flex-grow">{item.snippet}</p>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {item.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                    ))}
+                  </div>
+                  <div className="text-xs text-primary hover:underline flex items-center mt-auto">
                     Read more <ExternalLink className="h-3 w-3 ml-1" />
-                 </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </a>
-        ))}
+            </a>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

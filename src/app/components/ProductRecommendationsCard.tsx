@@ -31,7 +31,7 @@ const recommendedProducts: RecommendedProduct[] = [
     description: 'Calming herbal infusion for relaxation.',
     imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'tea box herbal',
-    link: '/buy#recovery-coffee', // Assuming tea might be near coffee
+    link: '/buy#recovery-coffee', 
   },
   {
     id: '3',
@@ -39,7 +39,15 @@ const recommendedProducts: RecommendedProduct[] = [
     description: 'Essential fatty acids for brain & heart.',
     imageUrl: 'https://placehold.co/200x200.png',
     imageHint: 'supplement capsules',
-    link: '/buy#bone-broth', // General supplement category
+    link: '/buy#bone-broth', 
+  },
+  {
+    id: '4',
+    name: 'Energizing Electrolytes',
+    description: 'Replenish and hydrate post-workout.',
+    imageUrl: 'https://placehold.co/200x200.png',
+    imageHint: 'electrolyte powder',
+    link: '/buy#hydration-powder',
   },
 ];
 
@@ -52,11 +60,11 @@ export function ProductRecommendationsCard() {
           Podium Picks For You
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {recommendedProducts.slice(0, 2).map((product) => ( // Show 2 products in grid for now
-            <Card key={product.id} className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-              <div className="relative w-full aspect-[4/3]">
+      <CardContent>
+        <div className="flex overflow-x-auto space-x-4 pb-2 -mx-4 px-4">
+          {recommendedProducts.map((product) => (
+            <Card key={product.id} className="overflow-hidden shadow-md hover:shadow-lg transition-shadow w-52 flex-shrink-0">
+              <div className="relative w-full aspect-square">
                 <Image
                   src={product.imageUrl}
                   alt={product.name}
@@ -65,10 +73,10 @@ export function ProductRecommendationsCard() {
                   data-ai-hint={product.imageHint}
                 />
               </div>
-              <CardContent className="p-3">
+              <CardContent className="p-3 flex flex-col h-[calc(100%-theme(spacing.52))]"> {/* Assuming aspect-square image, so height is w-52 */}
                 <h3 className="text-md font-semibold text-primary mb-1 truncate">{product.name}</h3>
-                <p className="text-xs text-muted-foreground mb-2 h-8 overflow-hidden">{product.description}</p>
-                <Button variant="outline" size="sm" className="w-full text-primary hover:bg-muted/50" asChild>
+                <p className="text-xs text-muted-foreground mb-2 h-10 line-clamp-2 flex-grow">{product.description}</p>
+                <Button variant="outline" size="sm" className="w-full text-primary hover:bg-muted/50 mt-auto" asChild>
                   <Link href={product.link}>
                     <ShoppingCart className="mr-2 h-4 w-4" /> View Product
                   </Link>
@@ -77,15 +85,6 @@ export function ProductRecommendationsCard() {
             </Card>
           ))}
         </div>
-        {recommendedProducts.length > 2 && (
-          <div className="text-center">
-            <Button variant="link" asChild>
-              <Link href="/buy">
-                See All Recommendations
-              </Link>
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
