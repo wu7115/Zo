@@ -114,7 +114,7 @@ export default function ShopPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="absolute bottom-2 right-2 h-6 w-6 bg-white hover:bg-gray-100 text-primary rounded-md p-1"
+                            className="absolute bottom-2 right-2 h-6 w-6 bg-white hover:bg-gray-100 text-primary rounded-full p-1"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
