@@ -79,7 +79,11 @@ const sections: AccordionSection[] = [
     id: 'upload',
     icon: UploadCloud,
     title: 'Upload from 3rd Party',
-    content: <p className="text-sm text-muted-foreground p-3">drop result here (PDF up to 20 pages)</p>,
+    content: (
+      <div className="h-32 bg-muted/20 border border-dashed border-border rounded-lg flex items-center justify-center p-3">
+        <p className="text-sm text-muted-foreground text-center">drop result here (PDF up to 20 pages)</p>
+      </div>
+    ),
   },
 ];
 
@@ -129,9 +133,7 @@ export default function DiagnosePage() {
                 </AccordionItem>
               ))}
             </Accordion>
-            <div className="mt-4 h-32 bg-muted/20 border border-dashed border-border rounded-lg">
-              {/* This is the empty panel at the bottom */}
-            </div>
+            {/* The empty panel at the bottom has been removed */}
           </CardContent>
         </Card>
       </div>
