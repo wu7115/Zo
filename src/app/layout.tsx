@@ -5,7 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TopHeader } from '@/app/components/TopHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 import { AiAgentFab } from '@/app/components/AiAgentFab';
-import { ContextualHelpFab } from '@/app/components/ContextualHelpFab'; // Will render null if panel closed, no direct FAB
+import { ContextualHelpFab } from '@/app/components/ContextualHelpFab';
+import { GlobalSwipeNavigator } from '@/app/components/GlobalSwipeNavigator'; // Import
 
 export const metadata: Metadata = {
   title: 'Podium',
@@ -24,15 +25,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased bg-background"> {/* Page Border color via --background */}
+      <body className="font-body antialiased bg-background">
         <TopHeader />
         {/* This div is the main app content area */}
-        <div className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16"> {/* Main content area color via --app-content-background */}
-          {children}
+        <div id="main-app-content" className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto">
+          <GlobalSwipeNavigator> {/* Wrap the children here */}
+            {children}
+          </GlobalSwipeNavigator>
         </div>
         <BottomNavigationBar />
-        <AiAgentFab /> {/* For the main Gemini chat */}
-        <ContextualHelpFab /> {/* Renders the panel logic, but panel is hidden by default and no FAB */}
+        <AiAgentFab />
+        <ContextualHelpFab />
         <Toaster />
       </body>
     </html>
