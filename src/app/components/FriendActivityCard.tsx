@@ -7,17 +7,17 @@ import { ThumbsUp, MessageCircle, Bike, CalendarDays } from "lucide-react";
 
 const friendActivity = {
   friend: {
-    name: "Alex Doe",
-    avatarUrl: "https://placehold.co/40x40.png",
-    avatarFallback: "AD",
-    avatarHint: "profile person"
+    name: "Jane Runner", // Changed from Alex Doe
+    avatarUrl: "https://placehold.co/40x40.png?text=JR", // Updated for new name
+    avatarFallback: "JR", // Updated for new name
+    avatarHint: "profile runner" // Updated hint
   },
   timestamp: "Yesterday, 6:30 PM",
   activityDetails: "Just crushed a 20km bike ride! Feeling fantastic. 🚴‍♀️ #CyclingLife",
   activityIcon: Bike,
-  activityImageUrl: "https://placehold.co/600x400.png", // Added image for the post
-  activityImageAlt: "Friend's cycling activity post",    // Added alt text
-  activityImageHint: "cycling landscape",                // Added AI hint for the image
+  activityImageUrl: "https://placehold.co/600x400.png",
+  activityImageAlt: "Friend's cycling activity post",
+  activityImageHint: "cycling landscape",
   likes: 15,
   comments: 3,
 };
