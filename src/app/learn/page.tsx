@@ -25,9 +25,9 @@ interface LearnItem {
   source?: string;
   duration?: string;
   type?: string;
-  imageUrl: string; // Added for consistency, though already present
-  imageHint: string; // Added for consistency, though already present
-  link: string; // Added for consistency
+  imageUrl: string; 
+  imageHint: string; 
+  link: string; 
 }
 
 interface LearnCategory {
