@@ -17,53 +17,24 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ArrowLeft, HeartPulse, FlaskConical, FileText, UploadCloud, Plus } from 'lucide-react';
+import * as React from 'react';
+import { ItemDetailModal, type ModalItemData } from '@/app/components/ItemDetailModal';
 
-interface ShopItem {
+interface DiagnosticKit {
+  id: string;
   name: string;
-  id?: string;
   imageUrl: string;
   imageHint: string;
-  href: string; // Link for the "+" button or card action
+  href: string; // Link for primary card action (e.g. to buy page)
+  description?: string;
+  category: string;
 }
 
-const diagnosticTestKits: ShopItem[] = [
-  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit zobiome', href: '/buy#zobiome' },
-  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit viome', href: '/buy#viome' },
-  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit mbt', href: '/buy#mbt' },
+const diagnosticTestKits: DiagnosticKit[] = [
+  { id: 'zobiome-kit', name: 'ZoBiome Test Kit', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit zobiome', href: '/buy#zobiome', description: 'Comprehensive gut microbiome analysis by ZoBiome. Understand your gut flora.', category: 'Test Kit' },
+  { id: 'viome-kit', name: 'Viome Health Intelligence', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit viome', href: '/buy#viome', description: 'Personalized health insights based on your unique biology with Viome testing.', category: 'Test Kit' },
+  { id: 'mbt-kit', name: 'MBT Metabolic Test', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit mbt', href: '/buy#mbt', description: 'Metabolic & Biome Test for a deeper understanding of your body\'s processes.', category: 'Test Kit' },
 ];
-
-const DiagnosticKitCard: React.FC<{ item: ShopItem }> = ({ item }) => (
-  <Card
-    className="w-[171px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-  >
-    <div className="w-full h-[130px] relative">
-      <Image
-        src={item.imageUrl}
-        alt={item.name}
-        layout="fill"
-        objectFit="cover"
-        data-ai-hint={item.imageHint}
-        className="rounded-t-xl"
-      />
-    </div>
-    <div className="p-2.5 flex-grow flex flex-col justify-between">
-      <div>
-        <p className="text-xs font-semibold text-primary line-clamp-2">{item.name}</p>
-      </div>
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-7 w-7 bg-card hover:bg-muted/50 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end border-primary/50"
-        asChild
-      >
-        <Link href={item.href}>
-          <Plus className="h-4 w-4" />
-        </Link>
-      </Button>
-    </div>
-  </Card>
-);
-
 
 interface AccordionSection {
   id: string;
@@ -72,49 +43,93 @@ interface AccordionSection {
   subtitle?: string;
   defaultOpen?: boolean;
   content: React.ReactNode;
+  items?: DiagnosticKit[]; // Only for sections with cards
 }
 
-const sections: AccordionSection[] = [
-  {
-    id: 'test-kits-purchase',
-    icon: FlaskConical,
-    title: 'Test Kits',
-    subtitle: 'Select to purchase',
-    defaultOpen: true,
-    content: (
-      <div className="flex overflow-x-auto space-x-3 p-3">
-        {diagnosticTestKits.map((kit) => (
-          <DiagnosticKitCard key={kit.id} item={kit} />
-        ))}
-      </div>
-    ),
-  },
-  {
-    id: 'test-kits-prescription',
-    icon: FlaskConical,
-    title: 'Test Kits',
-    subtitle: 'Prescription Required',
-    content: <p className="text-sm text-muted-foreground p-3">Details about prescription test kits will appear here. This section does not use cards yet.</p>,
-  },
-  {
-    id: 'results',
-    icon: FileText,
-    title: 'Results',
-    content: <p className="text-sm text-muted-foreground p-3">Your test results will be displayed here. This section does not use cards yet.</p>,
-  },
-  {
-    id: 'upload',
-    icon: UploadCloud,
-    title: 'Upload from 3rd Party',
-    content: (
-      <div className="h-32 bg-muted/20 border border-dashed border-border rounded-lg flex items-center justify-center p-3">
-        <p className="text-sm text-muted-foreground text-center">drop result here (PDF up to 20 pages)</p>
-      </div>
-    ),
-  },
-];
 
 export default function DiagnosePage() {
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedItemForModal, setSelectedItemForModal] = React.useState<ModalItemData | null>(null);
+  const currentUserContext = "seeking diagnostic information for better health"; // Example context
+
+  const handleOpenModal = (item: DiagnosticKit) => {
+    setSelectedItemForModal({
+      id: item.id,
+      name: item.name,
+      description: item.description || `Information about the ${item.name}.`,
+      imageUrl: item.imageUrl,
+      imageHint: item.imageHint,
+      category: item.category,
+    });
+    setIsModalOpen(true);
+  };
+  
+  const DiagnosticKitCard: React.FC<{ item: DiagnosticKit }> = ({ item }) => (
+    <Card
+      className="w-[171px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+    >
+      <div className="w-full h-[130px] relative">
+        <Image
+          src={item.imageUrl}
+          alt={item.name}
+          layout="fill"
+          objectFit="cover"
+          data-ai-hint={item.imageHint}
+          className="rounded-t-xl"
+        />
+      </div>
+      <div className="p-2.5 flex-grow flex flex-col justify-between">
+        <div>
+          <p className="text-xs font-semibold text-primary line-clamp-2">{item.name}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7 bg-card hover:bg-muted/50 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end border-primary/50"
+          onClick={() => handleOpenModal(item)}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    </Card>
+  );
+
+  const sections: AccordionSection[] = [
+    {
+      id: 'test-kits-purchase',
+      icon: FlaskConical,
+      title: 'Test Kits',
+      subtitle: 'Select to purchase',
+      defaultOpen: true,
+      items: diagnosticTestKits,
+      content: null, // Content will be generated from items
+    },
+    {
+      id: 'test-kits-prescription',
+      icon: FlaskConical,
+      title: 'Test Kits',
+      subtitle: 'Prescription Required',
+      content: <p className="text-sm text-muted-foreground p-3">Details about prescription test kits will appear here. This section does not use cards yet.</p>,
+    },
+    {
+      id: 'results',
+      icon: FileText,
+      title: 'Results',
+      content: <p className="text-sm text-muted-foreground p-3">Your test results will be displayed here. This section does not use cards yet.</p>,
+    },
+    {
+      id: 'upload',
+      icon: UploadCloud,
+      title: 'Upload from 3rd Party',
+      content: (
+        <div className="h-32 bg-muted/20 border border-dashed border-border rounded-lg flex items-center justify-center p-3">
+          <p className="text-sm text-muted-foreground text-center">drop result here (PDF up to 20 pages)</p>
+        </div>
+      ),
+    },
+  ];
+
+
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
@@ -155,11 +170,14 @@ export default function DiagnosePage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="bg-background">
-                      {/* Check if content is for the specific section that should have cards */}
-                      {section.id === 'test-kits-purchase' ? (
-                        section.content /* This already includes the div with flex overflow-x-auto */
+                      {section.items && section.items.length > 0 ? (
+                        <div className="flex overflow-x-auto space-x-3 p-3">
+                          {section.items.map((kit) => (
+                            <DiagnosticKitCard key={kit.id} item={kit} />
+                          ))}
+                        </div>
                       ) : (
-                        <div className="p-3">{section.content}</div> /* For other sections, keep the simple padding */
+                        <div className="p-3">{section.content}</div>
                       )}
                     </AccordionContent>
                   </AccordionItem>
@@ -169,6 +187,12 @@ export default function DiagnosePage() {
           </CardContent>
         </Card>
       </div>
+      <ItemDetailModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        item={selectedItemForModal}
+        userContext={currentUserContext}
+      />
     </main>
   );
 }
