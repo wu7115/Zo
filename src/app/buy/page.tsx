@@ -23,50 +23,50 @@ const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'coffee sachet',
   },
   {
     name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'supplement packet beige',
   },
   {
     name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png',
+    imageUrl: 'https://placehold.co/171x130.png',
     imageHint: 'hydration sachet blue',
   },
 ];
 
 const testKits = [
-  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' },
-  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },
-  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit zobiome' },
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit viome' },
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit mbt' },
 ];
 
 export default function ShopPage() {
   return (
-    <main className="flex flex-1 flex-col p-4 md:p-6 bg-background overflow-y-auto">
+    <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
         <Card className="shadow-xl">
           <CardHeader className="pb-4">
@@ -93,7 +93,7 @@ export default function ShopPage() {
                     {products.map((product, index) => (
                       <Card
                         key={index}
-                        className="w-[343px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                        className="w-[171px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
                       >
                         <div className="w-full h-[130px] relative">
                           <Image
@@ -105,17 +105,17 @@ export default function ShopPage() {
                             className="rounded-t-xl"
                           />
                         </div>
-                        <div className="p-3 flex-grow flex items-end justify-between">
-                          <div className="flex flex-col">
-                            <p className="text-base font-semibold text-primary line-clamp-2">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
+                        <div className="p-2 flex-grow flex flex-col justify-between">
+                          <div>
+                            <p className="text-xs font-semibold text-primary line-clamp-2">{product.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{product.priceIndicator}</p>
                           </div>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0"
+                            className="h-7 w-7 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end"
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </Card>
@@ -131,7 +131,7 @@ export default function ShopPage() {
                 <AccordionContent className="bg-background p-0">
                    <div className="flex overflow-x-auto space-x-3 p-3">
                     {testKits.map((kit) => (
-                      <Card key={kit.id} className="w-[343px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col rounded-xl">
+                      <Card key={kit.id} className="w-[171px] h-[200px] flex-shrink-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col rounded-xl">
                         <div className="relative w-full h-[130px]">
                            <Image
                             src={kit.imageUrl}
@@ -142,14 +142,14 @@ export default function ShopPage() {
                             className="rounded-t-xl"
                           />
                         </div>
-                        <div className="p-3 flex-grow flex items-end justify-between">
-                           <p className="text-base font-semibold text-primary truncate">{kit.name}</p>
+                        <div className="p-2 flex-grow flex flex-col justify-between">
+                           <p className="text-xs font-semibold text-primary truncate">{kit.name}</p>
                            <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0"
+                            className="h-7 w-7 bg-white hover:bg-gray-100 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end"
                            >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </Card>
