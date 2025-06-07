@@ -25,9 +25,9 @@ interface LearnItem {
   source?: string;
   duration?: string;
   type?: string;
-  imageUrl: string; 
-  imageHint: string; 
-  link: string; 
+  imageUrl: string;
+  imageHint: string;
+  link: string;
 }
 
 interface LearnCategory {
@@ -97,6 +97,7 @@ export default function LearnPage() {
                   </Link>
                 </Button>
                 <CardTitle className="text-2xl font-headline text-primary flex items-center">
+                  <BookOpenText className="h-7 w-7 mr-2 text-accent" />
                   Learn
                 </CardTitle>
               </div>
@@ -114,9 +115,9 @@ export default function LearnPage() {
              <Accordion type="multiple" defaultValue={learnCategories.filter(c => c.defaultOpen).map(c => c.id)} className="w-full">
               {learnCategories.map((category) => (
                 <AccordionItem value={category.id} key={category.id} className="mb-2 rounded-lg border bg-muted/20 overflow-hidden">
-                  <AccordionTrigger className="bg-amber-50 hover:bg-amber-100/80 text-primary font-semibold p-3.5 no-underline data-[state=open]:bg-amber-100">
+                  <AccordionTrigger className="bg-muted/20 hover:bg-muted/40 text-primary font-semibold p-3 no-underline data-[state=open]:bg-muted/30">
                     <div className="flex items-center flex-1 text-left">
-                      <category.icon className="h-5 w-5 mr-3 text-primary/80 shrink-0" />
+                      <category.icon className="h-5 w-5 mr-3 text-accent shrink-0" />
                       {category.title}
                     </div>
                   </AccordionTrigger>
@@ -124,7 +125,7 @@ export default function LearnPage() {
                     <div className="flex overflow-x-auto space-x-3 p-3">
                       {category.items.length > 0 ? category.items.map((item, index) => (
                         <Link href={item.link || '#'} key={index} className="block w-[343px] h-[200px] flex-shrink-0">
-                          <Card className="w-full h-full flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow rounded-lg">
+                          <Card className="w-full h-full flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow rounded-lg border">
                             <div className="relative w-full h-[150px]">
                               <Image
                                 src={item.imageUrl}
