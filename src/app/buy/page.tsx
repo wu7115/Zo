@@ -98,7 +98,7 @@ const ShopItemCard: React.FC<{ item: ShopItem }> = ({ item }) => (
         className="rounded-t-xl"
       />
     </div>
-    <div className="p-2.5 flex-grow flex flex-col justify-between"> {/* Adjusted padding slightly */}
+    <div className="p-2.5 flex-grow flex flex-col justify-between">
       <div>
         <p className="text-xs font-semibold text-primary line-clamp-2">{item.name}</p>
         {item.priceIndicator && <p className="text-[10px] text-muted-foreground">{item.priceIndicator}</p>}
@@ -108,7 +108,7 @@ const ShopItemCard: React.FC<{ item: ShopItem }> = ({ item }) => (
         size="icon"
         className="h-7 w-7 bg-card hover:bg-muted/50 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end border-primary/50"
       >
-        <Plus className="h-4 w-4" /> {/* Slightly larger plus icon */}
+        <Plus className="h-4 w-4" />
       </Button>
     </div>
   </Card>
@@ -140,7 +140,7 @@ export default function ShopPage() {
       id: 'marketplace-solutions',
       title: 'Marketplace Solutions',
       icon: TrendingUp,
-      items: testKits, // Using testKits data here
+      items: testKits, 
     },
   ];
 
@@ -152,7 +152,7 @@ export default function ShopPage() {
             <div className="flex items-center justify-between mb-3">
               <CardTitle className="text-2xl font-headline text-primary flex items-center">
                 <ShoppingCart className="h-7 w-7 mr-2 text-accent" />
-                Shop
+                Marketplace
               </CardTitle>
               <Button variant="ghost" size="icon" asChild>
                 <Link href="/">
