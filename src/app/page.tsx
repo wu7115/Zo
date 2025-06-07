@@ -10,6 +10,7 @@ import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settin
 import { RecommendedLearningCard } from './components/RecommendedLearningCard';
 import { ProductRecommendationsCard } from './components/ProductRecommendationsCard';
 import { FriendActivityCard } from './components/FriendActivityCard';
+import { UserActivityCard } from './components/UserActivityCard'; // Import the new card
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +64,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-6 sm:py-12">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
+
+          {/* New User Activity Card - Simulates latest post */}
+          <UserActivityCard /> 
 
           {/* Card 1: Greeting & Sleep Accomplishment */}
           <Card className="shadow-lg">

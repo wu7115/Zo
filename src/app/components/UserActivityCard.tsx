@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footprints, Flame, Smile, Zap, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
