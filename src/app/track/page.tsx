@@ -32,7 +32,7 @@ interface TrackingQuestion {
   id: string;
   ref: string;
   text: string;
-  inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time' | 'duration';
+  inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time'; // Removed 'duration'
   options?: string[];
   placeholder?: string;
   status: string;
@@ -44,6 +44,7 @@ interface TrackingCategory {
   title: string;
   icon: React.ElementType;
   questions: TrackingQuestion[];
+  badgeCount?: number;
 }
 
 const trackingData: TrackingCategory[] = [
@@ -79,11 +80,12 @@ const trackingData: TrackingCategory[] = [
     id: 'sleep-&-rest',
     title: 'Sleep & Rest',
     icon: BedDouble,
+    badgeCount: 1,
     questions: [
       { id: 'q3.1', ref: '3.1', text: 'What time did you go to bed last night?', inputType: 'time', status: '11:15 PM ✅', value: '11:15 PM' },
       { id: 'q3.2', ref: '3.2', text: 'How long did it take you to fall asleep last night? (minutes)', inputType: 'number', placeholder: 'e.g., 15', status: '15 min ✅ (Manually Entered)', value: 15 },
       { id: 'q3.3', ref: '3.3', text: 'What time did you wake up today?', inputType: 'time', status: '6:30 AM ✅', value: '6:30 AM' },
-      { id: 'q3.4', ref: '3.4', text: 'Total hours of sleep:', inputType: 'duration', placeholder: 'e.g., 7h 15m', status: '7h 15m ✅ (Synced)', value: '7h 15m' },
+      { id: 'q3.4', ref: '3.4', text: 'Total hours of sleep:', inputType: 'text', placeholder: 'e.g., 7h 15m', status: '7h 15m ✅ (Synced)', value: '7h 15m' },
       { id: 'q3.5', ref: '3.5', text: 'How would you rate your sleep quality?', inputType: 'rating-5', status: 'Good ⭐⭐⭐⭐ ✅', value: 4 },
       { id: 'q3.6', ref: '3.6', text: 'Did you take any naps or rest periods today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'No ✅', value: false },
     ],
@@ -92,6 +94,7 @@ const trackingData: TrackingCategory[] = [
     id: 'stress-&-relaxation',
     title: 'Stress & Relaxation',
     icon: Smile,
+    badgeCount: 1,
     questions: [
       { id: 'q4.1', ref: '4.1', text: 'How would you rate your stress level today?', inputType: 'rating-5', status: 'Pending' },
       { id: 'q4.2', ref: '4.2', text: 'Did you engage in any mindfulness or meditation practices today?', inputType: 'boolean', options: ['Yes', 'No'], status: 'Pending', value: false },
@@ -149,6 +152,7 @@ const trackingData: TrackingCategory[] = [
     id: 'medication-&-supplement-use',
     title: 'Medication & Supplement Use',
     icon: Pill,
+    badgeCount: 1,
     questions: [
       { id: 'q6.1', ref: '6.1', text: 'Did you take any medications today (including antibiotics)?', inputType: 'textarea', placeholder: 'List medications or type N/A', status: 'Pending' },
     ],
@@ -175,8 +179,7 @@ const renderInputType = (question: TrackingQuestion) => {
     case 'number':
     case 'text':
     case 'time':
-    case 'duration':
-      return <Input type={question.inputType === 'number' || question.inputType === 'duration' ? 'number' : 'text'} placeholder={question.placeholder} className="mt-1 w-full" defaultValue={question.value?.toString()} />;
+      return <Input type={question.inputType === 'number' ? 'number' : 'text'} placeholder={question.placeholder} className="mt-1 w-full" defaultValue={question.value?.toString()} />;
     case 'textarea':
       return <Textarea placeholder={question.placeholder} className="mt-1 w-full" defaultValue={question.value?.toString()} />;
     case 'boolean':
@@ -323,13 +326,20 @@ export default function TrackPage() {
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
                     </Button>
                 </div>
-                <Accordion type="multiple" defaultValue={trackingData.length > 0 ? ['nutrition-&-diet-habits'] : []} className="w-full space-y-3">
+                <Accordion type="multiple" defaultValue={[]} className="w-full space-y-3">
                   {trackingData.map((category) => (
                     <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
                       <AccordionTrigger className="bg-muted/20 hover:bg-muted/30 p-3 text-md font-semibold text-primary data-[state=open]:bg-muted/40 data-[state=open]:border-b">
-                        <div className="flex items-center flex-1 text-left">
-                          <category.icon className="h-5 w-5 mr-2 text-accent" />
-                          {category.title}
+                        <div className="flex items-center flex-1 text-left justify-between w-full">
+                          <div className="flex items-center">
+                            <category.icon className="h-5 w-5 mr-2 text-accent" />
+                            {category.title}
+                          </div>
+                          {category.badgeCount && category.badgeCount > 0 && (
+                            <Badge variant="destructive" className="h-5 min-w-[1.25rem] flex items-center justify-center p-1 text-xs">
+                              {category.badgeCount}
+                            </Badge>
+                          )}
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-0">
