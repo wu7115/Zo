@@ -1,4 +1,6 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +17,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, HeartPulse, MinusCircle, CheckCircle2, FlaskConical, FileText, UploadCloud } from 'lucide-react';
+import { ArrowLeft, HeartPulse, CheckCircle2, FlaskConical, FileText, UploadCloud, MinusCircle } from 'lucide-react';
 
 interface TestKitItemProps {
   name: string;
@@ -40,7 +42,7 @@ const TestKitListItem: React.FC<TestKitItemProps> = ({ name, selected, href }) =
 
 interface AccordionSection {
   id: string;
-  icon?: React.ElementType; // Icon for the trigger title area, not the left-most minus
+  icon: React.ElementType; 
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
@@ -89,7 +91,7 @@ const sections: AccordionSection[] = [
 
 export default function DiagnosePage() {
   return (
-    <main className="flex flex-1 flex-col p-4 md:p-6 bg-background overflow-y-auto">
+    <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
       <div className="w-full max-w-md mx-auto">
         <Card className="shadow-xl">
           <CardHeader className="pb-4">
@@ -106,26 +108,33 @@ export default function DiagnosePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Accordion type="single" collapsible defaultValue={sections.find(s => s.defaultOpen)?.id} className="w-full">
-              {sections.map((section) => (
-                <AccordionItem value={section.id} key={section.id} className="mb-2 rounded-lg border bg-muted/10 overflow-hidden">
-                  <AccordionTrigger className="bg-sky-50 hover:bg-sky-100/80 text-primary font-semibold p-4 no-underline data-[state=open]:bg-sky-100">
-                    <div className="flex items-center flex-1 text-left">
-                      <MinusCircle className="h-6 w-6 mr-3 text-primary/70 shrink-0" />
-                      <div>
-                        <span className="text-md">{section.title}</span>
-                        {section.subtitle && (
-                          <p className="text-xs text-primary/80 font-normal mt-0.5">{section.subtitle}</p>
-                        )}
+            <Accordion 
+              type="single" 
+              collapsible 
+              defaultValue={sections.find(s => s.defaultOpen)?.id} 
+              className="w-full space-y-3"
+            >
+              {sections.map((section) => {
+                const IconComponent = section.icon;
+                return (
+                  <AccordionItem value={section.id} key={section.id} className="rounded-lg border bg-card overflow-hidden">
+                    <AccordionTrigger className="hover:bg-muted/20 data-[state=open]:bg-muted/30 p-4 w-full text-primary font-semibold no-underline">
+                      <div className="flex items-center flex-1 text-left">
+                        <IconComponent className="h-6 w-6 mr-3 text-primary shrink-0" />
+                        <div>
+                          <span className="text-md">{section.title}</span>
+                          {section.subtitle && (
+                            <p className="text-xs text-primary/80 font-normal mt-0.5">{section.subtitle}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    {/* ChevronDown is added by default by AccordionTrigger */}
-                  </AccordionTrigger>
-                  <AccordionContent className="bg-background">
-                    <div className="p-2">{section.content}</div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+                    </AccordionTrigger>
+                    <AccordionContent className="bg-background">
+                      <div className="p-3">{section.content}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
             </Accordion>
           </CardContent>
         </Card>
