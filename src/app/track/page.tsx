@@ -272,12 +272,6 @@ export default function TrackPage() {
                 </Link>
               </Button>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
-                <Link href="/gut-health-score">Score: 55/100</Link>
-              </Button>
-              <Badge variant="secondary" className="text-sm">Points: 421</Badge>
-            </div>
           </CardHeader>
           <CardContent className="space-y-1 pb-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

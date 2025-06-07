@@ -23,45 +23,45 @@ const products = [
   {
     name: 'Bone Broth',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'supplement packet',
   },
   {
     name: 'Hydration Powder',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'hydration sachet',
   },
   {
     name: 'Probiotics',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'probiotic packet',
   },
   {
     name: 'Recovery Coffee',
     priceIndicator: 'SJ',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'coffee sachet',
   },
   {
     name: 'Bone Broth V2',
     priceIndicator: 'SS',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'supplement packet beige',
   },
   {
     name: 'Hydration Powder XL',
     priceIndicator: 'SB',
-    imageUrl: 'https://placehold.co/343x130.png', // Updated
+    imageUrl: 'https://placehold.co/343x130.png',
     imageHint: 'hydration sachet blue',
   },
 ];
 
 const testKits = [
-  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' }, // Updated
-  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },       // Updated
-  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },           // Updated
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit zobiome' },
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit viome' },
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/343x130.png', imageHint: 'test kit mbt' },
 ];
 
 export default function ShopPage() {
@@ -80,12 +80,6 @@ export default function ShopPage() {
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
               </Button>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
-                <Link href="/gut-health-score">Score: 55/100</Link>
-              </Button>
-              <Badge variant="secondary" className="text-sm">Points: 421</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -111,9 +105,9 @@ export default function ShopPage() {
                             className="rounded-t-xl"
                           />
                         </div>
-                        <div className="p-3 flex-grow flex items-center justify-between">
+                        <div className="p-3 flex-grow flex items-end justify-between">
                           <div className="flex flex-col">
-                            <p className="text-sm font-semibold text-primary line-clamp-2">{product.name}</p>
+                            <p className="text-base font-semibold text-primary line-clamp-2">{product.name}</p>
                             <p className="text-xs text-muted-foreground">{product.priceIndicator}</p>
                           </div>
                           <Button
@@ -148,7 +142,7 @@ export default function ShopPage() {
                             className="rounded-t-xl"
                           />
                         </div>
-                        <CardContent className="p-3 flex-grow flex items-center justify-between">
+                        <div className="p-3 flex-grow flex items-end justify-between">
                            <p className="text-base font-semibold text-primary truncate">{kit.name}</p>
                            <Button
                             variant="outline"
@@ -157,7 +151,7 @@ export default function ShopPage() {
                            >
                             <Plus className="h-4 w-4" />
                           </Button>
-                        </CardContent>
+                        </div>
                       </Card>
                     ))}
                   </div>

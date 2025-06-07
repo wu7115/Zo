@@ -109,12 +109,6 @@ export default function LearnPage() {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
-                 <Link href="/gut-health-score">ZoGut Score 55/100</Link>
-              </Button>
-              <Badge variant="secondary" className="text-sm">ZoPoints 431</Badge>
-            </div>
           </CardHeader>
           <CardContent className="space-y-1 pb-4">
              <Accordion type="multiple" defaultValue={learnCategories.filter(c => c.defaultOpen).map(c => c.id)} className="w-full">
@@ -130,7 +124,7 @@ export default function LearnPage() {
                     <div className="flex overflow-x-auto space-x-3 p-3">
                       {category.items.length > 0 ? category.items.map((item, index) => (
                         <Link href={item.link || '#'} key={index} className="block w-[343px] h-[200px] flex-shrink-0">
-                          <Card className="w-full h-full flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                          <Card className="w-full h-full flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow rounded-lg">
                             <div className="relative w-full h-[150px]">
                               <Image
                                 src={item.imageUrl}

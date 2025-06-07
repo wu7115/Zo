@@ -104,12 +104,6 @@ export default function DiagnosePage() {
                 </Link>
               </Button>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="secondary" size="sm" className="text-xs h-auto" asChild>
-                <Link href="/gut-health-score">Score: 55/100</Link>
-              </Button>
-              <Badge variant="secondary" className="text-sm">Points: 421</Badge>
-            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <Accordion type="single" collapsible defaultValue={sections.find(s => s.defaultOpen)?.id} className="w-full">
@@ -133,7 +127,6 @@ export default function DiagnosePage() {
                 </AccordionItem>
               ))}
             </Accordion>
-            {/* The empty panel at the bottom has been removed */}
           </CardContent>
         </Card>
       </div>
