@@ -2,13 +2,13 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import {
   Accordion,
@@ -16,33 +16,58 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, HeartPulse, CheckCircle2, FlaskConical, FileText, UploadCloud, MinusCircle } from 'lucide-react';
+import { ArrowLeft, HeartPulse, FlaskConical, FileText, UploadCloud, Plus } from 'lucide-react';
 
-interface TestKitItemProps {
+interface ShopItem {
   name: string;
-  selected?: boolean;
-  href: string;
+  id?: string;
+  imageUrl: string;
+  imageHint: string;
+  href: string; // Link for the "+" button or card action
 }
 
-const TestKitListItem: React.FC<TestKitItemProps> = ({ name, selected, href }) => (
-  <Link href={href} passHref>
-    <div className="flex items-center justify-between py-3 px-1 hover:bg-muted/50 rounded-md cursor-pointer">
-      <span className={`text-sm ${selected ? 'font-semibold text-primary' : 'text-foreground'}`}>
-        {name}
-      </span>
-      {selected ? (
-        <CheckCircle2 className="h-5 w-5 text-green-600" />
-      ) : (
-        <MinusCircle className="h-5 w-5 text-slate-500" />
-      )}
+const diagnosticTestKits: ShopItem[] = [
+  { name: 'ZoBiome', id: 'zobiome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit zobiome', href: '/buy#zobiome' },
+  { name: 'Viome', id: 'viome', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit viome', href: '/buy#viome' },
+  { name: 'MBT', id: 'mbt', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit mbt', href: '/buy#mbt' },
+];
+
+const DiagnosticKitCard: React.FC<{ item: ShopItem }> = ({ item }) => (
+  <Card
+    className="w-[171px] h-[200px] flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+  >
+    <div className="w-full h-[130px] relative">
+      <Image
+        src={item.imageUrl}
+        alt={item.name}
+        layout="fill"
+        objectFit="cover"
+        data-ai-hint={item.imageHint}
+        className="rounded-t-xl"
+      />
     </div>
-  </Link>
+    <div className="p-2.5 flex-grow flex flex-col justify-between">
+      <div>
+        <p className="text-xs font-semibold text-primary line-clamp-2">{item.name}</p>
+      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-7 w-7 bg-card hover:bg-muted/50 text-primary rounded-full p-1.5 flex items-center justify-center shrink-0 self-end border-primary/50"
+        asChild
+      >
+        <Link href={item.href}>
+          <Plus className="h-4 w-4" />
+        </Link>
+      </Button>
+    </div>
+  </Card>
 );
+
 
 interface AccordionSection {
   id: string;
-  icon: React.ElementType; 
+  icon: React.ElementType;
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
@@ -57,10 +82,10 @@ const sections: AccordionSection[] = [
     subtitle: 'Select to purchase',
     defaultOpen: true,
     content: (
-      <div className="space-y-1 pt-2">
-        <TestKitListItem name="ZoBiome" href="/buy#zobiome" />
-        <TestKitListItem name="Viome" selected href="/buy#viome" />
-        <TestKitListItem name="MBT" href="/buy#mbt" />
+      <div className="flex overflow-x-auto space-x-3 p-3">
+        {diagnosticTestKits.map((kit) => (
+          <DiagnosticKitCard key={kit.id} item={kit} />
+        ))}
       </div>
     ),
   },
@@ -69,13 +94,13 @@ const sections: AccordionSection[] = [
     icon: FlaskConical,
     title: 'Test Kits',
     subtitle: 'Prescription Required',
-    content: <p className="text-sm text-muted-foreground p-3">Details about prescription test kits will appear here.</p>,
+    content: <p className="text-sm text-muted-foreground p-3">Details about prescription test kits will appear here. This section does not use cards yet.</p>,
   },
   {
     id: 'results',
     icon: FileText,
     title: 'Results',
-    content: <p className="text-sm text-muted-foreground p-3">Your test results will be displayed here.</p>,
+    content: <p className="text-sm text-muted-foreground p-3">Your test results will be displayed here. This section does not use cards yet.</p>,
   },
   {
     id: 'upload',
@@ -108,10 +133,10 @@ export default function DiagnosePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Accordion 
-              type="single" 
-              collapsible 
-              defaultValue={sections.find(s => s.defaultOpen)?.id} 
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue={sections.find(s => s.defaultOpen)?.id}
               className="w-full space-y-3"
             >
               {sections.map((section) => {
@@ -130,7 +155,12 @@ export default function DiagnosePage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="bg-background">
-                      <div className="p-3">{section.content}</div>
+                      {/* Check if content is for the specific section that should have cards */}
+                      {section.id === 'test-kits-purchase' ? (
+                        section.content /* This already includes the div with flex overflow-x-auto */
+                      ) : (
+                        <div className="p-3">{section.content}</div> /* For other sections, keep the simple padding */
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 );
