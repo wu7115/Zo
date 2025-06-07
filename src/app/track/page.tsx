@@ -9,6 +9,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import {
   Tabs,
@@ -25,14 +26,27 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, Activity, Star, Edit3, ListChecks } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, Activity, Star, Edit3, ListChecks, Loader2, AlertTriangle, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { estimateActivityCalories, type EstimateActivityCaloriesInput, type EstimateActivityCaloriesOutput } from '@/ai/flows/estimate-activity-calories-flow';
+import { useToast } from "@/hooks/use-toast";
+
 
 interface TrackingQuestion {
   id: string;
   ref: string;
   text: string;
-  inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time'; // Removed 'duration'
+  inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time';
   options?: string[];
   placeholder?: string;
   status: string;
@@ -242,21 +256,107 @@ const renderInputType = (question: TrackingQuestion) => {
 
 export default function TrackPage() {
   const [activeTab, setActiveTab] = React.useState("dashboard");
+  const { toast } = useToast();
+
+  const [isActivityLoggerOpen, setIsActivityLoggerOpen] = React.useState(false);
+  const [activityName, setActivityName] = React.useState('');
+  const [timeMinutes, setTimeMinutes] = React.useState('');
+  const [effortLevel, setEffortLevel] = React.useState<number | null>(null);
+  const [estimatedCalories, setEstimatedCalories] = React.useState<EstimateActivityCaloriesOutput | null>(null);
+  const [isCalculating, setIsCalculating] = React.useState(false);
+  const [calculationError, setCalculationError] = React.useState<string | null>(null);
+
+  const effortLevels = [
+    { label: 'Very Light', value: 1 },
+    { label: 'Light', value: 2 },
+    { label: 'Moderate', value: 3 },
+    { label: 'Very Intense', value: 4 },
+  ];
+
+  const resetLoggerState = () => {
+    setActivityName('');
+    setTimeMinutes('');
+    setEffortLevel(null);
+    setEstimatedCalories(null);
+    setCalculationError(null);
+    setIsCalculating(false);
+  };
+
+  const handleModalOpenChange = (open: boolean) => {
+    setIsActivityLoggerOpen(open);
+    if (!open) {
+      resetLoggerState();
+    }
+  };
+
+  const handleCalculateCalories = async () => {
+    if (!activityName.trim() || !timeMinutes.trim() || !effortLevel) {
+      setCalculationError("Please fill in all fields: Activity Name, Time, and Effort Level.");
+      return;
+    }
+    const time = parseInt(timeMinutes, 10);
+    if (isNaN(time) || time <= 0) {
+      setCalculationError("Please enter a valid positive number for time.");
+      return;
+    }
+
+    setIsCalculating(true);
+    setCalculationError(null);
+    setEstimatedCalories(null);
+
+    try {
+      const input: EstimateActivityCaloriesInput = {
+        activityName,
+        timeMinutes: time,
+        effortLevel,
+      };
+      const result = await estimateActivityCalories(input);
+      setEstimatedCalories(result);
+    } catch (e: any) {
+      console.error("Error estimating calories:", e);
+      setCalculationError(e.message || "Failed to estimate calories. Please try again.");
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleLogActivity = () => {
+    // In a real app, this would save to a database or global state.
+    console.log("Activity Logged:", {
+      activityName,
+      timeMinutes: parseInt(timeMinutes, 10),
+      effortLevel,
+      calories: estimatedCalories?.estimatedCalories,
+    });
+    toast({
+        title: "Activity Logged!",
+        description: `${activityName} for ${timeMinutes} min - ${estimatedCalories?.estimatedCalories} kcal (est.)`,
+    });
+    handleModalOpenChange(false); // Closes modal and resets state
+  };
+
 
   React.useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '');
     if (hash === 'diary' || trackingData.some(cat => `diary-${cat.id}` === hash)) {
       setActiveTab('diary');
       if (trackingData.some(cat => `diary-${cat.id}` === hash)) {
+        // Ensure accordions are rendered before trying to scroll
+        const defaultOpenAccordion = trackingData.find(cat => `diary-${cat.id}` === hash);
+        if (defaultOpenAccordion) {
+            setDefaultOpenItems([defaultOpenAccordion.id]);
+        }
         setTimeout(() => {
             const element = document.getElementById(hash);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-        }, 100);
+        }, 150); // Increased timeout slightly
       }
     }
   }, []);
+
+  const [defaultOpenItems, setDefaultOpenItems] = React.useState<string[]>([]);
 
 
   return (
@@ -322,11 +422,89 @@ export default function TrackPage() {
                         <p className="text-lg font-semibold text-primary">Alex's Diary</p>
                         <p className="text-sm text-muted-foreground">June 5, 2025</p>
                     </div>
-                    <Button variant="outline" size="sm">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
-                    </Button>
+                    <Dialog open={isActivityLoggerOpen} onOpenChange={handleModalOpenChange}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl font-headline text-primary flex items-center">
+                            <Brain className="mr-2 h-6 w-6 text-accent"/> AI Activity Logger
+                          </DialogTitle>
+                          <DialogDescription>
+                            Log any activity and let AI estimate the calories.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <h3 className="text-lg font-semibold text-primary">Log New Activity</h3>
+                          <div className="grid gap-2">
+                            <Label htmlFor="activityName">Activity Name</Label>
+                            <Input
+                              id="activityName"
+                              value={activityName}
+                              onChange={(e) => setActivityName(e.target.value)}
+                              placeholder="e.g., Brisk Walking, Cycling"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="timeMinutes">Time (min)</Label>
+                            <Input
+                              id="timeMinutes"
+                              type="number"
+                              value={timeMinutes}
+                              onChange={(e) => setTimeMinutes(e.target.value)}
+                              placeholder="e.g., 30"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>Effort Level (1-4)</Label>
+                            <div className="flex space-x-2">
+                              {effortLevels.map((level) => (
+                                <Button
+                                  key={level.value}
+                                  variant={effortLevel === level.value ? "default" : "outline"}
+                                  onClick={() => setEffortLevel(level.value)}
+                                  className="flex-1"
+                                >
+                                  {level.value}
+                                </Button>
+                              ))}
+                            </div>
+                             {effortLevel && <p className="text-xs text-muted-foreground text-center mt-1">{effortLevels.find(l => l.value === effortLevel)?.label}</p>}
+                          </div>
+                           <Button onClick={handleCalculateCalories} disabled={isCalculating || !activityName || !timeMinutes || !effortLevel}>
+                            {isCalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Calculate Calories
+                          </Button>
+
+                          {calculationError && (
+                            <div className="mt-2 flex items-center space-x-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                                <AlertTriangle className="h-4 w-4 shrink-0" />
+                                <p>{calculationError}</p>
+                            </div>
+                          )}
+                          {estimatedCalories && !calculationError && (
+                            <div className="mt-4 p-3 bg-secondary/20 rounded-md text-center">
+                              <p className="text-sm text-secondary-foreground">Estimated Calories Burned:</p>
+                              <p className="text-2xl font-bold text-primary">{estimatedCalories.estimatedCalories} kcal</p>
+                              {estimatedCalories.reasoning && <p className="text-xs text-muted-foreground mt-1">{estimatedCalories.reasoning}</p>}
+                            </div>
+                          )}
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={handleLogActivity}
+                            disabled={!estimatedCalories || isCalculating || !!calculationError}
+                          >
+                            Log Activity
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                 </div>
-                <Accordion type="multiple" defaultValue={[]} className="w-full space-y-3">
+                <Accordion type="multiple" defaultValue={defaultOpenItems} className="w-full space-y-3">
                   {trackingData.map((category) => (
                     <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
                       <AccordionTrigger className="bg-muted/20 hover:bg-muted/30 p-3 text-md font-semibold text-primary data-[state=open]:bg-muted/40 data-[state=open]:border-b">
@@ -367,4 +545,3 @@ export default function TrackPage() {
     </main>
   );
 }
-    
