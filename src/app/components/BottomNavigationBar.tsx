@@ -100,7 +100,7 @@ export function BottomNavigationBar() {
 
   const navItems: NavItem[] = [
     { id: 'home', href: '/', label: 'Home', icon: Home },
-    { id: 'marketplace', href: '/buy', label: 'Market', icon: ShoppingCart },
+    { id: 'buy', href: '/buy', label: 'Buy', icon: ShoppingCart },
     { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
     {
       id: 'ask',
