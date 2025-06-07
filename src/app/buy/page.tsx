@@ -152,7 +152,7 @@ export default function ShopPage() {
             <div className="flex items-center justify-between mb-3">
               <CardTitle className="text-2xl font-headline text-primary flex items-center">
                 <ShoppingCart className="h-7 w-7 mr-2 text-accent" />
-                Marketplace
+                Market
               </CardTitle>
               <Button variant="ghost" size="icon" asChild>
                 <Link href="/">
