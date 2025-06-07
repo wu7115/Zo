@@ -53,13 +53,15 @@ export function BottomNavigationBar() {
   const [showTipsBadge, setShowTipsBadge] = React.useState(false);
   const [hasMounted, setHasMounted] = React.useState(false);
   
-  const [askAiIsDisabled, setAskAiIsDisabled] = React.useState(true);
+  // askAiIsDisabled state is not actively used for disabling, 
+  // but askAiDynamicClasses handles visual cues and pointer events.
+  // const [askAiIsDisabled, setAskAiIsDisabled] = React.useState(true); 
   const [askAiDynamicClasses, setAskAiDynamicClasses] = React.useState("cursor-default opacity-75 pointer-events-none");
 
 
   React.useEffect(() => {
     setHasMounted(true);
-    setAskAiIsDisabled(false);
+    // setAskAiIsDisabled(false); // Can be removed if not directly used for disabling
     setAskAiDynamicClasses("hover:text-primary cursor-pointer");
 
     // Initial request for status after mount
@@ -67,7 +69,7 @@ export function BottomNavigationBar() {
         window.dispatchEvent(new CustomEvent('requestUnreadTipsStatus'));
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount
 
   const handleStatusUpdate = React.useCallback((event: Event) => {
     if (!hasMounted) return; 
@@ -139,18 +141,19 @@ export function BottomNavigationBar() {
                 href={item.href} 
                 onClick={(e) => {
                   e.preventDefault();
+                  // Check hasMounted before calling action
                   if (hasMounted && typeof item.action === 'function') {
                     item.action(showTipsBadge);
                   }
                 }}
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
-                  askAiDynamicClasses
+                  hasMounted ? askAiDynamicClasses : "cursor-default opacity-75 pointer-events-none" // Apply dynamic classes only if mounted
                 )}
               >
                 <div className="relative"> {/* Container for icon and badge */}
                   <item.icon className={cn("h-6 w-6 mb-0.5")} />
-                  {/* Badge is always rendered, visibility controlled by opacity */}
+                  {/* Badge visibility controlled by opacity based on hasMounted and showTipsBadge */}
                   <span
                     className={cn(
                       "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
@@ -186,7 +189,6 @@ export function BottomNavigationBar() {
                           {menuItem.label}
                         </Link>
                       </DropdownMenuItem>
-                      {/* Logic for separators between specific items */}
                       {(menuItem.id === 'diagnose' || menuItem.id === 'journey' || menuItem.id === 'gut-health') && 
                        index < moreMenuItems.length - 1 && 
                        (moreMenuItems[index+1].id !== 'profile') && 
@@ -206,11 +208,11 @@ export function BottomNavigationBar() {
               <a
                 className={cn(
                   "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150",
-                  isActive && "text-primary"
+                  hasMounted && isActive && "text-primary" // Apply active class only if mounted and active
                 )}
               >
-                <item.icon className={cn("h-6 w-6 mb-0.5", isActive ? "text-primary" : "")} />
-                <span className={cn("text-xs font-medium", isActive ? "text-primary" : "")}>{item.label}</span>
+                <item.icon className={cn("h-6 w-6 mb-0.5", hasMounted && isActive ? "text-primary" : "")} />
+                <span className={cn("text-xs font-medium", hasMounted && isActive ? "text-primary" : "")}>{item.label}</span>
               </a>
             </Link>
           );
@@ -224,4 +226,3 @@ export function BottomNavigationBar() {
     </nav>
   );
 }
-
