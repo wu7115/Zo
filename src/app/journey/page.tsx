@@ -49,9 +49,9 @@ interface JourneyTask {
   completed?: boolean;
 }
 
-interface JourneyMonth {
+interface JourneyMonth { // Renamed from JourneyMonth to JourneyProtocolItem for clarity
   id: string;
-  month: number;
+  month: number; // Retained for potential sorting or phase indication
   title: string;
   targets: string[];
   tasks: JourneyTask[];
@@ -77,7 +77,7 @@ const allJourneys: Journey[] = [
     totalDays: 90,
     protocol: [
       {
-        id: 'm1', month: 1, title: 'June (Days 1-30): Foundation & Awareness',
+        id: 'm1', month: 1, title: 'Month 1 (Days 1-30): Foundation & Awareness',
         targets: ['Establish a consistent daily movement routine (15-20 mins)', 'Practice 5-10 minutes of mindfulness daily', 'Track mood and energy levels'],
         tasks: [
           { id: 't1', name: 'Track daily activities (movement, mindfulness)' },
@@ -89,7 +89,7 @@ const allJourneys: Journey[] = [
         ],
       },
       {
-        id: 'm2', month: 2, title: 'July (Days 31-60): Deepening Practice',
+        id: 'm2', month: 2, title: 'Month 2 (Days 31-60): Deepening Practice',
         targets: ['Increase movement duration to 30 mins', 'Explore varied mindfulness techniques', 'Identify personal motivation triggers'],
         tasks: [
           { id: 't7', name: 'Advanced mindful movement routines (30 mins)' },
@@ -98,7 +98,7 @@ const allJourneys: Journey[] = [
         ],
       },
       {
-        id: 'm3', month: 3, title: 'August (Days 61-90): Integration & Lifestyle',
+        id: 'm3', month: 3, title: 'Month 3 (Days 61-90): Integration & Lifestyle',
         targets: ['Maintain 30+ minutes of mindful movement most days', 'Incorporate mindfulness into daily activities', 'Reflect on long-term wellness habits'],
         tasks: [
           { id: 't10', name: 'Plan weekly movement schedule independently' },
@@ -118,7 +118,7 @@ const allJourneys: Journey[] = [
     overallTargets: ['Improve digestion', 'Identify food sensitivities', 'Increase beneficial gut bacteria'],
     protocol: [
       {
-        id: 'gr-m1', month: 1, title: 'Phase 1: Elimination & Cleansing (Days 1-7)',
+        id: 'gr-m1', month: 1, title: 'Phase 1 (Days 1-7): Elimination & Cleansing',
         targets: ['Remove common gut irritants', 'Focus on whole, unprocessed foods'],
         tasks: [
           { id: 'gr-t1', name: 'Follow elimination diet plan' },
@@ -128,7 +128,7 @@ const allJourneys: Journey[] = [
         ]
       },
       {
-        id: 'gr-m2', month: 1, title: 'Phase 2: Reintroduction & Observation (Days 8-14)',
+        id: 'gr-m2', month: 1, title: 'Phase 2 (Days 8-14): Reintroduction & Observation',
         targets: ['Systematically reintroduce food groups', 'Monitor reactions closely'],
         tasks: [
           { id: 'gr-t5', name: 'Follow reintroduction schedule' },
@@ -136,7 +136,7 @@ const allJourneys: Journey[] = [
         ]
       },
        {
-        id: 'gr-m3', month: 1, title: 'Phase 3: Personalization & Maintenance (Days 15-21)',
+        id: 'gr-m3', month: 1, title: 'Phase 3 (Days 15-21): Personalization & Maintenance',
         targets: ['Develop a personalized, sustainable gut-friendly diet', 'Receive Insights Snapshot based on test'],
         tasks: [
           { id: 'gr-t7', name: 'Review Microbiome test results & Insights' },
@@ -285,13 +285,46 @@ const allJourneys: Journey[] = [
 
 
 export default function JourneyPage() {
-  // For prototype, let's assume 'mindful-mover' is the current active journey
-  // In a real app, this would come from user state, props, or URL params
   const currentJourneyId = 'mindful-mover';
   const currentJourney = allJourneys.find(j => j.id === currentJourneyId) || allJourneys[0];
   const recommendedJourneys = allJourneys.filter(j => j.id !== currentJourneyId);
 
   const [activeAccordionItem, setActiveAccordionItem] = React.useState<string | string[]>(`journey-${currentJourney.id}`);
+
+  const renderProtocolBreakdown = (protocol: JourneyMonth[]) => (
+    <div>
+      <h4 className="text-md font-semibold text-primary mb-2 flex items-center">
+        <ListChecks className="h-5 w-5 mr-2 text-accent" /> Protocol Breakdown
+      </h4>
+      <Accordion type="multiple" className="w-full space-y-2">
+        {protocol.map((protocolItem) => (
+          <AccordionItem key={protocolItem.id} value={protocolItem.id} className="border bg-muted/20 rounded-md">
+            <AccordionTrigger className="p-3 text-sm font-medium text-primary hover:no-underline data-[state=open]:bg-muted/30">
+              {protocolItem.title}
+            </AccordionTrigger>
+            <AccordionContent className="p-3 space-y-2">
+              <div>
+                <h5 className="text-xs font-semibold text-primary mb-1">Targets:</h5>
+                <ul className="list-disc list-inside text-xs text-foreground/80 space-y-0.5 pl-2">
+                  {protocolItem.targets.map((target, index) => (
+                    <li key={index}>{target}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h5 className="text-xs font-semibold text-primary mb-1">Tasks:</h5>
+                <ul className="list-disc list-inside text-xs text-foreground/80 space-y-0.5 pl-2">
+                  {protocolItem.tasks.map((task) => (
+                    <li key={task.id}>{task.name}</li>
+                  ))}
+                </ul>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -324,7 +357,7 @@ export default function JourneyPage() {
                 <AccordionContent className="p-4 space-y-4">
                   <div>
                     <h4 className="text-md font-semibold text-primary mb-1 flex items-center">
-                      <Target className="h-5 w-5 mr-2 text-secondary-foreground" /> Overall Targets & Goals
+                      <Target className="h-5 w-5 mr-2 text-accent" /> Overall Targets & Goals
                     </h4>
                     <ul className="list-disc list-inside text-sm text-foreground/90 space-y-1 pl-2">
                       {currentJourney.overallTargets.map((target, index) => (
@@ -334,43 +367,11 @@ export default function JourneyPage() {
                   </div>
                   <div>
                     <h4 className="text-md font-semibold text-primary mb-1 flex items-center">
-                      <BookOpen className="h-5 w-5 mr-2 text-secondary-foreground" /> Description
+                      <BookOpen className="h-5 w-5 mr-2 text-accent" /> Description
                     </h4>
                     <p className="text-sm text-foreground/90">{currentJourney.description}</p>
                   </div>
-
-                  <div>
-                    <h4 className="text-md font-semibold text-primary mb-2 flex items-center">
-                      <ListChecks className="h-5 w-5 mr-2 text-secondary-foreground" /> Protocol Breakdown
-                    </h4>
-                    <Accordion type="multiple" className="w-full space-y-2">
-                      {currentJourney.protocol.map((monthData) => (
-                        <AccordionItem key={monthData.id} value={monthData.id} className="border bg-muted/20 rounded-md">
-                          <AccordionTrigger className="p-3 text-sm font-medium text-primary hover:no-underline data-[state=open]:bg-muted/30">
-                            {monthData.title}
-                          </AccordionTrigger>
-                          <AccordionContent className="p-3 space-y-2">
-                            <div>
-                              <h5 className="text-xs font-semibold text-primary mb-1">Monthly Targets:</h5>
-                              <ul className="list-disc list-inside text-xs text-foreground/80 space-y-0.5 pl-2">
-                                {monthData.targets.map((target, index) => (
-                                  <li key={index}>{target}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-primary mb-1">Tasks:</h5>
-                              <ul className="list-disc list-inside text-xs text-foreground/80 space-y-0.5 pl-2">
-                                {monthData.tasks.map((task) => (
-                                  <li key={task.id}>{task.name}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
+                  {renderProtocolBreakdown(currentJourney.protocol)}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -389,10 +390,26 @@ export default function JourneyPage() {
                           {journey.name}
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="p-3">
-                        <p className="text-sm text-foreground/80 mb-2">{journey.description}</p>
-                        <p className="text-xs text-muted-foreground">Total Duration: {journey.totalDays} days</p>
-                        <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => alert(`Starting ${journey.name} - (prototype)`)}>
+                      <AccordionContent className="p-4 space-y-4">
+                        <div>
+                          <h4 className="text-md font-semibold text-primary mb-1 flex items-center">
+                            <Target className="h-5 w-5 mr-2 text-accent" /> Overall Targets & Goals
+                          </h4>
+                          <ul className="list-disc list-inside text-sm text-foreground/90 space-y-1 pl-2">
+                            {journey.overallTargets.map((target, index) => (
+                              <li key={index}>{target}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="text-md font-semibold text-primary mb-1 flex items-center">
+                            <BookOpen className="h-5 w-5 mr-2 text-accent" /> Description
+                          </h4>
+                          <p className="text-sm text-foreground/90">{journey.description}</p>
+                        </div>
+                        {renderProtocolBreakdown(journey.protocol)}
+                        <p className="text-xs text-muted-foreground mt-3">Total Duration: {journey.totalDays} days</p>
+                        <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => alert(`Starting ${journey.name} - (prototype)`)}>
                           Switch to this Journey
                         </Button>
                       </AccordionContent>
