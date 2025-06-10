@@ -388,13 +388,13 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
     const completedCategoriesCount = useMemo(() => {
         return allCategories.filter(catName => {
-            const categoryQuestions = questionnaireData.part2[catName];
+            const categoryQuestions = questionnaireData.part2[catName as keyof typeof questionnaireData.part2];
             const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
             if (visibleCategoryQuestions.length === 0) return true; // Category is "complete" if no questions are visible
             return visibleCategoryQuestions.every(q => {
               const answer = answers[q.id];
               if (answer === undefined) return false;
-              if (Array.isArray(answer) && answer.length === 0 && !(q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))))) {
+              if (Array.isArray(answer) && answer.length === 0 && !(q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))!))) {
                 return false; 
               }
               return true;
@@ -406,11 +406,11 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
     if (activeCategory) {
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
-                    questions={questionnaireData.part2[activeCategory]}
-                    answers={answers} // Pass current global answers to the flow for conditional rendering
-                    setAnswers={setAnswers} // Pass the global setter for updating answers
+                    questions={questionnaireData.part2[activeCategory as keyof typeof questionnaireData.part2]}
+                    answers={answers} 
+                    setAnswers={setAnswers} 
                     onExitCategory={() => setActiveCategory(null)}
-                    globalAnswers={answers} // Explicitly pass globalAnswers for conditions
+                    globalAnswers={answers} 
                 />;
     }
 
@@ -423,13 +423,13 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
             <div className="flex-grow space-y-3 overflow-y-auto pr-2 -mr-2 mb-4">
                 {allCategories.map(categoryName => {
-                    const categoryQuestions = questionnaireData.part2[categoryName];
+                    const categoryQuestions = questionnaireData.part2[categoryName as keyof typeof questionnaireData.part2];
                     const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
 
                     const answeredCount = visibleCategoryQuestions.filter(q => {
                         const answer = answers[q.id];
-                         // Consider "None" option as an answer for multi-selects
-                        if(Array.isArray(answer) && q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none")))) {
+                        
+                        if(Array.isArray(answer) && q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))!)) {
                             return true;
                         }
                         return answer !== undefined && (!Array.isArray(answer) || answer.length > 0);
@@ -473,9 +473,30 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState('splash');
   const [answers, setAnswers] = useState<any>({});
 
+  // Load answers from localStorage on initial mount
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem('onboardingAnswers');
+    if (savedAnswers) {
+      try {
+        setAnswers(JSON.parse(savedAnswers));
+      } catch (e) {
+        console.error("Error parsing saved answers from localStorage", e);
+      }
+    }
+  }, []);
+
+  // Save answers to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+  }, [answers]);
+
+
   const handleFinishOnboarding = () => {
     console.log('Onboarding data collected:', answers);
     localStorage.setItem('isOnboarded', 'true');
+    // Optionally, remove 'onboardingAnswers' if they are now fully processed,
+    // or keep them for future reference/editing by the user.
+    // localStorage.removeItem('onboardingAnswers'); 
     router.push('/');
   };
 
@@ -490,10 +511,10 @@ export default function OnboardingPage() {
       case 'confirmation': return <ConfirmationPageComponent onComplete={() => setCurrentStep('part2_intro')} />;
       case 'part2_intro':
         return <Part2SurveyIntroComponent
-                    onBeginSurvey={() => setCurrentStep('part2_categories')}
+                    onBeginSurvey={() => setCurrentStep('part2_survey')}
                     onSkipSurvey={handleFinishOnboarding}
                />;
-      case 'part2_categories':
+      case 'part2_survey':
         return <Part2SurveyComponent answers={answers} setAnswers={setAnswers} onComplete={handleFinishOnboarding} />;
       default: return <OnboardingStepContainer><p>Loading...</p></OnboardingStepContainer>;
     }
@@ -508,6 +529,4 @@ export default function OnboardingPage() {
   );
 }
 
-    </script>
-</body>
-</html>
+    
