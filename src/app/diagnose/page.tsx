@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ArrowLeft, HeartPulse, FlaskConical, FileText, UploadCloud, Plus } from 'lucide-react';
+import { ArrowLeft, HeartPulse, FlaskConical, FileText, UploadCloud, Plus, Edit } from 'lucide-react'; // Added Edit icon
 import * as React from 'react';
 import { ItemDetailModal, type ModalItemData } from '@/app/components/ItemDetailModal';
 
@@ -25,7 +25,7 @@ interface DiagnosticKit {
   name: string;
   imageUrl: string;
   imageHint: string;
-  href: string; // Link for primary card action (e.g. to buy page)
+  href: string; 
   description?: string;
   category: string;
 }
@@ -42,15 +42,16 @@ interface AccordionSection {
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
-  content: React.ReactNode;
-  items?: DiagnosticKit[]; // Only for sections with cards
+  content?: React.ReactNode; // Make content optional
+  items?: DiagnosticKit[]; 
+  isSurveySection?: boolean; // Flag for special survey section
 }
 
 
 export default function DiagnosePage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedItemForModal, setSelectedItemForModal] = React.useState<ModalItemData | null>(null);
-  const currentUserContext = "seeking diagnostic information for better health"; // Example context
+  const currentUserContext = "seeking diagnostic information for better health"; 
 
   const handleOpenModal = (item: DiagnosticKit) => {
     setSelectedItemForModal({
@@ -96,13 +97,20 @@ export default function DiagnosePage() {
 
   const sections: AccordionSection[] = [
     {
+      id: 'diagnostic-surveys',
+      icon: Edit, // Using Edit icon for surveys
+      title: 'Diagnostic Surveys',
+      subtitle: 'Complete to enhance your profile',
+      isSurveySection: true, // Mark this as the special survey section
+      defaultOpen: false,
+    },
+    {
       id: 'test-kits-purchase',
       icon: FlaskConical,
       title: 'Test Kits',
       subtitle: 'Select to purchase',
       defaultOpen: true,
       items: diagnosticTestKits,
-      content: null, // Content will be generated from items
     },
     {
       id: 'test-kits-prescription',
@@ -170,7 +178,15 @@ export default function DiagnosePage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="bg-background">
-                      {section.items && section.items.length > 0 ? (
+                      {section.isSurveySection ? (
+                        <div className="p-3">
+                          <Button asChild className="w-full">
+                            <Link href="/diagnose/survey">
+                              Complete Full Diagnostic Survey
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : section.items && section.items.length > 0 ? (
                         <div className="flex overflow-x-auto space-x-3 p-3">
                           {section.items.map((kit) => (
                             <DiagnosticKitCard key={kit.id} item={kit} />
