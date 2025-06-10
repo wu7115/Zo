@@ -34,7 +34,7 @@ export default function RootLayout({
         <meta name="description" content="Your personal wellness companion" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased bg-background">
         {showMainLayout && <TopHeader />}
@@ -42,7 +42,7 @@ export default function RootLayout({
           id="main-app-content"
           className={cn(
             "mx-auto max-w-md min-h-screen flex flex-col",
-            showMainLayout ? "bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto" : "bg-background"
+            showMainLayout ? "bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto" : "bg-transparent" // Changed for onboarding
           )}
         >
           {showMainLayout ? <GlobalSwipeNavigator>{children}</GlobalSwipeNavigator> : children}

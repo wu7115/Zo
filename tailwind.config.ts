@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -11,7 +12,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        headline: ['Playfair Display', 'serif'], // Added Playfair Display
         code: ['monospace'],
       },
       colors: {
@@ -65,7 +66,6 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-        // softHighlight is removed as its function is covered by theme variables like 'secondary'
       },
       borderRadius: {
         lg: 'var(--radius)',
