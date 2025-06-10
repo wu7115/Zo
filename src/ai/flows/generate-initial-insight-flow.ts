@@ -32,10 +32,13 @@ const insightPrompt = ai.definePrompt({
   name: 'generateInitialInsightPrompt',
   input: {schema: GenerateInitialInsightInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
-  helpers: { // Correct way to define Handlebars helpers in Genkit 1.x
+  helpers: {
     JSONstringify: function (context) {
       return JSON.stringify(context);
     },
+  },
+  promptOptions: {
+    knownHelpersOnly: false, // Allow the locally defined helper
   },
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
 The user has just completed the first part of their onboarding questionnaire.
@@ -71,3 +74,4 @@ const generateInitialInsightFlow = ai.defineFlow(
     return output;
   }
 );
+
