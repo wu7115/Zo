@@ -129,7 +129,7 @@ export function BottomNavigationBar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 h-16 w-full max-w-md bg-background/80 backdrop-blur-sm shadow-t-md border-t border-border">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 h-16 w-full max-w-[408px] bg-background/80 backdrop-blur-sm shadow-t-md border-t border-border"> {/* Changed max-w-md to max-w-[408px] */}
       <div className="flex h-full items-center justify-around">
         {navItems.map((item) => {
           const isActive = !item.isMoreMenu && item.id !== 'ask' && pathname === item.href;

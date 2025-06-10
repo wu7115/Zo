@@ -89,7 +89,7 @@ export function PostComposerModal({ isOpen, onOpenChange }: PostComposerModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenModalChange}>
-      <DialogContent className="sm:max-w-[480px] bg-card">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[392px] bg-card"> {/* Adjusted max-width */}
         <DialogHeader>
           <DialogTitle className="text-primary font-headline text-xl">Create Post</DialogTitle>
           <DialogDescription>Share an update with your connections.</DialogDescription>

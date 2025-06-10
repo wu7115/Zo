@@ -58,7 +58,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ isOpen, onOpen
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-card text-card-foreground">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[392px] bg-card text-card-foreground"> {/* Adjusted max-width */}
         <DialogHeader>
           <DialogTitle className="text-primary text-xl font-headline">{item.name}</DialogTitle>
         </DialogHeader>

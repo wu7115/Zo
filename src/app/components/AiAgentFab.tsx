@@ -118,7 +118,7 @@ export function AiAgentFab() {
 
       <Card
         className={cn(
-          "fixed bottom-0 left-1/2 -translate-x-1/2 h-[35vh] w-full max-w-lg bg-background shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col",
+          "fixed bottom-0 left-1/2 -translate-x-1/2 h-[35vh] w-full max-w-[408px] bg-background shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col", // Changed max-w-lg to max-w-[408px]
           isPanelOpen ? "translate-y-0" : "translate-y-full"
         )}
       >

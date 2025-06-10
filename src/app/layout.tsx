@@ -41,8 +41,8 @@ export default function RootLayout({
         <div
           id="main-app-content"
           className={cn(
-            "mx-auto max-w-md min-h-screen flex flex-col",
-            showMainLayout ? "bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto" : "bg-transparent" // Changed for onboarding
+            "mx-auto max-w-[408px] min-h-screen flex flex-col", // Changed max-w-md to max-w-[408px]
+            showMainLayout ? "bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto" : "bg-transparent" 
           )}
         >
           {showMainLayout ? <GlobalSwipeNavigator>{children}</GlobalSwipeNavigator> : children}

@@ -195,7 +195,7 @@ export function ContextualHelpFab() {
       />
       <Card
         className={cn(
-          "fixed right-0 w-full max-w-md bg-sidebar shadow-2xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col",
+          "fixed right-0 w-full max-w-[408px] bg-sidebar shadow-2xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col", // Changed max-w-md to max-w-[408px]
            "bottom-16 md:bottom-20", 
           "h-[33vh]", 
           isPanelOpen ? "translate-y-0" : "translate-y-full"
@@ -229,4 +229,3 @@ export function ContextualHelpFab() {
     </>
   );
 }
-
