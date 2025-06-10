@@ -61,7 +61,7 @@ const questionnaireData = {
          { id: 'otherHealthConditions', type: 'multi', text: 'Do you have any other diagnosed health conditions?', options: ['None', 'Pre-diabetes / Insulin resistance', 'Type 2 diabetes', 'Hypertension', 'High cholesterol', 'Autoimmune disorder', 'Other'] },
          { id: 'medications', type: 'multi', text: 'Are you currently taking any medications?', options: ['None', 'Acid reducers', 'Anti-inflammatory drugs', 'Antidepressants', 'Hormonal medications'] },
          { id: 'antibioticsLast6Months', type: 'single', text: 'Have you taken antibiotics in the past 6 months?', options: ['Yes', 'No'] },
-         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptomFrequency !== 'Never' && answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Assuming 'digestiveSymptoms' is an ID from Part 1 and 'digestiveSymptomFrequency' might be another related answer.
+         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Assuming 'digestiveSymptoms' is an ID from Part 1
     ],
     'A Few Final Details': [
          { id: 'age', type: 'number', text: 'What is your age?', placeholder: 'e.g., 35' },
@@ -394,10 +394,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
             return visibleCategoryQuestions.every(q => {
               const answer = answers[q.id];
               if (answer === undefined) return false;
-              if (Array.isArray(answer) && answer.length === 0) {
-                // Allow empty array if a "None" type option was explicitly selected, otherwise, it's incomplete
-                // This assumes "None" options are single select and would not result in an empty array directly.
-                // For multi-select, an empty array is incomplete unless the question itself has no options or is skipped by condition.
+              if (Array.isArray(answer) && answer.length === 0 && !(q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))))) {
                 return false; 
               }
               return true;
@@ -410,14 +407,14 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
                     questions={questionnaireData.part2[activeCategory]}
-                    answers={answers}
-                    setAnswers={setAnswers}
+                    answers={answers} // Pass current global answers to the flow for conditional rendering
+                    setAnswers={setAnswers} // Pass the global setter for updating answers
                     onExitCategory={() => setActiveCategory(null)}
-                    globalAnswers={answers}
+                    globalAnswers={answers} // Explicitly pass globalAnswers for conditions
                 />;
     }
 
-    const allQuestionsAnswered = completedCategoriesCount === allCategories.length;
+    const allQuestionsConsideredAnswered = completedCategoriesCount === allCategories.length;
 
     return (
          <div className="p-6 bg-card h-full flex flex-col">
@@ -431,8 +428,13 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
                     const answeredCount = visibleCategoryQuestions.filter(q => {
                         const answer = answers[q.id];
+                         // Consider "None" option as an answer for multi-selects
+                        if(Array.isArray(answer) && q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none")))) {
+                            return true;
+                        }
                         return answer !== undefined && (!Array.isArray(answer) || answer.length > 0);
                     }).length;
+                    
                     const isComplete = visibleCategoryQuestions.length > 0 ? answeredCount === visibleCategoryQuestions.length : true;
 
                     return (
@@ -458,7 +460,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
             <div className="mt-auto flex-shrink-0 pt-4 border-t border-border">
                 <PrimaryButton onClick={onComplete}>
-                    {allQuestionsAnswered ? 'View My Full Plan & Go to Home' : 'Finish For Now & Go to Home'}
+                    {allQuestionsConsideredAnswered ? 'View My Full Plan & Go to Home' : 'Finish For Now & Go to Home'}
                 </PrimaryButton>
             </div>
          </div>
@@ -505,3 +507,7 @@ export default function OnboardingPage() {
     </main>
   );
 }
+
+    </script>
+</body>
+</html>
