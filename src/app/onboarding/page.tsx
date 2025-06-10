@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Check, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Check, ArrowLeft, CheckCircle, Loader2, Lightbulb, AlertTriangle } from 'lucide-react';
+import { generateInitialInsight, type GenerateInitialInsightInput, type GenerateInitialInsightOutput } from '@/ai/flows/generate-initial-insight-flow';
+
 
 // Questionnaire Data
 const questionnaireData = {
@@ -263,30 +265,127 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
     );
 };
 
-const TeaserPageComponent = ({ onComplete }: { onComplete: () => void }) => (
-    <OnboardingStepContainer>
-        <h2 className="font-headline text-2xl text-primary">Teaser Results</h2>
-        <p className="my-4 text-muted-foreground">Based on your initial answers, your diet might be playing a key role in how you feel.</p>
-        <PrimaryButton onClick={onComplete}>See Full Plan Options</PrimaryButton>
-    </OnboardingStepContainer>
-);
+const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => void, answers: any }) => {
+  const [insight, setInsight] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const SubscriptionPageComponent = ({ onComplete }: { onComplete: () => void }) => (
-     <OnboardingStepContainer className="justify-between">
-        <div>
-            <h2 className="font-headline text-2xl text-primary mb-4">Choose Your Podium Plan</h2>
-            <p className="text-muted-foreground mb-6">Unlock personalized insights and premium features.</p>
-        </div>
-        <div className="space-y-3 w-full max-w-sm">
-            {['Gut Basics - Free', 'Gut Signal - $19/mo', 'Gut Genius - $39/mo'].map(plan => (
-                <OptionButton key={plan} text={plan} isSelected={plan.includes('Genius')} onClick={() => {}} />
-            ))}
-        </div>
-        <div className="w-full max-w-sm mt-8">
-         <PrimaryButton onClick={onComplete}>Continue to Profile Setup</PrimaryButton>
-        </div>
+  useEffect(() => {
+    const fetchInsight = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const part1AnswerKeys = questionnaireData.part1.map(q => q.id);
+        const part1Answers:any = {};
+        for (const key of part1AnswerKeys) {
+            if (answers.hasOwnProperty(key)) {
+                part1Answers[key] = answers[key];
+            }
+        }
+        if (Object.keys(part1Answers).length > 0) {
+            const result = await generateInitialInsight({ onboardingAnswers: part1Answers });
+            setInsight(result.insight);
+        } else {
+            // Default insight if no answers from part 1 are available (e.g., user skipped or an error occurred)
+            setInsight("Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.");
+        }
+      } catch (e: any) {
+        console.error("Error fetching initial insight:", e);
+        setError("Sorry, I couldn't generate an initial insight right now. Let's continue!");
+        setInsight("We're excited to help you on your wellness journey!"); // Fallback content
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInsight();
+  }, [answers]);
+
+  return (
+    <OnboardingStepContainer className="justify-between">
+      <div className="flex-grow flex flex-col items-center justify-center">
+        <h2 className="font-headline text-3xl text-primary mb-4">Initial Insights</h2>
+        {isLoading && (
+          <div className="flex flex-col items-center space-y-3 text-muted-foreground animate-pulse">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p>Zoe is preparing your first insights...</p>
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="p-4 bg-destructive/10 rounded-lg text-center max-w-sm">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-2" />
+            <p className="text-destructive-foreground font-semibold">Oops!</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        )}
+        {!isLoading && !error && insight && (
+          <div className="p-4 bg-secondary/20 rounded-lg text-center max-w-sm border border-secondary">
+             <Lightbulb className="h-10 w-10 text-accent mx-auto mb-2" />
+            <p className="text-secondary-foreground text-lg">{insight}</p>
+          </div>
+        )}
+        <p className="mt-6 text-muted-foreground text-sm max-w-xs">This is just a quick glance. The more we know, the better we can tailor your Podium experience!</p>
+      </div>
+      <div className="w-full max-w-sm mt-8">
+        <PrimaryButton onClick={onComplete}>Continue to Subscription Options</PrimaryButton>
+      </div>
     </OnboardingStepContainer>
-);
+  );
+};
+
+const SubscriptionPageComponent = ({ onComplete }: { onComplete: () => void }) => {
+    const [referralCode, setReferralCode] = useState('');
+
+    const handleApplyReferral = () => {
+        console.log("Applying referral code:", referralCode);
+        // Mock: Add toast notification here if desired
+        alert(`Referral code "${referralCode}" applied (mock)!`);
+    };
+
+    return (
+         <OnboardingStepContainer className="justify-between">
+            <div className="text-center">
+                <h2 className="font-headline text-3xl text-primary mb-3">Choose Your Podium Plan</h2>
+                <p className="text-muted-foreground mb-8 max-w-xs mx-auto">Unlock personalized insights and premium features to accelerate your wellness journey.</p>
+            </div>
+            <div className="space-y-3 w-full max-w-sm">
+                {['Gut Basics - Free', 'Gut Signal - $19/mo', 'Gut Genius - $39/mo'].map(plan => (
+                    <OptionButton 
+                        key={plan} 
+                        text={plan} 
+                        isSelected={plan.includes('Genius')} // Example: default selection
+                        onClick={() => console.log("Selected plan:", plan)} // Mock: update state for selected plan
+                        className="py-4 text-md"
+                    />
+                ))}
+            </div>
+            <div className="w-full max-w-sm mt-6 space-y-3">
+                <p className="text-sm text-muted-foreground text-center">Have a referral code?</p>
+                <div className="flex space-x-2">
+                    <Input 
+                        type="text" 
+                        placeholder="Enter referral code" 
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value)}
+                        className="h-auto py-3 text-md bg-card border-input focus:border-primary"
+                    />
+                    <Button 
+                        variant="outline" 
+                        onClick={handleApplyReferral} 
+                        disabled={!referralCode.trim()}
+                        className="h-auto py-3 text-md border-primary text-primary hover:bg-primary/5"
+                    >
+                        Apply
+                    </Button>
+                </div>
+            </div>
+            <div className="w-full max-w-sm mt-8">
+             <PrimaryButton onClick={onComplete}>Continue to Profile Setup</PrimaryButton>
+             <Button variant="link" onClick={onComplete} className="mt-2 text-muted-foreground">Skip for now</Button>
+            </div>
+        </OnboardingStepContainer>
+    );
+};
+
 
 const ConfirmationPageComponent = ({ onComplete }: { onComplete: () => void }) => (
     <OnboardingStepContainer>
@@ -484,15 +583,20 @@ export default function OnboardingPage() {
     }
   }, []);
 
-  // Save answers to localStorage whenever they change
+  // Save answers to localStorage whenever they change,
+  // but only if currentStep is not splash or login to avoid saving empty/default object early.
   useEffect(() => {
-    localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
-  }, [answers]);
+    if (currentStep !== 'splash' && currentStep !== 'login') {
+        localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+    }
+  }, [answers, currentStep]);
 
 
   const handleFinishOnboarding = () => {
     console.log('Onboarding data collected:', answers);
     localStorage.setItem('isOnboarded', 'true');
+    // Ensure final answers are saved before redirecting
+    localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
     router.push('/');
   };
 
@@ -501,16 +605,17 @@ export default function OnboardingPage() {
       case 'splash': return <SplashScreenComponent onComplete={() => setCurrentStep('login')} />;
       case 'login': return <LoginPageComponent onComplete={() => setCurrentStep('intro')} />;
       case 'intro': return <IntroCarouselComponent onComplete={() => setCurrentStep('part1')} />;
-      case 'part1': return <Part1QuestionnaireComponent answers={answers} setAnswers={setAnswers} onComplete={() => setCurrentStep('teaser')} />;
-      case 'teaser': return <TeaserPageComponent onComplete={() => setCurrentStep('subscription')} />;
+      case 'part1': return <Part1QuestionnaireComponent answers={answers} setAnswers={setAnswers} onComplete={() => setCurrentStep('initial_insights')} />;
+      case 'initial_insights': return <InitialInsightsComponent answers={answers} onComplete={() => setCurrentStep('subscription')} />;
       case 'subscription': return <SubscriptionPageComponent onComplete={() => setCurrentStep('confirmation')} />;
       case 'confirmation': return <ConfirmationPageComponent onComplete={() => setCurrentStep('part2_intro')} />;
       case 'part2_intro':
         return <Part2SurveyIntroComponent
                     onBeginSurvey={() => setCurrentStep('part2_survey')}
-                    onSkipSurvey={handleFinishOnboarding}
+                    onSkipSurvey={handleFinishOnboarding} // This correctly finishes onboarding if skipped
                />;
       case 'part2_survey':
+        // When Part 2 Survey is completed (button inside Part2SurveyComponent is clicked), it calls onComplete, which is handleFinishOnboarding.
         return <Part2SurveyComponent answers={answers} setAnswers={setAnswers} onComplete={handleFinishOnboarding} />;
       default: return <OnboardingStepContainer><p>Loading...</p></OnboardingStepContainer>;
     }

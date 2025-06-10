@@ -30,7 +30,7 @@ const questionnaireDataPart2 = {
         { id: 'processedFoods', type: 'single', text: 'How often do you eat processed foods?', options: ['Rarely', 'Sometimes', 'Often'] },
         { id: 'waterIntake', type: 'number', text: 'About how much water do you drink per day (in ounces)?', placeholder: 'e.g., 64' },
         { id: 'foodAvoidance', type: 'multi', text: 'Are there any foods you actively avoid?', options: ['Gluten', 'Dairy', 'Eggs', 'Red meat', 'Spicy foods', 'Caffeine', 'Alcohol', 'Artificial sweeteners'] },
-        { id: 'probioticBrands', type: 'multi', text: 'Which probiotic/prebiotic supplements are you taking?', options: ['Culturelle', 'Align', 'Garden of Life', 'Seed Daily Synbiotic', 'Other'], condition: (answers: any) => answers.probiotics === 'Yes' },
+        { id: 'probioticBrands', type: 'multi', text: 'Which probiotic/prebiotic supplements are you taking?', options: ['Culturelle', 'Align', 'Garden of Life', 'Seed Daily Synbiotic', 'Other'], condition: (answers: any) => answers.probiotics === 'Yes' }, // Note: 'probiotics' answer comes from Part 1
         { id: 'otherSupplements', type: 'multi', text: 'Are you taking any other herbal or nutritional supplements?', options: ['None', 'Multivitamin', 'Vitamin D', 'Magnesium', 'Omega-3 / fish oil', 'Collagen'] }
     ],
     'Lifestyle & Habits': [
@@ -52,7 +52,7 @@ const questionnaireDataPart2 = {
          { id: 'otherHealthConditions', type: 'multi', text: 'Do you have any other diagnosed health conditions?', options: ['None', 'Pre-diabetes / Insulin resistance', 'Type 2 diabetes', 'Hypertension', 'High cholesterol', 'Autoimmune disorder', 'Other'] },
          { id: 'medications', type: 'multi', text: 'Are you currently taking any medications?', options: ['None', 'Acid reducers', 'Anti-inflammatory drugs', 'Antidepressants', 'Hormonal medications'] },
          { id: 'antibioticsLast6Months', type: 'single', text: 'Have you taken antibiotics in the past 6 months?', options: ['Yes', 'No'] },
-         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptomFrequency !== 'Never' && answers.digestiveSymptomFrequency !== undefined }
+         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Note: 'digestiveSymptoms' answer comes from Part 1
     ],
     'A Few Final Details': [
          { id: 'age', type: 'number', text: 'What is your age?', placeholder: 'e.g., 35' },
@@ -215,10 +215,9 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 };
 
 const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { onSurveyComplete: (surveyAnswers: any) => void, initialAnswers: any }) => {
-    const [answers, setAnswers] = useState<any>(initialAnswers);
+    const [answers, setAnswers] = useState<any>({});
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    // Update local state if initialAnswers prop changes (e.g., loaded from localStorage)
     useEffect(() => {
         setAnswers(initialAnswers);
     }, [initialAnswers]);
@@ -245,10 +244,10 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
                     questions={questionnaireDataPart2[activeCategory as keyof typeof questionnaireDataPart2]}
-                    answers={answers} // Current answers for the active category (though flow uses globalAnswers for conditions)
-                    setAnswers={setAnswers} // This updates the global 'answers' state for this page
+                    answers={answers} 
+                    setAnswers={setAnswers} 
                     onExitCategory={() => setActiveCategory(null)}
-                    globalAnswers={answers} // Pass current survey answers for conditional logic within the flow
+                    globalAnswers={answers} 
                 />;
     }
 
@@ -265,6 +264,7 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
                     
                     const answeredCount = visibleCategoryQuestions.filter(q => {
                         const answer = answers[q.id];
+                        
                         if(Array.isArray(answer) && q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))!)) {
                             return true;
                         }
@@ -311,7 +311,7 @@ export default function StandaloneDiagnosticSurveyPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        let loadedAnswers = {};
+        let loadedAnswers: any = {};
         try {
             const standaloneSaved = localStorage.getItem('standaloneSurveyAnswers');
             if (standaloneSaved) {
@@ -327,12 +327,21 @@ export default function StandaloneDiagnosticSurveyPage() {
                             relevantOnboardingAnswers[key] = allOnboardingAnswers[key];
                         }
                     }
+                    // Merge with Part 1 answers from onboarding if needed by conditions
+                    // This ensures conditions like `answers.probiotics === 'Yes'` can work if 'probiotics' was answered in Part 1
+                    const part1AnswerKeysFromOnboarding = Object.keys(allOnboardingAnswers).filter(
+                        key => !part2AnswerKeys.includes(key) && !key.startsWith('part2_') // Avoid potential naming conflicts
+                    );
+                    for (const key of part1AnswerKeysFromOnboarding) {
+                        if (allOnboardingAnswers.hasOwnProperty(key)) {
+                             relevantOnboardingAnswers[key] = allOnboardingAnswers[key];
+                        }
+                    }
                     loadedAnswers = relevantOnboardingAnswers;
                 }
             }
         } catch (error) {
             console.error("Error loading survey answers from localStorage:", error);
-            // Keep loadedAnswers as {}
         }
         setInitialSurveyAnswers(loadedAnswers);
         setIsLoading(false);
@@ -395,4 +404,3 @@ export default function StandaloneDiagnosticSurveyPage() {
         </main>
     );
 }
-
