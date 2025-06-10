@@ -10,8 +10,9 @@ import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settin
 import { RecommendedLearningCard } from './components/RecommendedLearningCard';
 import { ProductRecommendationsCard } from './components/ProductRecommendationsCard';
 import { FriendActivityCard } from './components/FriendActivityCard';
-import { UserActivityCard } from './components/UserActivityCard'; // Import the new card
-import { useState } from 'react';
+import { UserActivityCard } from './components/UserActivityCard';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 
@@ -23,20 +24,30 @@ const homeFeedData = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
+  const [isLoadingRedirect, setIsLoadingRedirect] = useState(true);
+
+  useEffect(() => {
+    const isOnboarded = localStorage.getItem('isOnboarded');
+    if (!isOnboarded) {
+      router.replace('/launch');
+    } else {
+      setIsLoadingRedirect(false);
+    }
+  }, [router]);
+
   const [selectedSleepQuality, setSelectedSleepQuality] = useState<number | null>(null);
-  const [napsTaken, setNapsTaken] = useState<string | null>("No"); // Default based on mockup
-  const [morningMood, setMorningMood] = useState<string | null>("Good"); // Default based on mockup
-  const [waterIntake, setWaterIntake] = useState<string>("16oz"); // Default based on mockup
+  const [napsTaken, setNapsTaken] = useState<string | null>("No");
+  const [morningMood, setMorningMood] = useState<string | null>("Good");
+  const [waterIntake, setWaterIntake] = useState<string>("16oz");
 
   const handleSleepQualitySelect = (rating: number) => {
     setSelectedSleepQuality(rating);
-    // In a real app, you would log this data
     console.log(`Sleep quality rated: ${rating}`);
   };
 
   const handleNapSelect = (option: 'Yes' | 'No') => {
     setNapsTaken(option);
-    // In a real app, log this
     console.log(`Naps taken: ${option}`);
   };
   
@@ -54,21 +65,26 @@ export default function HomePage() {
   };
 
   const handleWaterIntake = (amount: string) => {
-    // This is simplified; a real app might parse and sum amounts
     setWaterIntake(amount); 
     console.log(`Water intake: ${amount}`);
   };
 
+  if (isLoadingRedirect) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center min-h-screen">
+        {/* Optional: Add a spinner or loading message here */}
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-6 sm:py-12">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
 
-          {/* New User Activity Card - Simulates latest post */}
           <UserActivityCard /> 
 
-          {/* Card 1: Greeting & Sleep Accomplishment */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl font-headline text-primary">{homeFeedData.greeting}</CardTitle>
@@ -79,7 +95,6 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Card 2: Tracking Prompt - Sleep Quality & Naps */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-primary flex items-center">
@@ -125,7 +140,6 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Card 3: Tracking Prompt - Morning Mood & Water Start */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-primary flex items-center">
@@ -160,8 +174,6 @@ export default function HomePage() {
                 <div className="flex space-x-2">
                   <Button variant={waterIntake === '8oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('8oz')}>+8oz</Button>
                   <Button variant={waterIntake === '16oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('16oz')}>+16oz</Button>
-                  {/* Basic input for custom amount - can be enhanced */}
-                  {/* <Input type="text" placeholder="Or enter amount" className="flex-1 h-9 text-sm" onChange={(e) => handleWaterIntake(e.target.value)} /> */}
                 </div>
                  <p className="text-xs text-muted-foreground mt-1 text-right">
                   Water: {waterIntake || 'Pending'}
@@ -171,16 +183,12 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Card 4: Learning Recommendation */}
           <RecommendedLearningCard />
 
-          {/* Card 5: Product Recommendations */}
           <ProductRecommendationsCard />
 
-          {/* Card 6: Friend Activity */}
           <FriendActivityCard />
 
-          {/* Card 7: Gentle Reminder - Supplements */}
           <Card className="shadow-lg bg-secondary/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -196,7 +204,6 @@ export default function HomePage() {
             </CardContent>
           </Card>
           
-          {/* Quick Add Teaser to full Track Page */}
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
                 <Link href="/track#diary" className="flex items-center justify-center text-primary hover:text-accent font-semibold">

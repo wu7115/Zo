@@ -1,41 +1,55 @@
 
-import type {Metadata} from 'next';
+'use client'; // Required for usePathname
+
+import type {Metadata} from 'next'; // Keep if you have static metadata elsewhere
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { TopHeader } from '@/app/components/TopHeader';
 import { BottomNavigationBar } from '@/app/components/BottomNavigationBar';
 import { AiAgentFab } from '@/app/components/AiAgentFab';
 import { ContextualHelpFab } from '@/app/components/ContextualHelpFab';
-import { GlobalSwipeNavigator } from '@/app/components/GlobalSwipeNavigator'; // Import
+import { GlobalSwipeNavigator } from '@/app/components/GlobalSwipeNavigator';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
-export const metadata: Metadata = {
-  title: 'Podium',
-  description: 'Your personal wellness companion',
-};
+// Static metadata can be defined here if needed, but it won't be dynamic per route this way.
+// export const metadata: Metadata = {
+//   title: 'Podium',
+//   description: 'Your personal wellness companion',
+// };
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const showMainLayout = !pathname.startsWith('/launch') && !pathname.startsWith('/onboarding');
+
   return (
     <html lang="en">
       <head>
+        {/* Title can be managed per-page using Next.js Metadata API in page.tsx/layout.tsx files */}
+        <title>Podium</title>
+        <meta name="description" content="Your personal wellness companion" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased bg-background">
-        <TopHeader />
-        {/* This div is the main app content area */}
-        <div id="main-app-content" className="mx-auto max-w-md min-h-screen flex flex-col bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto">
-          <GlobalSwipeNavigator> {/* Wrap the children here */}
-            {children}
-          </GlobalSwipeNavigator>
+        {showMainLayout && <TopHeader />}
+        <div
+          id="main-app-content"
+          className={cn(
+            "mx-auto max-w-md min-h-screen flex flex-col",
+            showMainLayout ? "bg-app-content shadow-xl pt-16 pb-16 overflow-y-auto" : "bg-background"
+          )}
+        >
+          {showMainLayout ? <GlobalSwipeNavigator>{children}</GlobalSwipeNavigator> : children}
         </div>
-        <BottomNavigationBar />
-        <AiAgentFab />
-        <ContextualHelpFab />
+        {showMainLayout && <BottomNavigationBar />}
+        {showMainLayout && <AiAgentFab />}
+        {showMainLayout && <ContextualHelpFab />}
         <Toaster />
       </body>
     </html>
