@@ -43,7 +43,7 @@ export default function OnboardingPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 p-6 bg-muted/30 border-t">
-          <Button variant="outline" size="lg" className="w-full sm:w-auto text-primary border-primary hover:bg-primary/5">
+          <Button variant="outline" size="lg" className="w-full sm:w-auto text-primary border-primary hover:bg-primary/5" asChild>
             <Link href="/launch">
               Back to Launch
             </Link>
