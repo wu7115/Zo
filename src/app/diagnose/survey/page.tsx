@@ -3,12 +3,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea might be needed
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Check, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 // --- Questionnaire Data (Part 2 Only for this standalone page) ---
 const questionnaireDataPart2 = {
@@ -28,13 +30,10 @@ const questionnaireDataPart2 = {
         { id: 'processedFoods', type: 'single', text: 'How often do you eat processed foods?', options: ['Rarely', 'Sometimes', 'Often'] },
         { id: 'waterIntake', type: 'number', text: 'About how much water do you drink per day (in ounces)?', placeholder: 'e.g., 64' },
         { id: 'foodAvoidance', type: 'multi', text: 'Are there any foods you actively avoid?', options: ['Gluten', 'Dairy', 'Eggs', 'Red meat', 'Spicy foods', 'Caffeine', 'Alcohol', 'Artificial sweeteners'] },
-        // The 'probiotics' condition refers to a Part 1 question. In a standalone survey, this might always be false if 'probiotics' isn't in `answers`.
-        // For this implementation, if 'answers.probiotics' is undefined, the condition is false.
         { id: 'probioticBrands', type: 'multi', text: 'Which probiotic/prebiotic supplements are you taking?', options: ['Culturelle', 'Align', 'Garden of Life', 'Seed Daily Synbiotic', 'Other'], condition: (answers: any) => answers.probiotics === 'Yes' },
         { id: 'otherSupplements', type: 'multi', text: 'Are you taking any other herbal or nutritional supplements?', options: ['None', 'Multivitamin', 'Vitamin D', 'Magnesium', 'Omega-3 / fish oil', 'Collagen'] }
     ],
     'Lifestyle & Habits': [
-        // 'healthDataSynced' also comes from Part 1 context, will default to question being visible if undefined
         { id: 'sleepHours', type: 'number', text: 'On average, how many hours of sleep do you get per night?', placeholder: 'e.g., 7', condition: (answers: any) => !answers.healthDataSynced?.includes('sleep') },
         { id: 'sleepIssues', type: 'multi', text: 'Which of the following sleep issues do you experience?', options: ['Trouble falling asleep', 'Waking up during the night', 'Not feeling rested upon waking'] },
         { id: 'sleepAids', type: 'single', text: 'Do you use sleep aids?', options: ['Yes', 'No'], condition: (answers: any) => answers.sleepIssues && answers.sleepIssues.length > 0 },
@@ -53,8 +52,7 @@ const questionnaireDataPart2 = {
          { id: 'otherHealthConditions', type: 'multi', text: 'Do you have any other diagnosed health conditions?', options: ['None', 'Pre-diabetes / Insulin resistance', 'Type 2 diabetes', 'Hypertension', 'High cholesterol', 'Autoimmune disorder', 'Other'] },
          { id: 'medications', type: 'multi', text: 'Are you currently taking any medications?', options: ['None', 'Acid reducers', 'Anti-inflammatory drugs', 'Antidepressants', 'Hormonal medications'] },
          { id: 'antibioticsLast6Months', type: 'single', text: 'Have you taken antibiotics in the past 6 months?', options: ['Yes', 'No'] },
-         // 'digestiveSymptoms' would come from Part 1.
-         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptomFrequency !== 'Never' } // Changed to 'digestiveSymptomFrequency' as per your code
+         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptomFrequency !== 'Never' && answers.digestiveSymptomFrequency !== undefined }
     ],
     'A Few Final Details': [
          { id: 'age', type: 'number', text: 'What is your age?', placeholder: 'e.g., 35' },
@@ -153,13 +151,15 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     const [qIndex, setQIndex] = useState(0);
 
     const visibleQuestions = useMemo(() => {
+        // Use globalAnswers for conditional logic
         return questions.filter(q => q.condition ? q.condition(globalAnswers) : true);
     }, [questions, globalAnswers]);
 
     const currentQuestion = visibleQuestions[qIndex];
 
     const handleAnswer = (value: any) => {
-        setAnswers((prevAnswers: any) => ({ ...prevAnswers, [currentQuestion.id]: value }));
+        // Update globalAnswers directly for immediate reflection in conditions
+        setAnswers((prevGlobalAnswers: any) => ({ ...prevGlobalAnswers, [currentQuestion.id]: value }));
     };
 
     const handleNext = () => {
@@ -172,7 +172,8 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 
     const renderQuestion = () => {
         if (!currentQuestion) return <p className="text-muted-foreground">No more questions in this category or conditions not met.</p>;
-        const commonProps = { question: currentQuestion, answer: answers[currentQuestion.id], onAnswerChange: handleAnswer };
+        // Pass globalAnswers[currentQuestion.id] as the current answer for this question
+        const commonProps = { question: currentQuestion, answer: globalAnswers[currentQuestion.id], onAnswerChange: handleAnswer };
         switch(currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
             case 'single': return <SingleSelectQuestionComponent {...commonProps} />;
@@ -205,7 +206,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
             <h2 className="font-headline text-xl text-primary mb-4 text-center">{categoryName}</h2>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">{renderQuestion()}</div>
             <div className="flex-shrink-0 mt-8 space-y-2">
-                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || answers[currentQuestion.id] === undefined || (Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].length === 0)}>
+                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || globalAnswers[currentQuestion.id] === undefined || (Array.isArray(globalAnswers[currentQuestion.id]) && globalAnswers[currentQuestion.id].length === 0 && !(currentQuestion.options && currentQuestion.options.some((opt: string) => opt.toLowerCase().includes("none")) && globalAnswers[currentQuestion.id].includes(currentQuestion.options.find((opt: string) => opt.toLowerCase().includes("none"))!)) ) }>
                     {qIndex < visibleQuestions.length - 1 ? 'Next' : 'Finish Category'}
                 </PrimaryButton>
             </div>
@@ -213,9 +214,14 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     );
 };
 
-const DiagnosticSurveyContent = ({ onSurveyComplete }: { onSurveyComplete: (surveyAnswers: any) => void }) => {
-    const [answers, setAnswers] = useState<any>({});
+const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { onSurveyComplete: (surveyAnswers: any) => void, initialAnswers: any }) => {
+    const [answers, setAnswers] = useState<any>(initialAnswers);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+    // Update local state if initialAnswers prop changes (e.g., loaded from localStorage)
+    useEffect(() => {
+        setAnswers(initialAnswers);
+    }, [initialAnswers]);
 
     const allCategories = Object.keys(questionnaireDataPart2);
 
@@ -239,10 +245,10 @@ const DiagnosticSurveyContent = ({ onSurveyComplete }: { onSurveyComplete: (surv
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
                     questions={questionnaireDataPart2[activeCategory as keyof typeof questionnaireDataPart2]}
-                    answers={answers} 
-                    setAnswers={setAnswers} 
+                    answers={answers} // Current answers for the active category (though flow uses globalAnswers for conditions)
+                    setAnswers={setAnswers} // This updates the global 'answers' state for this page
                     onExitCategory={() => setActiveCategory(null)}
-                    globalAnswers={answers} // Pass current survey answers for conditional logic
+                    globalAnswers={answers} // Pass current survey answers for conditional logic within the flow
                 />;
     }
 
@@ -290,7 +296,7 @@ const DiagnosticSurveyContent = ({ onSurveyComplete }: { onSurveyComplete: (surv
 
             <div className="mt-auto flex-shrink-0 pt-4 border-t border-border">
                 <PrimaryButton onClick={() => onSurveyComplete(answers)}>
-                    {allQuestionsConsideredAnswered ? 'Submit Survey' : 'Save Progress & Exit'}
+                    {allQuestionsConsideredAnswered ? 'Submit Survey & Exit' : 'Save Progress & Exit'}
                 </PrimaryButton>
             </div>
          </div>
@@ -299,12 +305,64 @@ const DiagnosticSurveyContent = ({ onSurveyComplete }: { onSurveyComplete: (surv
 
 
 export default function StandaloneDiagnosticSurveyPage() {
-    const handleSurveySubmission = (surveyAnswers: any) => {
-        console.log('Standalone Survey Submitted:', surveyAnswers);
-        // Here you would typically send data to a backend or update global state
-        alert("Survey responses logged to console. (Placeholder for actual submission)");
-        // Potentially navigate away or show a success message
+    const router = useRouter();
+    const { toast } = useToast();
+    const [initialSurveyAnswers, setInitialSurveyAnswers] = useState<any>({});
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let loadedAnswers = {};
+        try {
+            const standaloneSaved = localStorage.getItem('standaloneSurveyAnswers');
+            if (standaloneSaved) {
+                loadedAnswers = JSON.parse(standaloneSaved);
+            } else {
+                const onboardingSaved = localStorage.getItem('onboardingAnswers');
+                if (onboardingSaved) {
+                    const allOnboardingAnswers = JSON.parse(onboardingSaved);
+                    const part2AnswerKeys = Object.values(questionnaireDataPart2).flat().map(q => q.id);
+                    const relevantOnboardingAnswers: any = {};
+                    for (const key of part2AnswerKeys) {
+                        if (allOnboardingAnswers.hasOwnProperty(key)) {
+                            relevantOnboardingAnswers[key] = allOnboardingAnswers[key];
+                        }
+                    }
+                    loadedAnswers = relevantOnboardingAnswers;
+                }
+            }
+        } catch (error) {
+            console.error("Error loading survey answers from localStorage:", error);
+            // Keep loadedAnswers as {}
+        }
+        setInitialSurveyAnswers(loadedAnswers);
+        setIsLoading(false);
+    }, []);
+
+    const handleSurveySubmission = (currentSurveyAnswers: any) => {
+        try {
+            localStorage.setItem('standaloneSurveyAnswers', JSON.stringify(currentSurveyAnswers));
+            toast({
+                title: "Progress Saved!",
+                description: "Your diagnostic survey answers have been saved.",
+            });
+        } catch (error) {
+            console.error("Error saving survey answers to localStorage:", error);
+            toast({
+                title: "Error",
+                description: "Could not save your survey answers. Please try again.",
+                variant: "destructive",
+            });
+        }
+        router.push('/diagnose');
     };
+
+    if (isLoading) {
+        return (
+            <main className="flex flex-1 flex-col items-center justify-center p-4 md:p-6 bg-app-content">
+                <p className="text-muted-foreground">Loading survey...</p>
+            </main>
+        );
+    }
 
     return (
         <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -324,9 +382,12 @@ export default function StandaloneDiagnosticSurveyPage() {
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0"> {/* Remove padding for full-height flow */}
-                       <div className="h-[calc(100vh-10rem-72px)] min-h-[500px]"> {/* Adjust height as needed */}
-                            <DiagnosticSurveyContent onSurveyComplete={handleSurveySubmission} />
+                    <CardContent className="p-0">
+                       <div className="h-[calc(100vh-10rem-72px)] min-h-[500px]">
+                            <DiagnosticSurveyContent 
+                                onSurveyComplete={handleSurveySubmission} 
+                                initialAnswers={initialSurveyAnswers}
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -334,3 +395,4 @@ export default function StandaloneDiagnosticSurveyPage() {
         </main>
     );
 }
+
