@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,7 @@ const questionnaireData = {
     { id: 'digestiveSymptoms', type: 'multi', text: 'Which of the following digestive symptoms do you regularly experience?', options: ['General gut discomfort', 'Bloating after meals', 'Constipation, diarrhea, or irregular bowel movements', 'None'] },
     { id: 'dietType', type: 'single', text: 'Which of these best describes your usual diet?', options: ['Omnivorous', 'Vegetarian', 'Vegan', 'Pescatarian', 'Other'] },
     { id: 'fruitVegServings', type: 'single', text: 'About how many servings of fruits and vegetables do you usually have per day?', options: ['0–1', '2–3', '4–5', '6+'] },
-    { id: 'probiotics', type: 'single', text: "Do you currently take probiotics or prebiotics?", options: ['Yes', 'No', "I'm not sure"] },
+    { id: 'probiotics', type: 'single', text: 'Do you currently take probiotics or prebiotics?', options: ['Yes', 'No', "I'm not sure"] },
     { id: 'stressLevel', type: 'single', text: 'How would you describe your stress level most days?', options: ['Low', 'Moderate', 'High', 'Very High'] },
     { id: 'sleepQuality', type: 'single', text: 'Do you feel well-rested upon waking up?', options: ['Yes', 'No'] },
     { id: 'wearables', type: 'single', text: 'Do you track your health using wearables (like Fitbit, Apple Watch, Oura, etc.)?', options: ['Yes', 'No'] },
@@ -120,7 +120,7 @@ const MultiSelectQuestionComponent = ({ question, answer = [], onAnswerChange }:
     };
     return (
         <div>
-            <h3 className="text-xl font-semibold text-primary mb-6">{question.text}</h3>
+            <h3 className="question-title">{question.text}</h3>
             {question.options.map((option: string) => (
                 <OptionButton key={option} text={option} isSelected={answer.includes(option)} onClick={() => toggleOption(option)} />
             ))}
@@ -130,7 +130,7 @@ const MultiSelectQuestionComponent = ({ question, answer = [], onAnswerChange }:
 
 const SingleSelectQuestionComponent = ({ question, answer, onAnswerChange }: { question: any, answer: string, onAnswerChange: (value: string) => void }) => (
     <div>
-        <h3 className="text-xl font-semibold text-primary mb-6">{question.text}</h3>
+        <h3 className="question-title">{question.text}</h3>
         {question.options.map((option: string) => (
             <OptionButton key={option} text={option} isSelected={answer === option} onClick={() => onAnswerChange(option)} />
         ))}
@@ -139,12 +139,12 @@ const SingleSelectQuestionComponent = ({ question, answer, onAnswerChange }: { q
 
 const TextInputQuestionComponent = ({ question, answer, onAnswerChange }: { question: any, answer: string, onAnswerChange: (value: string) => void }) => (
     <div>
-        <h3 className="text-xl font-semibold text-primary mb-6">{question.text}</h3>
-        <Input 
-            type="text" 
-            value={answer || ''} 
-            onChange={(e) => onAnswerChange(e.target.value)} 
-            placeholder={question.placeholder} 
+        <h3 className="question-title">{question.text}</h3>
+        <Input
+            type="text"
+            value={answer || ''}
+            onChange={(e) => onAnswerChange(e.target.value)}
+            placeholder={question.placeholder}
             className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto focus:ring-ring focus:border-ring"
         />
     </div>
@@ -152,12 +152,12 @@ const TextInputQuestionComponent = ({ question, answer, onAnswerChange }: { ques
 
 const NumberInputQuestionComponent = ({ question, answer, onAnswerChange }: { question: any, answer: string, onAnswerChange: (value: string) => void }) => (
     <div>
-        <h3 className="text-xl font-semibold text-primary mb-6">{question.text}</h3>
-        <Input 
-            type="number" 
-            value={answer || ''} 
-            onChange={(e) => onAnswerChange(e.target.value)} 
-            placeholder={question.placeholder} 
+        <h3 className="question-title">{question.text}</h3>
+        <Input
+            type="number"
+            value={answer || ''}
+            onChange={(e) => onAnswerChange(e.target.value)}
+            placeholder={question.placeholder}
             className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto focus:ring-ring focus:border-ring"
         />
     </div>
@@ -233,12 +233,12 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
             onComplete();
         }
     };
-    
+
     const renderQuestion = () => {
         const commonProps = { question: currentQuestion, answer: answers[currentQuestion.id], onAnswerChange: handleAnswer };
         switch (currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
-            case 'single-dynamic': 
+            case 'single-dynamic':
                 const dynamicOptions = answers[currentQuestion.dependsOn] || [];
                 if (dynamicOptions.length === 0 && qIndex > 0 && !questions.find(q => q.id === currentQuestion.dependsOn)?.options.includes(answers[currentQuestion.dependsOn])) {
                    return <p className="text-muted-foreground text-center py-4">Please select your primary reasons first to see this question.</p>;
@@ -247,7 +247,7 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
             default: return <SingleSelectQuestionComponent {...commonProps} />;
         }
     };
-    
+
     const isNextDisabled = currentQuestion.type === 'single-dynamic' && (!answers[currentQuestion.dependsOn] || answers[currentQuestion.dependsOn].length === 0) && (!answers[currentQuestion.id]);
 
 
@@ -320,7 +320,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     const visibleQuestions = useMemo(() => {
         return questions.filter(q => q.condition ? q.condition(globalAnswers) : true);
     }, [questions, globalAnswers]);
-    
+
     const currentQuestion = visibleQuestions[qIndex];
 
     const handleAnswer = (value: any) => {
@@ -332,13 +332,12 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
         if (qIndex < visibleQuestions.length - 1) {
             setQIndex(prev => prev + 1);
         } else {
-            onExitCategory(); 
+            onExitCategory();
         }
     };
-            
+
     const renderQuestion = () => {
         if (!currentQuestion) return <p className="text-muted-foreground">No more questions in this category or conditions not met.</p>;
-        // Pass the current question's specific answer from the globalAnswers
         const commonProps = { question: currentQuestion, answer: globalAnswers[currentQuestion.id], onAnswerChange: handleAnswer };
         switch(currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
@@ -351,7 +350,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 
     if (visibleQuestions.length === 0) {
          useEffect(() => {
-            onExitCategory(); // Exit if no visible questions from the start
+            onExitCategory();
         }, [onExitCategory]);
         return (
             <div className="p-6 h-full flex flex-col bg-card items-center justify-center">
@@ -360,7 +359,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
             </div>
         );
     }
-    
+
     return (
          <div className="p-6 h-full flex flex-col bg-card">
             <div className="flex items-center mb-6">
@@ -391,18 +390,28 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
         return allCategories.filter(catName => {
             const categoryQuestions = questionnaireData.part2[catName];
             const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
-            if (visibleCategoryQuestions.length === 0) return true;
-            return visibleCategoryQuestions.every(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan") || q.options.includes('Never') : true) );
+            if (visibleCategoryQuestions.length === 0) return true; // Category is "complete" if no questions are visible
+            return visibleCategoryQuestions.every(q => {
+              const answer = answers[q.id];
+              if (answer === undefined) return false;
+              if (Array.isArray(answer) && answer.length === 0) {
+                // Allow empty array if a "None" type option was explicitly selected, otherwise, it's incomplete
+                // This assumes "None" options are single select and would not result in an empty array directly.
+                // For multi-select, an empty array is incomplete unless the question itself has no options or is skipped by condition.
+                return false; 
+              }
+              return true;
+            });
         }).length;
     }, [answers, allCategories]);
 
 
     if (activeCategory) {
-        return <CategoryQuestionFlowComponent 
+        return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
                     questions={questionnaireData.part2[activeCategory]}
-                    answers={answers} 
-                    setAnswers={setAnswers} 
+                    answers={answers}
+                    setAnswers={setAnswers}
                     onExitCategory={() => setActiveCategory(null)}
                     globalAnswers={answers}
                 />;
@@ -414,19 +423,22 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
          <div className="p-6 bg-card h-full flex flex-col">
             <h1 className="font-headline text-2xl text-center mb-2 text-primary">Complete Your Diagnostic Survey</h1>
             <p className="text-center text-muted-foreground mb-6">Tap a category to answer questions. Your progress is saved automatically.</p>
-            
+
             <div className="flex-grow space-y-3 overflow-y-auto pr-2 -mr-2 mb-4">
                 {allCategories.map(categoryName => {
                     const categoryQuestions = questionnaireData.part2[categoryName];
                     const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
-                    
-                    const answeredCount = visibleCategoryQuestions.filter(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan") || q.options.includes('Never'): true)).length;
+
+                    const answeredCount = visibleCategoryQuestions.filter(q => {
+                        const answer = answers[q.id];
+                        return answer !== undefined && (!Array.isArray(answer) || answer.length > 0);
+                    }).length;
                     const isComplete = visibleCategoryQuestions.length > 0 ? answeredCount === visibleCategoryQuestions.length : true;
 
                     return (
-                        <button 
-                            key={categoryName} 
-                            onClick={() => setActiveCategory(categoryName)} 
+                        <button
+                            key={categoryName}
+                            onClick={() => setActiveCategory(categoryName)}
                             className="w-full text-left p-4 border-2 rounded-lg flex items-center justify-between hover:bg-muted/30 transition-colors"
                             disabled={visibleCategoryQuestions.length === 0 && !isComplete}
                         >
@@ -453,10 +465,10 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
     );
 };
 
-
+// Main Onboarding Page Component
 export default function OnboardingPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState('splash'); 
+  const [currentStep, setCurrentStep] = useState('splash');
   const [answers, setAnswers] = useState<any>({});
 
   const handleFinishOnboarding = () => {
@@ -474,12 +486,12 @@ export default function OnboardingPage() {
       case 'teaser': return <TeaserPageComponent onComplete={() => setCurrentStep('subscription')} />;
       case 'subscription': return <SubscriptionPageComponent onComplete={() => setCurrentStep('confirmation')} />;
       case 'confirmation': return <ConfirmationPageComponent onComplete={() => setCurrentStep('part2_intro')} />;
-      case 'part2_intro': 
-        return <Part2SurveyIntroComponent 
-                    onBeginSurvey={() => setCurrentStep('part2_categories')} 
-                    onSkipSurvey={handleFinishOnboarding} 
+      case 'part2_intro':
+        return <Part2SurveyIntroComponent
+                    onBeginSurvey={() => setCurrentStep('part2_categories')}
+                    onSkipSurvey={handleFinishOnboarding}
                />;
-      case 'part2_categories': 
+      case 'part2_categories':
         return <Part2SurveyComponent answers={answers} setAnswers={setAnswers} onComplete={handleFinishOnboarding} />;
       default: return <OnboardingStepContainer><p>Loading...</p></OnboardingStepContainer>;
     }
@@ -493,5 +505,3 @@ export default function OnboardingPage() {
     </main>
   );
 }
-
-```
