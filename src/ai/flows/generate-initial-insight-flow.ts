@@ -32,6 +32,11 @@ const insightPrompt = ai.definePrompt({
   name: 'generateInitialInsightPrompt',
   input: {schema: GenerateInitialInsightInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
+  helpers: { // Correct way to define Handlebars helpers in Genkit 1.x
+    JSONstringify: function (context) {
+      return JSON.stringify(context);
+    },
+  },
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
 The user has just completed the first part of their onboarding questionnaire.
 Review their answers provided below and generate a single, concise (1-2 sentences) initial insight or a welcoming observation.
@@ -51,14 +56,6 @@ Another example: "Welcome to Podium, Explorer! I see you're interested in increa
 Generate the insight:
 `,
 });
-
-// Helper for JSON stringification in prompt, if not already globally available
-if (!ai.registry.getHelper('JSONstringify')) {
-  ai.registry.defineHandlebarsHelper('JSONstringify', function (context) {
-    return JSON.stringify(context);
-  });
-}
-
 
 const generateInitialInsightFlow = ai.defineFlow(
   {
