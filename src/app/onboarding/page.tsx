@@ -39,7 +39,7 @@ const questionnaireData = {
         { id: 'processedFoods', type: 'single', text: 'How often do you eat processed foods?', options: ['Rarely', 'Sometimes', 'Often'] },
         { id: 'waterIntake', type: 'number', text: 'About how much water do you drink per day (in ounces)?', placeholder: 'e.g., 64' },
         { id: 'foodAvoidance', type: 'multi', text: 'Are there any foods you actively avoid?', options: ['Gluten', 'Dairy', 'Eggs', 'Red meat', 'Spicy foods', 'Caffeine', 'Alcohol', 'Artificial sweeteners'] },
-        { id: 'probioticBrands', type: 'multi', text: 'Which probiotic/prebiotic supplements are you taking?', options: ['Culturelle', 'Align', 'Garden of Life', 'Seed Daily Synbiotic', 'Other'], condition: (answers: any) => answers.probiotics === 'Yes' }, // Assuming 'probiotics' is an ID from Part 1
+        { id: 'probioticBrands', type: 'multi', text: 'Which probiotic/prebiotic supplements are you taking?', options: ['Culturelle', 'Align', 'Garden of Life', 'Seed Daily Synbiotic', 'Other'], condition: (answers: any) => answers.probiotics === 'Yes' },
         { id: 'otherSupplements', type: 'multi', text: 'Are you taking any other herbal or nutritional supplements?', options: ['None', 'Multivitamin', 'Vitamin D', 'Magnesium', 'Omega-3 / fish oil', 'Collagen'] }
     ],
     'Lifestyle & Habits': [
@@ -61,7 +61,7 @@ const questionnaireData = {
          { id: 'otherHealthConditions', type: 'multi', text: 'Do you have any other diagnosed health conditions?', options: ['None', 'Pre-diabetes / Insulin resistance', 'Type 2 diabetes', 'Hypertension', 'High cholesterol', 'Autoimmune disorder', 'Other'] },
          { id: 'medications', type: 'multi', text: 'Are you currently taking any medications?', options: ['None', 'Acid reducers', 'Anti-inflammatory drugs', 'Antidepressants', 'Hormonal medications'] },
          { id: 'antibioticsLast6Months', type: 'single', text: 'Have you taken antibiotics in the past 6 months?', options: ['Yes', 'No'] },
-         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Assuming 'digestiveSymptoms' is an ID from Part 1
+         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 }
     ],
     'A Few Final Details': [
          { id: 'age', type: 'number', text: 'What is your age?', placeholder: 'e.g., 35' },
@@ -301,8 +301,7 @@ const Part2SurveyIntroComponent = ({ onBeginSurvey, onSkipSurvey }: { onBeginSur
     <OnboardingStepContainer className="justify-center">
         <h2 className="font-headline text-2xl text-primary mb-4">Diagnostic Survey</h2>
         <p className="my-4 text-muted-foreground text-lg max-w-md">
-            This optional survey helps us fine-tune your recommendations. It typically takes about 10 minutes to complete.
-            You can also skip this for now and complete it later from your profile.
+            This survey baseline helps us develop a more personalized start for insights and recommendations . It typically takes about 10 minutes to complete. You can also skip this for now and complete it later from your Diagnose page under more in the bottom menu.
         </p>
         <div className="w-full max-w-sm space-y-3 mt-6">
           <PrimaryButton onClick={onBeginSurvey}>Complete Survey Now (est. 10 min)</PrimaryButton>
@@ -390,7 +389,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
         return allCategories.filter(catName => {
             const categoryQuestions = questionnaireData.part2[catName as keyof typeof questionnaireData.part2];
             const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
-            if (visibleCategoryQuestions.length === 0) return true; // Category is "complete" if no questions are visible
+            if (visibleCategoryQuestions.length === 0) return true;
             return visibleCategoryQuestions.every(q => {
               const answer = answers[q.id];
               if (answer === undefined) return false;
@@ -425,7 +424,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
                 {allCategories.map(categoryName => {
                     const categoryQuestions = questionnaireData.part2[categoryName as keyof typeof questionnaireData.part2];
                     const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
-
+                    
                     const answeredCount = visibleCategoryQuestions.filter(q => {
                         const answer = answers[q.id];
                         
@@ -442,7 +441,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
                             key={categoryName}
                             onClick={() => setActiveCategory(categoryName)}
                             className="w-full text-left p-4 border-2 rounded-lg flex items-center justify-between hover:bg-muted/30 transition-colors"
-                            disabled={visibleCategoryQuestions.length === 0 && !isComplete}
+                            disabled={visibleCategoryQuestions.length === 0 && !isComplete} // Disable if no questions and not marked complete
                         >
                             <div>
                                 <p className="font-semibold text-primary">{categoryName}</p>
@@ -494,9 +493,6 @@ export default function OnboardingPage() {
   const handleFinishOnboarding = () => {
     console.log('Onboarding data collected:', answers);
     localStorage.setItem('isOnboarded', 'true');
-    // Optionally, remove 'onboardingAnswers' if they are now fully processed,
-    // or keep them for future reference/editing by the user.
-    // localStorage.removeItem('onboardingAnswers'); 
     router.push('/');
   };
 
@@ -521,12 +517,10 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center min-h-screen bg-gradient-to-br from-accent to-secondary">
+    <main className="flex flex-1 flex-col items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md h-screen max-h-[875px] sm:h-[calc(100vh-4rem)] sm:max-h-[875px] bg-background shadow-2xl sm:rounded-2xl flex flex-col overflow-hidden">
         {renderCurrentStep()}
       </div>
     </main>
   );
 }
-
-    
