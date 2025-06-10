@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,11 +43,11 @@ const questionnaireData = {
         { id: 'otherSupplements', type: 'multi', text: 'Are you taking any other herbal or nutritional supplements?', options: ['None', 'Multivitamin', 'Vitamin D', 'Magnesium', 'Omega-3 / fish oil', 'Collagen'] }
     ],
     'Lifestyle & Habits': [
-        { id: 'sleepHours', type: 'number', text: 'On average, how many hours of sleep do you get per night?', placeholder: 'e.g., 7' },
+        { id: 'sleepHours', type: 'number', text: 'On average, how many hours of sleep do you get per night?', placeholder: 'e.g., 7', condition: (answers: any) => !answers.healthDataSynced?.includes('sleep') },
         { id: 'sleepIssues', type: 'multi', text: 'Which of the following sleep issues do you experience?', options: ['Trouble falling asleep', 'Waking up during the night', 'Not feeling rested upon waking'] },
         { id: 'sleepAids', type: 'single', text: 'Do you use sleep aids?', options: ['Yes', 'No'], condition: (answers: any) => answers.sleepIssues && answers.sleepIssues.length > 0 },
         { id: 'sittingHours', type: 'number', text: 'About how many hours per day do you usually spend sitting?', placeholder: 'e.g., 8' },
-        { id: 'weeklyExercise', type: 'single', text: 'How would you describe your typical weekly exercise?', options: ['Mostly sedentary / Little to no formal exercise', 'Light activity (e.g., walking) on some days', 'Moderate exercise (e.g., brisk walking, cycling) 2-3 days a week', 'Moderate exercise 4 or more days a week', 'Vigorous exercise (e.g., running, HIIT) 1-3 days a week', 'A mix of moderate and vigorous exercise on most days'] },
+        { id: 'weeklyExercise', type: 'single', text: 'How would you describe your typical weekly exercise?', options: ['Mostly sedentary / Little to no formal exercise', 'Light activity (e.g., walking) on some days', 'Moderate exercise (e.g., brisk walking, cycling) 2-3 days a week', 'Moderate exercise 4 or more days a week', 'Vigorous exercise (e.g., running, HIIT) 1-3 days a week', 'A mix of moderate and vigorous exercise on most days'], condition: (answers: any) => !answers.healthDataSynced?.includes('exercise') },
         { id: 'mood', type: 'single', text: 'How would you describe your mood most of the time?', options: ['Positive', 'Neutral', 'Negative'] },
         { id: 'mindfulness', type: 'single', text: 'Do you meditate or practice mindfulness?', options: ['Yes', 'No'] },
         { id: 'relaxation', type: 'single', text: 'How often do you engage in relaxation activities?', options: ['Rarely / never', '1–2 times per week', 'Most days'] },
@@ -61,13 +61,13 @@ const questionnaireData = {
          { id: 'otherHealthConditions', type: 'multi', text: 'Do you have any other diagnosed health conditions?', options: ['None', 'Pre-diabetes / Insulin resistance', 'Type 2 diabetes', 'Hypertension', 'High cholesterol', 'Autoimmune disorder', 'Other'] },
          { id: 'medications', type: 'multi', text: 'Are you currently taking any medications?', options: ['None', 'Acid reducers', 'Anti-inflammatory drugs', 'Antidepressants', 'Hormonal medications'] },
          { id: 'antibioticsLast6Months', type: 'single', text: 'Have you taken antibiotics in the past 6 months?', options: ['Yes', 'No'] },
-         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Assuming 'digestiveSymptoms' is an ID from Part 1
+         { id: 'remediesTried', type: 'multi', text: 'What remedies have you tried for GI symptoms?', options: ['None', 'OTC medications', 'Probiotics', 'Dietary changes', 'Exercise', 'Stress reduction'], condition: (answers: any) => answers.digestiveSymptomFrequency !== 'Never' && answers.digestiveSymptoms && !answers.digestiveSymptoms.includes('None') && answers.digestiveSymptoms.length > 0 } // Assuming 'digestiveSymptoms' is an ID from Part 1 and 'digestiveSymptomFrequency' might be another related answer.
     ],
     'A Few Final Details': [
          { id: 'age', type: 'number', text: 'What is your age?', placeholder: 'e.g., 35' },
          { id: 'sex', type: 'single', text: 'What is your biological sex?', options: ['Male', 'Female', 'Other', 'Prefer not to say'] },
-         { id: 'weight', type: 'number', text: 'What is your weight (in lbs)?', placeholder: 'e.g., 150' },
-         { id: 'height', type: 'text', text: 'What is your height (in ft and inches)?', placeholder: 'e.g., 5\' 10"' },
+         { id: 'weight', type: 'number', text: 'What is your weight (in lbs)?', placeholder: 'e.g., 150', condition: (answers: any) => !answers.healthDataSynced?.includes('weight') },
+         { id: 'height', type: 'text', text: 'What is your height (in ft and inches)?', placeholder: 'e.g., 5\' 10"', condition: (answers: any) => !answers.healthDataSynced?.includes('height') },
          { id: 'livingEnvironment', type: 'single', text: 'Which of these best describes your living environment?', options: ['Urban', 'Suburban', 'Rural'] },
          { id: 'occupation', type: 'text', text: 'What is your current occupation?', placeholder: 'e.g., Software Engineer' },
          { id: 'location', type: 'text', text: 'Where do you live?', placeholder: 'State/Province, Country' }
@@ -248,14 +248,15 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
         }
     };
     
-    const isNextDisabled = currentQuestion.type === 'single-dynamic' && (!answers[currentQuestion.dependsOn] || answers[currentQuestion.dependsOn].length === 0);
+    const isNextDisabled = currentQuestion.type === 'single-dynamic' && (!answers[currentQuestion.dependsOn] || answers[currentQuestion.dependsOn].length === 0) && (!answers[currentQuestion.id]);
+
 
     return (
          <div className="p-6 sm:p-8 h-full flex flex-col">
             <h2 className="font-headline text-2xl mb-6 text-center text-primary">Set Your Goals</h2>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">{renderQuestion()}</div>
             <div className="flex-shrink-0 mt-8 space-y-2">
-                <PrimaryButton onClick={handleNext} disabled={isNextDisabled}>Next</PrimaryButton>
+                <PrimaryButton onClick={handleNext} disabled={isNextDisabled || (answers[currentQuestion.id] === undefined || (Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].length === 0))}>Next</PrimaryButton>
                 <Button variant="ghost" className="w-full text-sm text-muted-foreground p-2 h-auto">Save for Later</Button>
             </div>
         </div>
@@ -323,7 +324,8 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     const currentQuestion = visibleQuestions[qIndex];
 
     const handleAnswer = (value: any) => {
-        setAnswers((prev: any) => ({ ...prev, [currentQuestion.id]: value }));
+        // Update global answers state directly from here
+        setAnswers((prevGlobalAnswers: any) => ({ ...prevGlobalAnswers, [currentQuestion.id]: value }));
     };
 
     const handleNext = () => {
@@ -336,7 +338,8 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
             
     const renderQuestion = () => {
         if (!currentQuestion) return <p className="text-muted-foreground">No more questions in this category or conditions not met.</p>;
-        const commonProps = { question: currentQuestion, answer: answers[currentQuestion.id], onAnswerChange: handleAnswer };
+        // Pass the current question's specific answer from the globalAnswers
+        const commonProps = { question: currentQuestion, answer: globalAnswers[currentQuestion.id], onAnswerChange: handleAnswer };
         switch(currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
             case 'single': return <SingleSelectQuestionComponent {...commonProps} />;
@@ -369,7 +372,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
             <h2 className="font-headline text-xl text-primary mb-4 text-center">{categoryName}</h2>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">{renderQuestion()}</div>
             <div className="flex-shrink-0 mt-8 space-y-2">
-                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || answers[currentQuestion.id] === undefined || (Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].length === 0)}>
+                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || globalAnswers[currentQuestion.id] === undefined || (Array.isArray(globalAnswers[currentQuestion.id]) && globalAnswers[currentQuestion.id].length === 0)}>
                     {qIndex < visibleQuestions.length - 1 ? 'Next' : 'Finish Category'}
                 </PrimaryButton>
                 <Button variant="ghost" onClick={onExitCategory} className="w-full text-sm text-muted-foreground p-2 h-auto">Save & Exit Category</Button>
@@ -388,8 +391,8 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
         return allCategories.filter(catName => {
             const categoryQuestions = questionnaireData.part2[catName];
             const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
-            if (visibleCategoryQuestions.length === 0) return true; // Category considered complete if no questions are visible
-            return visibleCategoryQuestions.every(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan") : true) );
+            if (visibleCategoryQuestions.length === 0) return true;
+            return visibleCategoryQuestions.every(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan") || q.options.includes('Never') : true) );
         }).length;
     }, [answers, allCategories]);
 
@@ -398,10 +401,10 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
         return <CategoryQuestionFlowComponent 
                     categoryName={activeCategory}
                     questions={questionnaireData.part2[activeCategory]}
-                    answers={answers} // Pass all answers for conditions
-                    setAnswers={setAnswers} // Allow CategoryQuestionFlow to update the main answers state
+                    answers={answers} 
+                    setAnswers={setAnswers} 
                     onExitCategory={() => setActiveCategory(null)}
-                    globalAnswers={answers} // Pass all answers for conditions
+                    globalAnswers={answers}
                 />;
     }
 
@@ -413,17 +416,11 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
             <p className="text-center text-muted-foreground mb-6">Tap a category to answer questions. Your progress is saved automatically.</p>
             
             <div className="flex-grow space-y-3 overflow-y-auto pr-2 -mr-2 mb-4">
-                {/* Placeholder for "View My Current Insights" button */}
-                {/* <div className="p-3 bg-secondary rounded-lg text-center cursor-pointer hover:bg-secondary/80 mb-3">
-                    <h2 className="font-semibold text-secondary-foreground">View My Current Insights</h2>
-                    <p className="text-xs text-muted-foreground">Get AI recommendations based on your answers so far.</p>
-                </div> */}
-
                 {allCategories.map(categoryName => {
                     const categoryQuestions = questionnaireData.part2[categoryName];
                     const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
                     
-                    const answeredCount = visibleCategoryQuestions.filter(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan"): true)).length;
+                    const answeredCount = visibleCategoryQuestions.filter(q => answers[q.id] !== undefined && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 || q.options.includes("None") || q.options.includes("No specific diet or plan") || q.options.includes('Never'): true)).length;
                     const isComplete = visibleCategoryQuestions.length > 0 ? answeredCount === visibleCategoryQuestions.length : true;
 
                     return (
@@ -431,7 +428,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
                             key={categoryName} 
                             onClick={() => setActiveCategory(categoryName)} 
                             className="w-full text-left p-4 border-2 rounded-lg flex items-center justify-between hover:bg-muted/30 transition-colors"
-                            disabled={visibleCategoryQuestions.length === 0 && !isComplete} // Disable if no questions and not marked complete (e.g. by prior logic)
+                            disabled={visibleCategoryQuestions.length === 0 && !isComplete}
                         >
                             <div>
                                 <p className="font-semibold text-primary">{categoryName}</p>
@@ -464,7 +461,6 @@ export default function OnboardingPage() {
 
   const handleFinishOnboarding = () => {
     console.log('Onboarding data collected:', answers);
-    // Here you would typically send `answers` to your backend/AI
     localStorage.setItem('isOnboarded', 'true');
     router.push('/');
   };
@@ -497,3 +493,5 @@ export default function OnboardingPage() {
     </main>
   );
 }
+
+```
