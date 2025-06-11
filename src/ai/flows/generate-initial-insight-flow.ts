@@ -62,10 +62,11 @@ const generateInitialInsightFlow = ai.defineFlow(
     inputSchema: GenerateInitialInsightInputSchema, // Flow still takes the original input type
     outputSchema: GenerateInitialInsightOutputSchema,
   },
-  async (input: GenerateInitialInsightInput) => { // Explicitly type 'input' from GenerateInitialInsightInputSchema
+  async (input: GenerateInitialInsightInput) => { // Explicitly type 'input'
     const onboardingAnswersJsonString = JSON.stringify(input.onboardingAnswers, null, 2); // Pre-stringify
     
-    const {output} = await insightPrompt({ onboardingAnswersJsonString }); // Call prompt with the stringified version
+    // Call prompt with the stringified version, conforming to InsightPromptInternalInputSchema
+    const {output} = await insightPrompt({ onboardingAnswersJsonString }); 
     
     if (!output) {
       throw new Error('No output received from AI model for initial insight.');
@@ -73,3 +74,4 @@ const generateInitialInsightFlow = ai.defineFlow(
     return output;
   }
 );
+
