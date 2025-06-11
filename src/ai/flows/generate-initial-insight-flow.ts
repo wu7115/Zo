@@ -74,3 +74,4 @@ const generateInitialInsightFlow = ai.defineFlow(
     return output;
   }
 );
+
