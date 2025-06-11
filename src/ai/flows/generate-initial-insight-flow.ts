@@ -33,12 +33,12 @@ const insightPrompt = ai.definePrompt({
   input: {schema: GenerateInitialInsightInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
   helpers: {
-    podiumStringifyJson: function (context) { // Renamed helper
+    podiumStringifyJson: function (context) {
       return JSON.stringify(context);
     },
   },
   promptOptions: {
-    knownHelpersOnly: false, // Ensure this is set to false
+    knownHelpersOnly: false,
   },
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
 The user has just completed the first part of their onboarding questionnaire.
