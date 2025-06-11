@@ -64,10 +64,10 @@ const generateInitialInsightFlow = ai.defineFlow(
   },
   async (input: GenerateInitialInsightInput) => { // Explicitly type 'input'
     const onboardingAnswersJsonString = JSON.stringify(input.onboardingAnswers, null, 2); // Pre-stringify
-    
+
     // Call prompt with the stringified version, conforming to InsightPromptInternalInputSchema
-    const {output} = await insightPrompt({ onboardingAnswersJsonString }); 
-    
+    const {output} = await insightPrompt({ onboardingAnswersJsonString });
+
     if (!output) {
       throw new Error('No output received from AI model for initial insight.');
     }
