@@ -11,9 +11,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// Define a flexible schema for answers, as Part 1 has various types
+// Schema for the original input to the exported function and the flow
 const OnboardingAnswersSchema = z.record(z.string(), z.any()).describe('A collection of answers from the Part 1 onboarding questionnaire.');
-
 const GenerateInitialInsightInputSchema = z.object({
   onboardingAnswers: OnboardingAnswersSchema,
 });
@@ -24,22 +23,19 @@ const GenerateInitialInsightOutputSchema = z.object({
 });
 export type GenerateInitialInsightOutput = z.infer<typeof GenerateInitialInsightOutputSchema>;
 
+// Schema for the input the prompt itself will receive (pre-stringified answers)
+const InsightPromptInternalInputSchema = z.object({
+  onboardingAnswersJsonString: z.string().describe('The JSON string representation of the user\'s onboarding answers.'),
+});
+
 export async function generateInitialInsight(input: GenerateInitialInsightInput): Promise<GenerateInitialInsightOutput> {
   return generateInitialInsightFlow(input);
 }
 
 const insightPrompt = ai.definePrompt({
   name: 'generateInitialInsightPrompt',
-  input: {schema: GenerateInitialInsightInputSchema},
+  input: {schema: InsightPromptInternalInputSchema}, // Uses the internal schema
   output: {schema: GenerateInitialInsightOutputSchema},
-  helpers: {
-    podiumStringifyJson: function (context) {
-      return JSON.stringify(context);
-    },
-  },
-  promptOptions: {
-    knownHelpersOnly: false,
-  },
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
 The user has just completed the first part of their onboarding questionnaire.
 Review their answers provided below and generate a single, concise (1-2 sentences) initial insight or a welcoming observation.
@@ -50,7 +46,7 @@ Address the user by a generic friendly name like "Wellness Seeker" or "Explorer"
 
 User's Onboarding Answers (Part 1):
 \`\`\`json
-{{{podiumStringifyJson onboardingAnswers}}}
+{{{onboardingAnswersJsonString}}}
 \`\`\`
 
 Example insight: "Thanks for sharing, Wellness Seeker! It's great you're looking to improve your general gut health. We can definitely explore that together!"
@@ -63,15 +59,17 @@ Generate the insight:
 const generateInitialInsightFlow = ai.defineFlow(
   {
     name: 'generateInitialInsightFlow',
-    inputSchema: GenerateInitialInsightInputSchema,
+    inputSchema: GenerateInitialInsightInputSchema, // Flow still takes the original input type
     outputSchema: GenerateInitialInsightOutputSchema,
   },
-  async (input) => {
-    const {output} = await insightPrompt(input);
+  async (input: GenerateInitialInsightInput) => { // Explicitly type 'input' from GenerateInitialInsightInputSchema
+    const onboardingAnswersJsonString = JSON.stringify(input.onboardingAnswers, null, 2); // Pre-stringify
+    
+    const {output} = await insightPrompt({ onboardingAnswersJsonString }); // Call prompt with the stringified version
+    
     if (!output) {
       throw new Error('No output received from AI model for initial insight.');
     }
     return output;
   }
 );
-
