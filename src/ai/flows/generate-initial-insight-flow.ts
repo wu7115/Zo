@@ -33,12 +33,12 @@ const insightPrompt = ai.definePrompt({
   input: {schema: GenerateInitialInsightInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
   helpers: {
-    JSONstringify: function (context) {
+    podiumStringifyJson: function (context) { // Renamed helper
       return JSON.stringify(context);
     },
   },
   promptOptions: {
-    knownHelpersOnly: false, // Allow the locally defined helper
+    knownHelpersOnly: false, // Ensure this is set to false
   },
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
 The user has just completed the first part of their onboarding questionnaire.
@@ -50,7 +50,7 @@ Address the user by a generic friendly name like "Wellness Seeker" or "Explorer"
 
 User's Onboarding Answers (Part 1):
 \`\`\`json
-{{{JSONstringify onboardingAnswers}}}
+{{{podiumStringifyJson onboardingAnswers}}}
 \`\`\`
 
 Example insight: "Thanks for sharing, Wellness Seeker! It's great you're looking to improve your general gut health. We can definitely explore that together!"
