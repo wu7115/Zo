@@ -1,31 +1,88 @@
 
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TrendingUp, Clock, Star, Coffee, Droplets, ListChecks, BookOpen, Settings, PlusCircle, Edit3 } from 'lucide-react';
-import { RecommendedLearningCard } from './components/RecommendedLearningCard';
-import { ProductRecommendationsCard } from './components/ProductRecommendationsCard';
-import { FriendActivityCard } from './components/FriendActivityCard';
-import { UserActivityCard } from './components/UserActivityCard';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import type { FeedItem } from '@/app/types/feed'; // Import the FeedItem type
+import { DynamicFeedCard } from './components/DynamicFeedCard'; // Import the dynamic card renderer
 
+// Mock data for the feed - this would eventually come from an API or state management
+const mockFeedItems: FeedItem[] = [
+  {
+    type: 'greeting',
+    id: 'greeting-1',
+    data: {
+      id: 'greeting-1',
+      greetingText: "Good morning, Alex! 🌅",
+      syncStatus: "Your wearable synced: 7h 15m sleep (11:15 PM - 6:30 AM).",
+      accomplishment: "You hit your sleep duration goal! 🎉",
+    },
+  },
+  {
+    type: 'weeklySnapshot',
+    id: 'weekly-snapshot-1',
+    data: { id: 'weekly-snapshot-1' },
+  },
+  {
+    type: 'todaysGoal',
+    id: 'todays-goal-1',
+    data: { id: 'todays-goal-1' },
+  },
+  {
+    type: 'engagementNudge',
+    id: 'engagement-nudge-1',
+    data: { id: 'engagement-nudge-1' },
+  },
+  {
+    type: 'userActivity',
+    id: 'user-activity-1',
+    data: { // This data is structured but UserActivityCard isn't using it yet
+      id: 'user-activity-1',
+      timestamp: "2 hours ago",
+      activityType: "Evening Run",
+      details: "Completed a 5km run through the park. Felt invigorating!",
+      metrics: [
+        { iconName: "Zap", label: "Distance", value: "5 km" },
+        { iconName: "Flame", label: "Calories", value: "350 kcal" },
+        { iconName: "Smile", label: "Mood", value: "Energized" },
+      ],
+    },
+  },
+  {
+    type: 'friendActivity',
+    id: 'friend-activity-1',
+    data: { // This data is structured but FriendActivityCard isn't using it yet
+      id: 'friend-activity-1',
+      friendName: "Jane Runner",
+      friendAvatarUrl: "https://placehold.co/40x40.png?text=JR",
+      friendAvatarFallback: "JR",
+      timestamp: "Yesterday, 6:30 PM",
+      activityDetails: "Just crushed a 20km bike ride! Feeling fantastic. 🚴‍♀️ #CyclingLife",
+      activityImageUrl: "https://placehold.co/600x400.png",
+      activityImageAlt: "Friend's cycling activity post",
+      activityImageHint: "cycling landscape",
+      likes: 15,
+      comments: 3,
+    },
+  },
+  {
+    type: 'recommendedLearning',
+    id: 'recommended-learning-1',
+    data: { id: 'recommended-learning-1' },
+  },
+  {
+    type: 'productRecommendations',
+    id: 'product-recommendations-1',
+    data: { id: 'product-recommendations-1' },
+  },
+  // Add more mock items here to test different card types and ordering
+];
 
-// Placeholder data for Home Feed
-const homeFeedData = {
-  greeting: "Good morning, Alex! 🌅",
-  wearableSync: "Your wearable synced: 7h 15m sleep (11:15 PM - 6:30 AM).",
-  accomplishment: "You hit your sleep duration goal! 🎉",
-};
 
 export default function HomePage() {
   const router = useRouter();
   const [isLoadingRedirect, setIsLoadingRedirect] = useState(true);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
 
   useEffect(() => {
     const isOnboarded = localStorage.getItem('isOnboarded');
@@ -33,46 +90,14 @@ export default function HomePage() {
       router.replace('/launch');
     } else {
       setIsLoadingRedirect(false);
+      // Simulate fetching feed data
+      setFeedItems(mockFeedItems);
     }
   }, [router]);
-
-  const [selectedSleepQuality, setSelectedSleepQuality] = useState<number | null>(null);
-  const [napsTaken, setNapsTaken] = useState<string | null>("No");
-  const [morningMood, setMorningMood] = useState<string | null>("Good");
-  const [waterIntake, setWaterIntake] = useState<string>("16oz");
-
-  const handleSleepQualitySelect = (rating: number) => {
-    setSelectedSleepQuality(rating);
-    console.log(`Sleep quality rated: ${rating}`);
-  };
-
-  const handleNapSelect = (option: 'Yes' | 'No') => {
-    setNapsTaken(option);
-    console.log(`Naps taken: ${option}`);
-  };
-  
-  const moodOptions = [
-    { emoji: '😊', label: 'Excellent' },
-    { emoji: '🙂', label: 'Good' },
-    { emoji: '😐', label: 'Neutral' },
-    { emoji: '😟', label: 'Low' },
-    { emoji: '😩', label: 'Very Low' },
-  ];
-
-  const handleMoodSelect = (mood: string) => {
-    setMorningMood(mood);
-    console.log(`Morning mood: ${mood}`);
-  };
-
-  const handleWaterIntake = (amount: string) => {
-    setWaterIntake(amount); 
-    console.log(`Water intake: ${amount}`);
-  };
 
   if (isLoadingRedirect) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-screen">
-        {/* Optional: Add a spinner or loading message here */}
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -82,137 +107,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-6 sm:py-12">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
-
-          <UserActivityCard /> 
-
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-headline text-primary">{homeFeedData.greeting}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground/90">{homeFeedData.wearableSync}</p>
-              <p className="text-green-600 font-semibold mt-1">{homeFeedData.accomplishment}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-primary flex items-center">
-                <Clock className="mr-2 h-5 w-5 text-accent" /> Your Rest
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-foreground/90 mb-2">How would you rate your sleep quality? (Ref: 3.5)</p>
-                <div className="flex space-x-1 justify-center">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <Button
-                      key={`sleep-rating-${rating}`}
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "p-0 text-muted-foreground hover:text-yellow-500",
-                        selectedSleepQuality !== null && rating <= selectedSleepQuality ? "text-yellow-400" : ""
-                      )}
-                      onClick={() => handleSleepQualitySelect(rating)}
-                    >
-                      <Star className={cn("h-6 w-6", selectedSleepQuality !== null && rating <= selectedSleepQuality ? "fill-yellow-400" : "fill-transparent")} />
-                    </Button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  Sleep Quality: {selectedSleepQuality ? `${selectedSleepQuality}/5 ⭐` : 'Pending'}
-                  {selectedSleepQuality && ' ✅'}
-                </p>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-foreground/90 mb-2">Did you take any naps or rest periods yesterday? (Ref: 3.6)</p>
-                <div className="flex space-x-2">
-                  <Button variant={napsTaken === 'Yes' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => handleNapSelect('Yes')}>Yes</Button>
-                  <Button variant={napsTaken === 'No' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => handleNapSelect('No')}>No</Button>
-                </div>
-                 <p className="text-xs text-muted-foreground mt-1 text-right">
-                  Naps Yesterday: {napsTaken || 'Pending'}
-                  {napsTaken && ' ✅'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-primary flex items-center">
-                <TrendingUp className="mr-2 h-5 w-5 text-accent" /> Morning Check-in
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-foreground/90 mb-2">How would you rate your mood this morning? (Ref: 4.4)</p>
-                <div className="flex justify-around text-2xl">
-                    {moodOptions.map(opt => (
-                         <Button
-                            key={opt.label}
-                            variant="ghost"
-                            size="icon"
-                            className={cn("hover:bg-accent/10", morningMood === opt.label ? "bg-accent/20 ring-2 ring-accent" : "")}
-                            onClick={() => handleMoodSelect(opt.label)}
-                            title={opt.label}
-                         >
-                            {opt.emoji}
-                        </Button>
-                    ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  Mood: {morningMood || 'Pending'}
-                  {morningMood && ' ✅'}
-                </p>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-foreground/90 mb-2">Let's start tracking your hydration: How much water did you drink so far today? (Ref: 1.1)</p>
-                <div className="flex space-x-2">
-                  <Button variant={waterIntake === '8oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('8oz')}>+8oz</Button>
-                  <Button variant={waterIntake === '16oz' ? 'default' : 'outline'} size="sm" onClick={() => handleWaterIntake('16oz')}>+16oz</Button>
-                </div>
-                 <p className="text-xs text-muted-foreground mt-1 text-right">
-                  Water: {waterIntake || 'Pending'}
-                  {waterIntake && ' ✅'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <RecommendedLearningCard />
-
-          <ProductRecommendationsCard />
-
-          <FriendActivityCard />
-
-          <Card className="shadow-lg bg-secondary/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-primary">Remember to log any supplements you take today. (Ref: 1.2)</p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/track#diary-medication-&-supplement-use">
-                    <Edit3 className="mr-2 h-4 w-4" /> Log Supplements
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-                <Link href="/track#diary" className="flex items-center justify-center text-primary hover:text-accent font-semibold">
-                    <ListChecks className="mr-2 h-5 w-5" />
-                    View Full Daily Diary / Log More
-                </Link>
-            </CardContent>
-          </Card>
-
+          {feedItems.map((item) => (
+            <DynamicFeedCard key={item.id} item={item} />
+          ))}
         </div>
       </main>
       <footer className="text-center py-8 mt-8 sm:mt-12">
