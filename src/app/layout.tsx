@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const showMainLayout = !pathname.startsWith('/launch') && !pathname.startsWith('/onboarding');
+  const showMainLayout = !pathname.startsWith('/launch') && !pathname.startsWith('/onboarding') && !pathname.startsWith('/diagnose/plan');
 
   return (
     <html lang="en">
