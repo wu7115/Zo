@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { askGemini } from '@/ai/flows/ask-gemini-flow';
+import { askAI } from '@/ai/flows/ask-gemini-flow';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
       If you cannot suggest a topic, return a default object with a placeholder link and tags.
     `;
 
-    // Call Gemini
-    const geminiResult = await askGemini({ prompt });
+    // Call AI
+    const aiResult = await askAI({ prompt });
     let suggestion;
     try {
-      suggestion = JSON.parse(geminiResult.response || '{}');
+      suggestion = JSON.parse(aiResult.response || '{}');
     } catch {
       suggestion = {};
     }

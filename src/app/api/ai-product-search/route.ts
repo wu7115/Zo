@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { askGemini } from '@/ai/flows/ask-gemini-flow';
+import { askAI } from '@/ai/flows/ask-gemini-flow';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,11 +39,11 @@ export async function POST(req: NextRequest) {
       Do not include any text outside the JSON array.
     `;
 
-    // Call Gemini
-    const geminiResult = await askGemini({ prompt });
+    // Call AI
+    const aiResult = await askAI({ prompt });
     let suggestions;
     try {
-      suggestions = JSON.parse(geminiResult.response || '[]');
+      suggestions = JSON.parse(aiResult.response || '[]');
     } catch {
       suggestions = [];
     }

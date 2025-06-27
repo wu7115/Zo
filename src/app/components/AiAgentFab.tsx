@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -9,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User, Bot, Loader2, AlertTriangle } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { askGemini, AskGeminiInput } from '@/ai/flows/ask-gemini-flow';
+import { askAI, AskAIInput } from '@/ai/flows/ask-gemini-flow';
 
 interface ChatMessage {
   id: string;
@@ -76,7 +75,7 @@ export function AiAgentFab() {
     setError(null);
 
     try {
-      const aiResponse = await askGemini({ prompt: currentPrompt } as AskGeminiInput);
+      const aiResponse = await askAI({ prompt: currentPrompt } as AskAIInput);
       const newAiMessage: ChatMessage = {
         id: Date.now().toString() + '-ai',
         sender: 'ai',

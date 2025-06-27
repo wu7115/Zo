@@ -39,9 +39,7 @@ export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
       // console.log("Rendering UserActivityCard with (currently unused) data:", item.data);
       return <UserActivityCard />;
     case 'friendActivity':
-      // FriendActivityCard currently renders its own static content.
-      // console.log("Rendering FriendActivityCard with (currently unused) data:", item.data);
-      return <FriendActivityCard />;
+      return <FriendActivityCard data={item.data} />;
     case 'recommendedLearning':
       return <RecommendedLearningCard />; // Assumes RecommendedLearningCard fetches/contains its own items
     case 'productRecommendations':

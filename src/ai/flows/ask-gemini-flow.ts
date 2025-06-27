@@ -1,46 +1,46 @@
 'use server';
 /**
- * @fileOverview A Genkit flow for general purpose chat with Gemini.
+ * @fileOverview A Genkit flow for general purpose chat with AI.
  *
- * - askGemini - A function that takes a user prompt and returns Gemini's response.
- * - AskGeminiInput - The input type for the askGemini function.
- * - AskGeminiOutput - The return type for the askGemini function.
+ * - askAI - A function that takes a user prompt and returns AI's response.
+ * - AskAIInput - The input type for the askAI function.
+ * - AskAIOutput - The return type for the askAI function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const AskGeminiInputSchema = z.object({
+const AskAIInputSchema = z.object({
   prompt: z.string().describe('The user question or prompt for the AI.'),
 });
-export type AskGeminiInput = z.infer<typeof AskGeminiInputSchema>;
+export type AskAIInput = z.infer<typeof AskAIInputSchema>;
 
-const AskGeminiOutputSchema = z.object({
+const AskAIOutputSchema = z.object({
   response: z.string().describe("The AI's response to the user's prompt."),
 });
-export type AskGeminiOutput = z.infer<typeof AskGeminiOutputSchema>;
+export type AskAIOutput = z.infer<typeof AskAIOutputSchema>;
 
-export async function askGemini(input: AskGeminiInput): Promise<AskGeminiOutput> {
-  return askGeminiFlow(input);
+export async function askAI(input: AskAIInput): Promise<AskAIOutput> {
+  return askAIFlow(input);
 }
 
-const geminiPrompt = ai.definePrompt({
-  name: 'askGeminiPrompt',
-  input: {schema: AskGeminiInputSchema},
-  output: {schema: AskGeminiOutputSchema},
+const aiPrompt = ai.definePrompt({
+  name: 'askAIPrompt',
+  input: {schema: AskAIInputSchema},
+  output: {schema: AskAIOutputSchema},
   prompt: `You are a helpful AI assistant. Please respond to the following user prompt:
 {{{prompt}}}
 `,
 });
 
-const askGeminiFlow = ai.defineFlow(
+const askAIFlow = ai.defineFlow(
   {
-    name: 'askGeminiFlow',
-    inputSchema: AskGeminiInputSchema,
-    outputSchema: AskGeminiOutputSchema,
+    name: 'askAIFlow',
+    inputSchema: AskAIInputSchema,
+    outputSchema: AskAIOutputSchema,
   },
   async (input) => {
-    const {output} = await geminiPrompt(input);
+    const {output} = await aiPrompt(input);
     if (!output) {
       throw new Error('No output received from AI model.');
     }

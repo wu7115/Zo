@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { askGemini } from '@/ai/flows/ask-gemini-flow';
+import { askAI } from '@/ai/flows/ask-gemini-flow';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,11 +36,11 @@ export async function POST(req: NextRequest) {
       If you cannot generate a fact, return a default object with a generic insight and a placeholder URL.
     `;
 
-    // Call Gemini
-    const geminiResult = await askGemini({ prompt });
+    // Call AI
+    const aiResult = await askAI({ prompt });
     let suggestion;
     try {
-      suggestion = JSON.parse(geminiResult.response || '{}');
+      suggestion = JSON.parse(aiResult.response || '{}');
     } catch {
       suggestion = {};
     }

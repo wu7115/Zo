@@ -1,12 +1,11 @@
-
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {openAI} from 'genkitx-openai';
 import { config } from 'dotenv';
 
 // Ensure .env variables are loaded at the earliest point
 config();
 
 export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
+  plugins: [openAI()],
+  model: 'openai/gpt-4o',
 });

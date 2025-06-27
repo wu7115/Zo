@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { askGemini } from '@/ai/flows/ask-gemini-flow';
+import { askAI } from '@/ai/flows/ask-gemini-flow';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,11 +18,11 @@ ${JSON.stringify(trackingQuestions, null, 2)}
 
 Respond ONLY with the JSON array, no extra text.`;
 
-    // Call Gemini
-    const geminiResult = await askGemini({ prompt });
+    // Call AI
+    const aiResult = await askAI({ prompt });
     let priorities;
     try {
-      priorities = JSON.parse(geminiResult.response || '[]');
+      priorities = JSON.parse(aiResult.response || '[]');
     } catch {
       priorities = [];
     }

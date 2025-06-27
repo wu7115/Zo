@@ -79,6 +79,35 @@ const getGreeting = (timePeriod: 'morning' | 'afternoon' | 'evening'): string =>
   }
 };
 
+// Helper to fetch AI-generated community post
+const fetchAiCommunityPost = async (onboardingAnswers: any, batchIndex: number) => {
+  try {
+    const res = await fetch('/api/ai-community-post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboardingAnswers, batchIndex }),
+    });
+    const communityPost = await res.json();
+    return communityPost;
+  } catch (error) {
+    console.error('Error fetching AI community post:', error);
+    // Return fallback data
+    return {
+      friendName: "Alex Johnson",
+      friendAvatarUrl: "https://placehold.co/40x40.png?text=AJ",
+      friendAvatarFallback: "AJ",
+      friendAvatarHint: "profile person",
+      timestamp: "2 hours ago",
+      activityDetails: "Just completed a 5K run! Feeling energized and ready for the day. 🏃‍♂️ #RunningGoals",
+      activityImageUrl: "https://placehold.co/600x400.png",
+      activityImageAlt: "Community member's activity post",
+      activityImageHint: "running trail",
+      likes: 12,
+      comments: 3,
+    };
+  }
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [isLoadingRedirect, setIsLoadingRedirect] = useState(true);
@@ -87,49 +116,6 @@ export default function HomePage() {
   const [batchIndex, setBatchIndex] = useState(0);
   const [onboardingAnswers, setOnboardingAnswers] = useState<any>({});
   const [trackingPriorities, setTrackingPriorities] = useState<Record<string, 'high' | 'medium' | 'low'>>({});
-
-  // Community mock data
-  const communityMocks = [
-    {
-      friendName: 'Jane Runner',
-      friendAvatarUrl: 'https://placehold.co/40x40.png?text=JR',
-      friendAvatarFallback: 'JR',
-      friendAvatarHint: 'profile runner',
-      timestamp: 'Yesterday, 6:30 PM',
-      activityDetails: 'Just crushed a 20km bike ride! Feeling fantastic. 🚴‍♀️ #CyclingLife',
-      activityImageUrl: 'https://placehold.co/600x400.png',
-      activityImageAlt: "Friend's cycling activity post",
-      activityImageHint: 'cycling landscape',
-      likes: 15,
-      comments: 3,
-    },
-    {
-      friendName: 'Sam Hiker',
-      friendAvatarUrl: 'https://placehold.co/40x40.png?text=SH',
-      friendAvatarFallback: 'SH',
-      friendAvatarHint: 'profile hiker',
-      timestamp: 'Today, 8:00 AM',
-      activityDetails: 'Early morning hike up the mountain. Amazing sunrise! 🌄 #HikingAdventures',
-      activityImageUrl: 'https://placehold.co/600x400.png',
-      activityImageAlt: "Friend's hiking activity post",
-      activityImageHint: 'mountain sunrise',
-      likes: 22,
-      comments: 5,
-    },
-    {
-      friendName: 'Lily Swimmer',
-      friendAvatarUrl: 'https://placehold.co/40x40.png?text=LS',
-      friendAvatarFallback: 'LS',
-      friendAvatarHint: 'profile swimmer',
-      timestamp: '2 days ago, 5:15 PM',
-      activityDetails: 'Swam 30 laps at the pool. Feeling refreshed! 🏊‍♂️ #SwimLife',
-      activityImageUrl: 'https://placehold.co/600x400.png',
-      activityImageAlt: "Friend's swimming activity post",
-      activityImageHint: 'swimming pool',
-      likes: 10,
-      comments: 2,
-    },
-  ];
 
   // Helper to generate a batch of feed items with unique keys
   const generateFeedBatch = async (batchNum: number): Promise<FeedItem[]> => {
@@ -155,12 +141,12 @@ export default function HomePage() {
     }
 
     // Fetch other content - generate unique insight for each batch
-    const [insight, topic] = await Promise.all([
+    const [insight, topic, community] = await Promise.all([
       fetchPersonalizedInsight({ ...onboardingAnswers, batchIndex: batchNum }), // Pass batch index to ensure uniqueness
       fetchPersonalizedTopic(onboardingAnswers),
+      fetchAiCommunityPost(onboardingAnswers, batchNum), // Fetch AI-generated community post
     ]);
     
-    const community = communityMocks[batchNum % communityMocks.length];
     const communityId = `community-${batchNum + 1}`;
     
     return [

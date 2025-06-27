@@ -226,16 +226,27 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
             }
         }
         if (Object.keys(part1Answers).length > 0) {
-            const result = await generateInitialInsight({ onboardingAnswers: part1Answers });
-            setInsight(result.insight);
+          const result = await generateInitialInsight({ onboardingAnswers: part1Answers });
+          if (result.categoryRecommendations && result.categoryRecommendations.length > 0) {
+            // Show the first recommendation, or join all if you want
+            setInsight(result.categoryRecommendations[0].recommendation);
+          } else {
+            setInsight("Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.");
+          }
         } else {
             // Default insight if no answers from part 1 are available (e.g., user skipped or an error occurred)
             setInsight("Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.");
         }
       } catch (e: any) {
         console.error("Error fetching initial insight:", e);
-        setError("Sorry, I couldn't generate an initial insight right now. Let's continue!");
-        setInsight("We're excited to help you on your wellness journey!"); // Fallback content
+        // Show a user-friendly error if LLM quota is exceeded or any other error
+        if (e?.message?.includes('quota') || e?.message?.includes('429')) {
+          setError("Sorry, our AI coach is temporarily unavailable due to high demand. Please try again later!");
+          setInsight("We're excited to help you on your wellness journey!");
+        } else {
+          setError("Sorry, I couldn't generate an initial insight right now. Let's continue!");
+          setInsight("We're excited to help you on your wellness journey!"); // Fallback content
+        }
       } finally {
         setIsLoading(false);
       }
@@ -355,7 +366,7 @@ const Part2SurveyIntroComponent = ({ onBeginSurvey, onSkipSurvey }: { onBeginSur
 );
 
 
-const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAnswers, onExitCategory, globalAnswers }: { categoryName: string, questions: any[], answers: any, setAnswers: (newAnswers: any) => void, onExitCategory: () => void, globalAnswers: any }) => {
+const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAnswers, onExitCategory, globalAnswers }: { categoryName: string, questions: any[], answers: Record<string, any>, setAnswers: (newAnswers: Record<string, any>) => void, onExitCategory: () => void, globalAnswers: Record<string, any> }) => {
     const [qIndex, setQIndex] = useState(0);
 
     const visibleQuestions = useMemo(() => {
@@ -365,7 +376,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     const currentQuestion = visibleQuestions[qIndex];
 
     const handleAnswer = (value: any) => {
-        setAnswers((prevGlobalAnswers: any) => ({ ...prevGlobalAnswers, [currentQuestion?.id ?? '']: value }));
+        setAnswers((prevGlobalAnswers: Record<string, any>) => ({ ...prevGlobalAnswers, [currentQuestion?.id ?? '']: value }));
     };
 
     const handleNext = () => {
@@ -378,14 +389,14 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 
     const renderQuestion = () => {
         if (!currentQuestion) return <p className="text-muted-foreground">No more questions in this category or conditions not met.</p>;
-        const commonProps = { question: currentQuestion, answer: globalAnswers?.[currentQuestion?.id ?? ''], onAnswerChange: handleAnswer };
+        const commonProps = { question: currentQuestion, answer: (globalAnswers as Record<string, any>)?.[String(currentQuestion?.id) ?? ''], onAnswerChange: handleAnswer };
         switch(currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
             case 'single': return <SingleSelectQuestionComponent {...commonProps} />;
             case 'number': return <NumberInputQuestionComponent {...commonProps} />;
             case 'text': return <TextInputQuestionComponent {...commonProps} />;
             case 'single-dynamic': {
-                const dynamicOptions = globalAnswers?.[currentQuestion?.dependsOn ?? ''] || [];
+                const dynamicOptions = (globalAnswers as Record<string, any>)?.[String(currentQuestion?.dependsOn) ?? ''] || [];
                 if (!Array.isArray(dynamicOptions) || dynamicOptions.length === 0) {
                     return <p className="text-muted-foreground text-center py-4">Please select your primary reasons first to see this question.</p>;
                 }
@@ -424,7 +435,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
             <h2 className="font-headline text-xl text-primary mb-4 text-center">{categoryName}</h2>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">{renderQuestion()}</div>
             <div className="flex-shrink-0 mt-8 space-y-2">
-                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || globalAnswers[currentQuestion.id] === undefined || (Array.isArray(globalAnswers[currentQuestion.id]) && globalAnswers[currentQuestion.id].length === 0)}>
+                <PrimaryButton onClick={handleNext} disabled={!currentQuestion || (globalAnswers as Record<string, any>)?.[String(currentQuestion.id)] === undefined || (Array.isArray((globalAnswers as Record<string, any>)?.[String(currentQuestion.id)]) && (globalAnswers as Record<string, any>)?.[String(currentQuestion.id)].length === 0)}>
                     {qIndex < visibleQuestions.length - 1 ? 'Next' : 'Finish Category'}
                 </PrimaryButton>
                 <Button variant="ghost" onClick={onExitCategory} className="w-full text-sm text-muted-foreground p-2 h-auto">Save & Exit Category</Button>
@@ -434,7 +445,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 };
 
 
-const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: any, setAnswers: React.Dispatch<React.SetStateAction<any>>, onComplete: () => void }) => {
+const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Record<string, any>, setAnswers: React.Dispatch<React.SetStateAction<Record<string, any>>>, onComplete: () => void }) => {
     const router = useRouter();
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [isFinishing, setIsFinishing] = useState(false);
@@ -444,10 +455,10 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
     const completedCategoriesCount = useMemo(() => {
         return allCategories.filter(catName => {
             const categoryQuestions = questionnaireData.part2[catName as keyof typeof questionnaireData.part2];
-            const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
+            const visibleCategoryQuestions = categoryQuestions.filter(q => ('condition' in q && typeof q.condition === 'function') ? q.condition(answers) : true);
             if (visibleCategoryQuestions.length === 0) return true;
             return visibleCategoryQuestions.every(q => {
-              const answer = answers[q.id];
+              const answer = (answers as Record<string, any>)[String(q.id)];
               if (answer === undefined) return false;
               if (Array.isArray(answer) && answer.length === 0 && !(q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))!))) {
                 return false; 
@@ -504,7 +515,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
         // Generate priorities for all time periods
         const periods = ['morning', 'afternoon', 'evening'];
-        const allPriorities: { [key: string]: Record<string, 'high' | 'medium' | 'low'> } = {};
+        const allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
         const { getQuestionTime } = await import('@/utils/taskAllocation');
         const categoryMapping: { [key: string]: string } = {
           'Digestive Health': 'digestive',
@@ -541,7 +552,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
               body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
             });
             const prioritiesArr = await res.json();
-            const prioritiesMap = {};
+            const prioritiesMap: Record<string, any> = {};
             if (Array.isArray(prioritiesArr)) {
               prioritiesArr.forEach((item) => {
                 if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
@@ -552,7 +563,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
             allPriorities[period] = prioritiesMap;
           } catch (e) {
             // fallback: all medium
-            const prioritiesMap = {};
+            const prioritiesMap: Record<string, any> = {};
             timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
             allPriorities[period] = prioritiesMap;
           }
@@ -570,10 +581,10 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
             <div className="flex-grow space-y-3 overflow-y-auto pr-2 -mr-2 mb-4">
                 {allCategories.map(categoryName => {
                     const categoryQuestions = questionnaireData.part2[categoryName as keyof typeof questionnaireData.part2];
-                    const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
+                    const visibleCategoryQuestions = categoryQuestions.filter(q => ('condition' in q && typeof q.condition === 'function') ? q.condition(answers) : true);
                     
                     const answeredCount = visibleCategoryQuestions.filter(q => {
-                        const answer = answers[q.id];
+                        const answer = (answers as Record<string, any>)[String(q.id)];
                         
                         if(Array.isArray(answer) && q.options && q.options.some((opt: string) => opt.toLowerCase().includes("none")) && answer.includes(q.options.find((opt: string) => opt.toLowerCase().includes("none"))!)) {
                             return true;
@@ -617,7 +628,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState('splash');
-  const [answers, setAnswers] = useState<any>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isFinishing, setIsFinishing] = useState(false);
 
   // Load answers from localStorage on initial mount
@@ -674,7 +685,7 @@ export default function OnboardingPage() {
 
     // Generate priorities for all time periods
     const periods = ['morning', 'afternoon', 'evening'];
-    const allPriorities: { [key: string]: Record<string, 'high' | 'medium' | 'low'> } = {};
+    const allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
     const { getQuestionTime } = await import('@/utils/taskAllocation');
     const categoryMapping: { [key: string]: string } = {
       'Digestive Health': 'digestive',
@@ -711,7 +722,7 @@ export default function OnboardingPage() {
           body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
         });
         const prioritiesArr = await res.json();
-        const prioritiesMap = {};
+        const prioritiesMap: Record<string, any> = {};
         if (Array.isArray(prioritiesArr)) {
           prioritiesArr.forEach((item) => {
             if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
@@ -722,7 +733,7 @@ export default function OnboardingPage() {
         allPriorities[period] = prioritiesMap;
       } catch (e) {
         // fallback: all medium
-        const prioritiesMap = {};
+        const prioritiesMap: Record<string, any> = {};
         timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
         allPriorities[period] = prioritiesMap;
       }
