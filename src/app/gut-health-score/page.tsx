@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -36,8 +35,25 @@ export default function GutHealthScorePage() {
   const [insight, setInsight] = React.useState<PersonalizeGutScoreInsightOutput | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = React.useState(true);
   const [insightError, setInsightError] = React.useState<string | null>(null);
+  const [onboardingInsight, setOnboardingInsight] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // Fetch onboarding-generated insight from localStorage
+    let foundInsight = null;
+    try {
+      if (typeof window !== 'undefined') {
+        const generated = localStorage.getItem('generatedInsights');
+        if (generated) {
+          const parsed = JSON.parse(generated);
+          if (parsed.summary) {
+            foundInsight = parsed.summary;
+          } else if (parsed.categoryInsights && parsed.categoryInsights.length > 0) {
+            foundInsight = parsed.categoryInsights[0].recommendation || null;
+          }
+        }
+      }
+    } catch {}
+    setOnboardingInsight(foundInsight);
     const fetchInsight = async () => {
       try {
         setIsLoadingInsight(true);
@@ -118,11 +134,18 @@ export default function GutHealthScorePage() {
               ))}
             </div>
             
+            <div className="space-y-3 pt-4">
+              <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50">
+                Access your full Results now
+                <FileText className="h-5 w-5" />
+              </Button>
+            </div>
+
             {isLoadingInsight && (
               <Card className="bg-secondary/20 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-md font-semibold text-primary flex items-center">
-                    <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Zoe's Quick Tip
+                    <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Your Insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -150,28 +173,20 @@ export default function GutHealthScorePage() {
                <Card className="bg-secondary/20 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-md font-semibold text-primary flex items-center">
-                     <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Zoe's Quick Tip
+                     <Lightbulb className="h-5 w-5 mr-2 text-accent" /> Your Insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-secondary-foreground">{insight.personalizedAdvice}</p>
+                  {onboardingInsight && (
+                    <p className="mb-2 text-sm text-secondary-foreground">{onboardingInsight}</p>
+                  )}
+                  {onboardingInsight && insight?.personalizedAdvice && (
+                    <div className="my-2 border-t border-muted-foreground/20" />
+                  )}
+                  <p className="text-sm text-secondary-foreground">{insight?.personalizedAdvice}</p>
                 </CardContent>
               </Card>
             )}
-
-
-            <div className="space-y-3 pt-4">
-              <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50">
-                Access your full Results now
-                <FileText className="h-5 w-5" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between items-center text-primary hover:bg-muted/50" asChild>
-                <Link href="/journey">
-                  Access your full 90-day Journey options
-                  <FileText className="h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

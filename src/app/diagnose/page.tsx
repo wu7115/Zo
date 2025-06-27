@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -31,9 +30,10 @@ interface DiagnosticKit {
 }
 
 const diagnosticTestKits: DiagnosticKit[] = [
-  { id: 'zobiome-kit', name: 'ZoBiome Test Kit', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit zobiome', href: '/buy#zobiome', description: 'Comprehensive gut microbiome analysis by ZoBiome. Understand your gut flora.', category: 'Test Kit' },
-  { id: 'viome-kit', name: 'Viome Health Intelligence', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit viome', href: '/buy#viome', description: 'Personalized health insights based on your unique biology with Viome testing.', category: 'Test Kit' },
-  { id: 'mbt-kit', name: 'MBT Metabolic Test', imageUrl: 'https://placehold.co/171x130.png', imageHint: 'test kit mbt', href: '/buy#mbt', description: 'Metabolic & Biome Test for a deeper understanding of your body\'s processes.', category: 'Test Kit' },
+  { id: 'zocam-o1', name: 'ZoCam-O1', imageUrl: '/images/products/ZoCam-01.png', imageHint: 'ZoCam O1', href: '/buy#zocam-o1', description: 'First-of-its-kind at-home optical imaging capsule for detailed, physician-reviewed gut health insights. Powered by advanced optical imaging and cloud-based AI analysis.', category: 'Test Kit' },
+  { id: 'zocam-o2', name: 'ZoCam-O2', imageUrl: '/images/products/ZoCam-02.png', imageHint: 'ZoCam O2', href: '/buy#zocam-o2', description: 'Next evolution in at-home gut health diagnostics, combining optical imaging and microbiome sampling. Provides complete picture of gut health with AI-enhanced processing.', category: 'Test Kit' },
+  { id: 'zocam-a1', name: 'ZoCam-A1', imageUrl: '/images/products/ZoCam-A1.png', imageHint: 'ZoCam A1', href: '/buy#zocam-a1', description: 'Next generation non-invasive colorectal cancer (CRC) screening device using acoustic imaging technology. Level-1 screening device with radiation-free, patient-friendly approach.', category: 'Test Kit' },
+  { id: 'microbiome-kit', name: 'Microbiome Testing Kit', imageUrl: '/images/products/MicrobiomeTestingKit.png', imageHint: 'Microbiome Test Kit', href: '/buy#microbiome-kit', description: 'Science-backed, precision-driven analysis of gut microbiome with personalized insights and actionable recommendations. Uses advanced sequencing technology.', category: 'Test Kit' },
 ];
 
 interface AccordionSection {
@@ -73,10 +73,9 @@ export default function DiagnosePage() {
         <Image
           src={item.imageUrl}
           alt={item.name}
-          layout="fill"
-          objectFit="cover"
+          fill
           data-ai-hint={item.imageHint}
-          className="rounded-t-xl"
+          className="rounded-t-xl object-contain bg-white"
         />
       </div>
       <div className="p-2.5 flex-grow flex flex-col justify-between">
@@ -111,13 +110,6 @@ export default function DiagnosePage() {
       subtitle: 'Select to purchase',
       defaultOpen: true,
       items: diagnosticTestKits,
-    },
-    {
-      id: 'test-kits-prescription',
-      icon: FlaskConical,
-      title: 'Test Kits',
-      subtitle: 'Prescription Required',
-      content: <p className="text-sm text-muted-foreground p-3">Details about prescription test kits will appear here. This section does not use cards yet.</p>,
     },
     {
       id: 'results',
@@ -179,12 +171,47 @@ export default function DiagnosePage() {
                     </AccordionTrigger>
                     <AccordionContent className="bg-background">
                       {section.isSurveySection ? (
-                        <div className="p-3">
-                          <Button asChild className="w-full">
+                        <div className="p-3 space-y-2">
+                          <Button asChild className="w-full mb-4">
                             <Link href="/diagnose/survey">
                               Complete Full Diagnostic Survey
                             </Link>
                           </Button>
+                          {/* TESTING BUTTONS: Clear answers for each category */}
+                          <div className="grid grid-cols-1 gap-2 mt-2">
+                            {[
+                              'Digestive Health',
+                              'Nutrition & Diet',
+                              'Health Goals & Body Changes',
+                              'Physical Wellness',
+                              'Mental & Emotional Wellness',
+                              'Medications & Supplements',
+                            ].map((cat) => (
+                              <Button
+                                key={cat}
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => {
+                                  // Get all question IDs for this category
+                                  import('@/data/questionnaireData').then(({ questionnaireData }) => {
+                                    const questions = questionnaireData.part2[cat as keyof typeof questionnaireData.part2] || [];
+                                    const ids = questions.map((q: any) => q.id);
+                                    const stored = localStorage.getItem('onboardingAnswers');
+                                    if (!stored) return;
+                                    const answers = JSON.parse(stored);
+                                    ids.forEach((id: string) => {
+                                      delete answers[id];
+                                    });
+                                    localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+                                    // Optionally, force a reload or show a toast
+                                    window.location.reload();
+                                  });
+                                }}
+                              >
+                                Clear {cat} Answers
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                       ) : section.items && section.items.length > 0 ? (
                         <div className="flex overflow-x-auto space-x-3 p-3">

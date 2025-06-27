@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -14,16 +13,171 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { PostComposerModal } from './PostComposerModal'; // Import PostComposerModal
+import { trackingQuestions } from '@/data/trackingQuestions';
+import { getQuestionTime } from '@/utils/taskAllocation';
+
+function getCurrentTimePeriod(): 'morning' | 'afternoon' | 'evening' {
+  const hour = new Date().getHours();
+  if (hour >= 3 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'evening';
+}
+
+function getTimeOrder(time: string) {
+  if (time === 'morning') return 1;
+  if (time === 'afternoon') return 2;
+  if (time === 'evening') return 3;
+  return 4;
+}
+
+function getPriorityOrder(priority: string) {
+  if (priority === 'high') return 1;
+  if (priority === 'medium') return 2;
+  if (priority === 'low') return 3;
+  return 4;
+}
+
+function getPrioritizedTaskForCurrentPeriod() {
+  // Get current time period
+  const now = getCurrentTimePeriod();
+  // Get priorities from localStorage
+  let priorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
+  try {
+    priorities = JSON.parse(localStorage.getItem('trackingQuestionPriorities') || '{}');
+  } catch {}
+  // Get answers from localStorage
+  let answers: Record<string, any> = {};
+  try {
+    answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
+  } catch {}
+  // Gather all relevant tasks for current period only
+  const tasks: any[] = [];
+  const categoryMapping = {
+    'Digestive Health': 'digestive-health-&-symptoms',
+    'Medication & Supplement Use': 'medication-&-supplement-use',
+    'Nutrition & Diet Habits': 'diet-&-nutrition',
+    'Personalized Goals & Achievements': 'lifestyle-factors',
+    'Physical Activity & Movement': 'lifestyle-factors',
+    'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+  };
+  Object.entries(trackingQuestions).forEach(([category, questions]) => {
+    questions.forEach((q: any) => {
+      const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+      const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
+      if (taskTime === now) {
+        const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const id = `${categoryId}__${q.id}`;
+        if (answers[id] === undefined || answers[id] === '') {
+          tasks.push({
+            id,
+            question: q.text,
+            inputType: q.type === 'number' ? 'number' : 'options',
+            options: q.options,
+            placeholder: q.placeholder,
+            time: taskTime,
+            priority: (priorities[taskTime]?.[id]) || 'medium',
+            category
+          });
+        }
+      }
+    });
+  });
+  // Sort by priority
+  tasks.sort((a, b) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
+  return tasks[0] || null;
+}
+
+function QuickTaskInputCurrentPeriod() {
+  const [task, setTask] = useState<any | null>(null);
+  const [value, setValue] = useState<any>('');
+  useEffect(() => {
+    setTask(getPrioritizedTaskForCurrentPeriod());
+  }, []);
+  useEffect(() => {
+    if (task) {
+      let answers: Record<string, any> = {};
+      try {
+        answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
+      } catch {}
+      setValue(answers[task.id] ?? '');
+    }
+  }, [task]);
+  if (!task) return null;
+  const handleChange = (val: any) => {
+    setValue(val);
+    let answers: Record<string, any> = {};
+    try {
+      answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
+    } catch {}
+    answers[task.id] = val;
+    localStorage.setItem('trackingAnswers', JSON.stringify(answers));
+    // Also update date for daily reset
+    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
+    // Dispatch event so other components/pages update immediately
+    window.dispatchEvent(new CustomEvent('trackingAnswersChanged', {
+      detail: { taskId: task.id, value: val, allAnswers: answers }
+    }));
+    setTask(getPrioritizedTaskForCurrentPeriod()); // Move to next task if any
+  };
+  return (
+    <div className="px-2 py-3">
+      <div className="flex items-center mb-1">
+        <span className={
+          task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
+          task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
+          task.time === 'evening' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2' :
+          'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs mr-2'
+        }>{task.time.charAt(0).toUpperCase() + task.time.slice(1)}</span>
+        <span className="text-xs text-muted-foreground">{task.category}</span>
+      </div>
+      <div className="text-sm font-medium mb-2">{task.question}</div>
+      {task.inputType === 'number' ? (
+        <input
+          type="number"
+          className="border rounded px-2 py-1 w-full text-sm"
+          placeholder={task.placeholder}
+          value={value}
+          onChange={e => handleChange(e.target.value === '' ? '' : Number(e.target.value))}
+        />
+      ) : (
+        <div className="flex flex-col gap-1">
+          {task.options?.map((opt: string) => (
+            <button
+              key={opt}
+              className={
+                'border rounded px-2 py-1 text-left text-sm ' +
+                (value === opt ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted')
+              }
+              onClick={() => handleChange(opt)}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TopHeader() {
   const [sleepRating, setSleepRating] = useState<number | null>(null);
   const [mood, setMood] = useState<string | null>(null);
   const router = useRouter();
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false); // State for Post Composer
+
+  // Daily reset of tracking answers
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const storedDate = localStorage.getItem('trackingAnswersDate');
+    if (storedDate !== today) {
+      localStorage.removeItem('trackingAnswers');
+      localStorage.setItem('trackingAnswersDate', today);
+    }
+  }, []);
 
   const handleSleepRate = (rating: number) => {
     setSleepRating(rating);
@@ -48,7 +202,7 @@ export function TopHeader() {
       <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-[408px] bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
         <div className="flex h-full items-center justify-between px-4">
           {/* Left: Logo */}
-          <Link href="/launch" className="text-2xl font-bold text-primary flex items-baseline" style={{ fontFamily: 'Inter' }}>
+          <Link href="/launch" className="text-2xl font-headline text-primary flex items-center">
             Podium
           </Link>
 
@@ -73,10 +227,11 @@ export function TopHeader() {
                   <span className="sr-only">Log Activity or Quick Updates</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuContent align="end" className="w-72">
                 <DropdownMenuLabel>Quick Updates</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-
+                <QuickTaskInputCurrentPeriod />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
                   <div className="w-full">
                     <p className="text-sm mb-1.5 text-foreground">Rate your sleep</p>
@@ -99,31 +254,29 @@ export function TopHeader() {
                     </div>
                   </div>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default mt-1">
-                   <div className="w-full">
-                      <p className="text-sm mb-1.5 text-foreground">Rate your mood</p>
-                      <div className="flex justify-between items-center px-1">
-                          {moodOptions.map((opt) => (
-                              <Button
-                                  key={`mood-${opt.label}`}
-                                  variant="ghost"
-                                  size="icon"
-                                  className={cn(
-                                      "h-8 w-8 p-0 text-xl rounded-full", 
-                                      mood === opt.emoji ? "bg-accent/20 ring-2 ring-accent" : "hover:bg-accent/10"
-                                  )}
-                                  onClick={() => handleMoodSelect(opt.emoji)}
-                                  title={opt.label}
-                                  aria-label={opt.label}
-                              >
-                                  {opt.emoji}
-                              </Button>
-                          ))}
-                      </div>
-                   </div>
+                  <div className="w-full">
+                    <p className="text-sm mb-1.5 text-foreground">Rate your mood</p>
+                    <div className="flex justify-between items-center px-1">
+                      {moodOptions.map((opt) => (
+                        <Button
+                          key={`mood-${opt.label}`}
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-8 w-8 p-0 text-xl rounded-full", 
+                            mood === opt.emoji ? "bg-accent/20 ring-2 ring-accent" : "hover:bg-accent/10"
+                          )}
+                          onClick={() => handleMoodSelect(opt.emoji)}
+                          title={opt.label}
+                          aria-label={opt.label}
+                        >
+                          {opt.emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </DropdownMenuItem>
-                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => router.push('/track#diary-medication-&-supplement-use')} 

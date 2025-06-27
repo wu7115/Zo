@@ -39,7 +39,9 @@ import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, 
 import { cn } from '@/lib/utils';
 import { estimateActivityCalories, type EstimateActivityCaloriesInput, type EstimateActivityCaloriesOutput } from '@/ai/flows/estimate-activity-calories-flow';
 import { useToast } from "@/hooks/use-toast";
-import { generateTrackingActivities } from '@/ai/flows/generate-second-insight-flow';
+import { trackingQuestions } from '@/data/trackingQuestions';
+import { useEffect, useState } from 'react';
+import { getQuestionTime, resetAnytimeTaskAllocation, getAnytimeTaskAllocation } from '@/utils/taskAllocation';
 
 
 interface TrackingTask {
@@ -47,7 +49,7 @@ interface TrackingTask {
   goal: string;
   question: string;
   inputType: 'rating-5' | 'text' | 'number' | 'options' | 'boolean' | 'bristol' | 'textarea' | 'time';
-  time?: 'morning' | 'afternoon' | 'night' | null;
+  time?: 'morning' | 'afternoon' | 'evening' | null;
   options?: string[];
   placeholder?: string;
   status?: string;
@@ -63,66 +65,97 @@ interface TrackingCategory {
   badgeCount?: number;
 }
 
-const renderInputType = (task: TrackingTask) => {
+const renderInputType = (task: TrackingTask, value: any, onChange: (val: any) => void) => {
   const baseButtonClass = "rounded-full py-3 text-sm font-medium w-full justify-start px-4";
   const selectedButtonClass = "bg-primary text-primary-foreground hover:bg-primary/90";
   const unselectedButtonClass = "bg-secondary text-secondary-foreground hover:bg-secondary/80";
 
   switch (task.inputType) {
     case 'number':
-    case 'text':
-    case 'time':
-      return <Input type={task.inputType === 'number' ? 'number' : 'text'} placeholder={task.placeholder} className="mt-1 w-full" defaultValue={task.value?.toString()} />;
-    case 'textarea':
-      return <Textarea placeholder={task.placeholder} className="mt-1 w-full" defaultValue={task.value?.toString()} />;
-    case 'boolean':
       return (
-        <div className="mt-1 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-          <Button
-            variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", task.value === true ? selectedButtonClass : unselectedButtonClass)}
-          >
-            Yes
-          </Button>
-          <Button
-            variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", task.value === false ? selectedButtonClass : unselectedButtonClass)}
-          >
-            No
-          </Button>
-        </div>
+        <Input
+          type="number"
+          placeholder={task.placeholder}
+          className="mt-1 w-full"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+        />
+      );
+    case 'text':
+      return (
+        <Input
+          type="text"
+          placeholder={task.placeholder}
+          className="mt-1 w-full"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+        />
+      );
+    case 'textarea':
+      return (
+        <Textarea
+          placeholder={task.placeholder}
+          className="mt-1 w-full"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+        />
       );
     case 'options':
-    case 'bristol':
+    case 'bristol': {
       const isBristol = task.inputType === 'bristol';
       return (
         <div className="mt-1 flex flex-col space-y-2">
           {task.options?.map(opt => {
-            let optionValue: string;
-            if (isBristol) {
-              optionValue = opt.split(':')[0].toLowerCase().replace(' ', '-');
-            } else {
-              optionValue = opt.split(' ')[0].toLowerCase().replace(/[(),]/g, '');
-            }
-            const isSelected = task.value === optionValue;
+            let optionValue = opt;
+            const isSelected = value === optionValue;
             return (
               <Button
                 key={opt}
                 variant="outline"
                 className={cn(baseButtonClass, isSelected ? selectedButtonClass : unselectedButtonClass)}
+                onClick={() => onChange(optionValue)}
               >
                 {opt}
+                {isSelected && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
               </Button>
             );
           })}
+        </div>
+      );
+    }
+    case 'boolean':
+      return (
+        <div className="mt-1 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+          <Button
+            variant="outline"
+            className={cn(baseButtonClass, "flex-1 justify-center", value === true ? selectedButtonClass : unselectedButtonClass)}
+            onClick={() => onChange(true)}
+          >
+            Yes
+            {value === true && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
+          </Button>
+          <Button
+            variant="outline"
+            className={cn(baseButtonClass, "flex-1 justify-center", value === false ? selectedButtonClass : unselectedButtonClass)}
+            onClick={() => onChange(false)}
+          >
+            No
+            {value === false && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
+          </Button>
         </div>
       );
     case 'rating-5':
       return (
         <div className="mt-1 flex space-x-1 justify-center">
           {[1, 2, 3, 4, 5].map(starRating => (
-            <Button key={starRating} variant="ghost" size="icon" className="p-1">
-              <Star className={`h-6 w-6 ${ (task.value && typeof task.value === 'number' && task.value >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+            <Button
+              key={starRating}
+              variant="ghost"
+              size="icon"
+              className="p-1"
+              onClick={() => onChange(starRating)}
+            >
+              <Star className={`h-6 w-6 ${ (value && typeof value === 'number' && value >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
             </Button>
           ))}
         </div>
@@ -141,6 +174,109 @@ const categoryIconMap: Record<string, React.ElementType> = {
   'Medication & Supplement Use': Pill,
   'Lifestyle Factors': Activity,
   'Stress, Sleep, and Recovery': BedDouble,
+};
+
+// Helper function to get priority for a task
+const getTaskPriority = (taskId: string, priorities: Record<string, Record<string, 'high' | 'medium' | 'low'>>): 'high' | 'medium' | 'low' => {
+  // Search through all time periods for the task priority
+  for (const timePeriod of ['morning', 'afternoon', 'evening']) {
+    if (priorities[timePeriod] && priorities[timePeriod][taskId]) {
+      return priorities[timePeriod][taskId];
+    }
+  }
+  return 'medium'; // Default priority
+};
+
+// Helper function to sort tasks by time period and priority
+const sortTasksByTimeAndPriority = (tasks: TrackingTask[], priorities: Record<string, Record<string, 'high' | 'medium' | 'low'>>): TrackingTask[] => {
+  const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
+  const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 };
+  
+  return [...tasks].sort((a, b) => {
+    // First sort by time period
+    const aTimeOrder = a.time ? timeOrder[a.time] : 4; // null time goes last
+    const bTimeOrder = b.time ? timeOrder[b.time] : 4;
+    
+    if (aTimeOrder !== bTimeOrder) {
+      return aTimeOrder - bTimeOrder;
+    }
+    
+    // Then sort by priority
+    const aPriority = getTaskPriority(a.id, priorities);
+    const bPriority = getTaskPriority(b.id, priorities);
+    const aPriorityOrder = priorityOrder[aPriority];
+    const bPriorityOrder = priorityOrder[bPriority];
+    
+    return aPriorityOrder - bPriorityOrder;
+  });
+};
+
+// Helper function to convert trackingQuestions to the expected plan format
+const convertTrackingQuestionsToPlan = (questions: typeof trackingQuestions) => {
+  const categoryMapping = {
+    'Digestive Health': 'digestive-health-&-symptoms',
+    'Medication & Supplement Use': 'medication-&-supplement-use',
+    'Nutrition & Diet Habits': 'diet-&-nutrition',
+    'Personalized Goals & Achievements': 'lifestyle-factors',
+    'Physical Activity & Movement': 'lifestyle-factors',
+    'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+  };
+
+  // Get persistent anytime allocation
+  const anytimeAllocation = getAnytimeTaskAllocation();
+
+  const plan = [];
+
+  for (const [categoryName, questionsList] of Object.entries(questions)) {
+    const categoryId = categoryMapping[categoryName as keyof typeof categoryMapping] || categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (!categoryId) continue;
+
+    const dailyTasks = (questionsList as any[]).map((q: any, index: number) => {
+      // Use persistent anytime allocation for anytime questions
+      let assignedTime = q.timeOfDay;
+      if (q.timeOfDay === 'Anytime' && q.id && anytimeAllocation[q.id]) {
+        assignedTime = anytimeAllocation[q.id];
+      }
+      const time = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
+      return {
+        id: `${categoryId}__${q.id || index}`,
+        goal: q.text,
+        question: q.text,
+        inputType: q.type === 'number' ? 'number' : 'options',
+        time,
+        options: q.options || [],
+        placeholder: q.placeholder || undefined,
+        status: 'Pending'
+      };
+    });
+
+    plan.push({
+      categoryId,
+      title: categoryName,
+      dailyTasks,
+      weeklyTasks: [] // No weekly tasks in hard-coded version
+    });
+  }
+
+  return plan;
+};
+
+// Helper: get ordered categories from trackingQuestions
+const getTrackingCategories = () => {
+  // Use the order from Object.keys(trackingQuestions)
+  const iconMap: Record<string, React.ElementType> = {
+    'Digestive Health': HeartPulse,
+    'Medication & Supplement Use': Pill,
+    'Nutrition & Diet Habits': Utensils,
+    'Personalized Goals & Achievements': Star,
+    'Physical Activity & Movement': Activity,
+    'Stress, Sleep, and Recovery': BedDouble,
+  };
+  return Object.keys(trackingQuestions).map((cat) => ({
+    id: cat.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    title: cat,
+    icon: iconMap[cat] || ClipboardList,
+  }));
 };
 
 export default function TrackPage() {
@@ -247,52 +383,106 @@ export default function TrackPage() {
 
   const [trackingData, setTrackingData] = React.useState<TrackingCategory[]>([]); // ← define this at the top
 
-  React.useEffect(() => {
-    const ALL_TRACKING_CATEGORIES: Omit<TrackingCategory, 'dailyTasks' | 'weeklyTasks'>[] = [
-      { id: 'diet-&-nutrition', title: 'Diet & Nutrition', icon: Utensils },
-      { id: 'digestive-health-&-symptoms', title: 'Digestive Health & Symptoms', icon: HeartPulse },
-      { id: 'non-gut-health-conditions', title: 'Non-Gut Health Conditions', icon: Pill },
-      { id: 'gut-to-brain-&-nervous-system', title: 'Gut-to-Brain / Nervous System', icon: Brain },
-      { id: 'medication-&-supplement-use', title: 'Medication & Supplement Use', icon: Pill },
-      { id: 'lifestyle-factors', title: 'Lifestyle Factors', icon: Activity },
-      { id: 'sleep-&-recovery', title: 'Sleep & Recovery', icon: BedDouble },
-    ];
+  const [trackingAnswers, setTrackingAnswers] = useState<{ [taskId: string]: any }>(() => {
+    if (typeof window !== 'undefined') {
+      const savedAnswers = localStorage.getItem('trackingAnswers');
+      const savedDate = localStorage.getItem('trackingAnswersDate');
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (savedAnswers && savedDate === today) {
+        return JSON.parse(savedAnswers);
+      } else {
+        // Reset answers if it's a new day
+        localStorage.setItem('trackingAnswers', JSON.stringify({}));
+        localStorage.setItem('trackingAnswersDate', today);
+        return {};
+      }
+    }
+    return {};
+  });
 
-    const storedPlan = localStorage.getItem('trackingPlan');
-    if (!storedPlan) return;
+  useEffect(() => {
+    localStorage.setItem('trackingAnswers', JSON.stringify(trackingAnswers));
+    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
+  }, [trackingAnswers]);
 
-    const activitiesFromPlan = JSON.parse(storedPlan);
+  // Listen for trackingAnswersChanged and refresh trackingAnswers from localStorage
+  useEffect(() => {
+    const handleTrackingAnswersChanged = () => {
+      // Reload answers from localStorage
+      const savedAnswers = localStorage.getItem('trackingAnswers');
+      const savedDate = localStorage.getItem('trackingAnswersDate');
+      const today = new Date().toISOString().split('T')[0];
+      if (savedAnswers && savedDate === today) {
+        setTrackingAnswers(JSON.parse(savedAnswers));
+      } else {
+        setTrackingAnswers({});
+      }
+    };
+    window.addEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
+    return () => {
+      window.removeEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
+    };
+  }, []);
+
+  const [trackingPriorities, setTrackingPriorities] = React.useState<Record<string, Record<string, 'high' | 'medium' | 'low'>>>({});
+
+  useEffect(() => {
+    // Load priorities from localStorage
+    const cacheKey = 'trackingQuestionPriorities';
+    let allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
+    try {
+      allPriorities = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+    } catch {}
+    setTrackingPriorities(allPriorities);
+  }, []);
+
+  useEffect(() => {
+    // Use the new hard-coded tracking questions from trackingQuestions.ts
+    const hardcodedTrackingPlan = convertTrackingQuestionsToPlan(trackingQuestions);
+
+    // Get categories in the same order and names as trackingQuestions
+    const ALL_TRACKING_CATEGORIES = getTrackingCategories();
 
     const activityMap = new Map<string, { dailyTasks: TrackingTask[]; weeklyTasks: TrackingTask[] }>();
-    for (const cat of activitiesFromPlan as any[]) {
-      activityMap.set(cat.categoryId, {
-        dailyTasks: Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+    for (const cat of hardcodedTrackingPlan as any[]) {
+      // Sort daily tasks by time period and priority
+      const sortedDailyTasks = sortTasksByTimeAndPriority(
+        Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+        trackingPriorities
+      );
+      
+      activityMap.set(cat.title, {
+        dailyTasks: sortedDailyTasks,
         weeklyTasks: Array.isArray(cat.weeklyTasks) ? cat.weeklyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
       });
     }
 
     const fullCategories: TrackingCategory[] = ALL_TRACKING_CATEGORIES.map(({ id, title, icon }) => {
-      const tasks = activityMap.get(id) || { dailyTasks: [], weeklyTasks: [] };
-      // Count incomplete tasks (status !== 'Done')
-      const incompleteCount = [
-        ...tasks.dailyTasks,
-        ...tasks.weeklyTasks
-      ].filter(task => task.status !== 'Done').length;
+      const tasks = activityMap.get(title) || { dailyTasks: [], weeklyTasks: [] };
+      // Count unanswered daily tasks (not present or empty in trackingAnswers)
+      const unansweredCount = tasks.dailyTasks.filter(task => trackingAnswers[task.id] === undefined || trackingAnswers[task.id] === '').length;
+      
       return {
         id,
         title,
         icon,
-        badgeCount: incompleteCount,
+        badgeCount: unansweredCount,
         dailyTasks: tasks.dailyTasks,
         weeklyTasks: tasks.weeklyTasks,
       };
     });
 
     setTrackingData(fullCategories);
-  }, []);
+  }, [trackingAnswers, trackingPriorities]);
 
   const [defaultOpenItems, setDefaultOpenItems] = React.useState<string[]>([]);
 
+  // Add reset button for anytime allocation
+  const handleResetAllocation = () => {
+    resetAnytimeTaskAllocation();
+    window.location.reload();
+  };
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -460,32 +650,58 @@ export default function TrackPage() {
                           <div>
                             <h4 className="font-semibold text-primary mb-2">Daily Tasks</h4>
                             {category.dailyTasks.length === 0 && <p className="text-muted-foreground text-sm">No daily tasks for this category.</p>}
-                            {category.dailyTasks.map((task) => (
-                              <div key={task.id} className="mb-4 p-3 border rounded-lg bg-muted/10 flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-primary flex items-center">
-                                    Goal: {task.goal}
-                                  </span>
-                                  {task.time && (
-                                    <span className={
-                                      task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                      task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                      task.time === 'night' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                      'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs ml-2'
-                                    }>
-                                      {task.time.charAt(0).toUpperCase() + task.time.slice(1)}
-                                    </span>
+                            {category.dailyTasks.map((task) => {
+                              const answered = trackingAnswers[task.id] !== undefined && trackingAnswers[task.id] !== '';
+                              return (
+                                <div
+                                  key={task.id}
+                                  className={cn(
+                                    "mb-4 p-3 border rounded-lg flex flex-col gap-2 transition-all",
+                                    answered ? "border-green-500 bg-green-50" : "bg-muted/10 border"
                                   )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-primary flex items-center">
+                                      Goal: {task.goal}
+                                    </span>
+                                    {task.time && (
+                                      <span className={
+                                        task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs ml-2' :
+                                        task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs ml-2' :
+                                        task.time === 'evening' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs ml-2' :
+                                        'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs ml-2'
+                                      }>
+                                        {task.time.charAt(0).toUpperCase() + task.time.slice(1)}
+                                      </span>
+                                    )}
+                                    {/* Priority indicator */}
+                                    <div className="flex items-center gap-2">
+                                      {(() => {
+                                        const priority = getTaskPriority(task.id, trackingPriorities);
+                                        const sunEmojis = priority === 'high' ? '☀️☀️☀️' : priority === 'medium' ? '☀️☀️' : '☀️';
+                                        return (
+                                          <span className="text-xs text-muted-foreground">
+                                            Priority: {sunEmojis}
+                                          </span>
+                                        );
+                                      })()}
+                                    </div>
+                                    {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
+                                  </div>
+                                  <hr className="my-1 border-muted" />
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-sm flex items-center">
+                                      {task.question}
+                                    </span>
+                                  </div>
+                                  {renderInputType(task, trackingAnswers[task.id], (val) => {
+                                    const newAnswers = { ...trackingAnswers, [task.id]: val };
+                                    setTrackingAnswers(newAnswers);
+                                    localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
+                                  })}
                                 </div>
-                                <hr className="my-1 border-muted" />
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground text-sm flex items-center">
-                                    {task.question}
-                                  </span>
-                                </div>
-                                {renderInputType(task)}
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           <div className="mt-4">
                             <h4 className="font-semibold text-primary mb-2">Weekly Tasks</h4>
@@ -503,7 +719,11 @@ export default function TrackPage() {
                                     {task.question}
                                   </span>
                                 </div>
-                                {renderInputType(task)}
+                                {renderInputType(task, trackingAnswers[task.id], (val) => {
+                                  const newAnswers = { ...trackingAnswers, [task.id]: val };
+                                  setTrackingAnswers(newAnswers);
+                                  localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
+                                })}
                               </div>
                             ))}
                           </div>
@@ -512,6 +732,29 @@ export default function TrackPage() {
                     </AccordionItem>
                   ))}
                 </Accordion>
+                <div className="flex justify-center mt-6 space-x-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      const emptyAnswers = {};
+                      setTrackingAnswers(emptyAnswers);
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('trackingAnswers');
+                        localStorage.removeItem('trackingAnswersDate');
+                      }
+                    }}
+                    className="w-full max-w-xs"
+                  >
+                    Clear All Answers
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleResetAllocation}
+                    className="w-full max-w-xs"
+                  >
+                    Re-allocate Anytime Tasks
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

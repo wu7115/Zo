@@ -10,6 +10,15 @@ import { Check, ArrowLeft, CheckCircle, Loader2, Lightbulb, AlertTriangle } from
 import { generateInitialInsight, type GenerateInitialInsightInput, type GenerateInitialInsightOutput } from '@/ai/flows/generate-initial-insight-flow';
 import { questionnaireData } from '@/data/questionnaireData';
 
+type TrackingQuestionForLLM = {
+  id: string;
+  type: string;
+  text: string;
+  timeOfDay: string;
+  options?: string[];
+  placeholder?: string;
+  condition?: any;
+};
 
 // UI Sub-Components
 const OnboardingStepContainer = ({ children, className }: { children: React.ReactNode, className?: string }) => (
@@ -158,7 +167,7 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
     const currentQuestion = questions[qIndex];
 
     const handleAnswer = (value: any) => {
-        setAnswers((prev: any) => ({ ...prev, [currentQuestion.id]: value }));
+        setAnswers((prev: any) => ({ ...prev, [currentQuestion?.id ?? '']: value }));
     };
 
     const handleNext = () => {
@@ -170,20 +179,21 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
     };
 
     const renderQuestion = () => {
-        const commonProps = { question: currentQuestion, answer: answers[currentQuestion.id], onAnswerChange: handleAnswer };
-        switch (currentQuestion.type) {
+        const commonProps = { question: currentQuestion, answer: answers?.[currentQuestion?.id ?? ''], onAnswerChange: handleAnswer };
+        switch (currentQuestion?.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
-            case 'single-dynamic':
-                const dynamicOptions = answers[currentQuestion.dependsOn] || [];
-                if (dynamicOptions.length === 0 && qIndex > 0 && !questions.find(q => q.id === currentQuestion.dependsOn)?.options.includes(answers[currentQuestion.dependsOn])) {
-                   return <p className="text-muted-foreground text-center py-4">Please select your primary reasons first to see this question.</p>;
+            case 'single-dynamic': {
+                const dynamicOptions = answers?.[currentQuestion?.dependsOn ?? ''] || [];
+                if (!Array.isArray(dynamicOptions) || dynamicOptions.length === 0) {
+                    return <p className="text-muted-foreground text-center py-4">Please select your primary reasons first to see this question.</p>;
                 }
                 return <SingleSelectQuestionComponent {...commonProps} question={{...currentQuestion, options: dynamicOptions.length > 0 ? dynamicOptions : ['Please select primary reasons first']}} />;
+            }
             default: return <SingleSelectQuestionComponent {...commonProps} />;
         }
     };
 
-    const isNextDisabled = currentQuestion.type === 'single-dynamic' && (!answers[currentQuestion.dependsOn] || answers[currentQuestion.dependsOn].length === 0) && (!answers[currentQuestion.id]);
+    const isNextDisabled = currentQuestion?.type === 'single-dynamic' && (!answers?.[currentQuestion?.dependsOn ?? ''] || answers?.[currentQuestion?.dependsOn ?? ''].length === 0) && (!answers?.[currentQuestion?.id ?? '']);
 
 
     return (
@@ -191,7 +201,7 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
             <h2 className="font-headline text-2xl mb-6 text-center text-primary">Set Your Goals</h2>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">{renderQuestion()}</div>
             <div className="flex-shrink-0 mt-8 space-y-2">
-                <PrimaryButton onClick={handleNext} disabled={isNextDisabled || (answers[currentQuestion.id] === undefined || (Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].length === 0))}>Next</PrimaryButton>
+                <PrimaryButton onClick={handleNext} disabled={isNextDisabled || (answers[currentQuestion?.id ?? ''] === undefined || (Array.isArray(answers[currentQuestion?.id ?? '']) && answers[currentQuestion?.id ?? ''].length === 0))}>Next</PrimaryButton>
                 <Button variant="ghost" className="w-full text-sm text-muted-foreground p-2 h-auto">Save for Later</Button>
             </div>
         </div>
@@ -349,14 +359,13 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     const [qIndex, setQIndex] = useState(0);
 
     const visibleQuestions = useMemo(() => {
-        return questions.filter(q => q.condition ? q.condition(globalAnswers) : true);
+        return questions.filter(q => typeof q === 'object' && q !== null && 'condition' in q && typeof (q as any).condition === 'function' ? (q as any).condition(globalAnswers) : true);
     }, [questions, globalAnswers]);
 
     const currentQuestion = visibleQuestions[qIndex];
 
     const handleAnswer = (value: any) => {
-        // Update global answers state directly from here
-        setAnswers((prevGlobalAnswers: any) => ({ ...prevGlobalAnswers, [currentQuestion.id]: value }));
+        setAnswers((prevGlobalAnswers: any) => ({ ...prevGlobalAnswers, [currentQuestion?.id ?? '']: value }));
     };
 
     const handleNext = () => {
@@ -369,12 +378,25 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 
     const renderQuestion = () => {
         if (!currentQuestion) return <p className="text-muted-foreground">No more questions in this category or conditions not met.</p>;
-        const commonProps = { question: currentQuestion, answer: globalAnswers[currentQuestion.id], onAnswerChange: handleAnswer };
+        const commonProps = { question: currentQuestion, answer: globalAnswers?.[currentQuestion?.id ?? ''], onAnswerChange: handleAnswer };
         switch(currentQuestion.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
             case 'single': return <SingleSelectQuestionComponent {...commonProps} />;
             case 'number': return <NumberInputQuestionComponent {...commonProps} />;
             case 'text': return <TextInputQuestionComponent {...commonProps} />;
+            case 'single-dynamic': {
+                const dynamicOptions = globalAnswers?.[currentQuestion?.dependsOn ?? ''] || [];
+                if (!Array.isArray(dynamicOptions) || dynamicOptions.length === 0) {
+                    return <p className="text-muted-foreground text-center py-4">Please select your primary reasons first to see this question.</p>;
+                }
+                return <SingleSelectQuestionComponent
+                    {...commonProps}
+                    question={{
+                        ...currentQuestion,
+                        options: dynamicOptions.length > 0 ? dynamicOptions : ['Please select primary reasons first']
+                    }}
+                />;
+            }
             default: return <p className="text-red-500">Unsupported question type: {currentQuestion.type}</p>;
         }
     };
@@ -415,6 +437,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: any, setAnswers: React.Dispatch<React.SetStateAction<any>>, onComplete: () => void }) => {
     const router = useRouter();
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [isFinishing, setIsFinishing] = useState(false);
 
     const allCategories = Object.keys(questionnaireData.part2);
 
@@ -447,6 +470,97 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
     }
 
     const allQuestionsConsideredAnswered = completedCategoriesCount === allCategories.length;
+
+    const handleFinishOnboarding = async () => {
+        setIsFinishing(true);
+        console.log('Onboarding data collected:', answers);
+        localStorage.setItem('isOnboarded', 'true');
+        // Ensure final answers are saved before redirecting
+        localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+        // Clear tracking question priorities cache so it will be recalculated
+        localStorage.removeItem('trackingQuestionPriorities');
+        // Clear anytime task allocation cache so it will be recalculated
+        localStorage.removeItem('anytimeTaskAllocation');
+
+        // Allocate anytime tasks ONCE and store in localStorage
+        const { trackingQuestions } = await import('@/data/trackingQuestions');
+        const anytimeQuestions: string[] = [];
+        Object.values(trackingQuestions).forEach((questions: any[]) => {
+          questions.forEach((q: any) => {
+            if (q.timeOfDay === 'Anytime' && q.id) {
+              anytimeQuestions.push(q.id);
+            }
+          });
+        });
+        // Shuffle and allocate
+        const shuffled: string[] = anytimeQuestions.slice().sort(() => Math.random() - 0.5);
+        const allocation: Record<string, string> = {};
+        shuffled.forEach((qid: string, i: number) => {
+          if (i < 10) allocation[qid] = 'Morning';
+          else if (i < 16) allocation[qid] = 'Afternoon';
+          else allocation[qid] = 'Evening';
+        });
+        localStorage.setItem('anytimeTaskAllocation', JSON.stringify(allocation));
+
+        // Generate priorities for all time periods
+        const periods = ['morning', 'afternoon', 'evening'];
+        const allPriorities: { [key: string]: Record<string, 'high' | 'medium' | 'low'> } = {};
+        const { getQuestionTime } = await import('@/utils/taskAllocation');
+        const categoryMapping: { [key: string]: string } = {
+          'Digestive Health': 'digestive',
+          'Medication & Supplement Use': 'medication',
+          'Nutrition & Diet Habits': 'nutrition',
+          'Personalized Goals & Achievements': 'goals',
+          'Physical Activity & Movement': 'activity',
+          'Stress, Sleep, and Recovery': 'stress',
+        };
+        for (const period of periods) {
+          const timeTasks: TrackingQuestionForLLM[] = [];
+          Object.entries(trackingQuestions).forEach(([category, questions]) => {
+            questions.forEach((q) => {
+              if ((q as any).condition && typeof (q as any).condition === 'function' && !(q as any).condition(answers)) return;
+              const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+              if (assignedTime === period.charAt(0).toUpperCase() + period.slice(1)) {
+                const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                timeTasks.push({
+                  id: `${categoryId}__${q.id}`,
+                  type: q.type,
+                  text: q.text,
+                  timeOfDay: q.timeOfDay,
+                  options: q.options,
+                  placeholder: 'placeholder' in q ? q.placeholder?.toString() || '' : '',
+                  condition: 'condition' in q ? q.condition : undefined,
+                });
+              }
+            });
+          });
+          try {
+            const res = await fetch('/api/ai-prioritize-tracking-questions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
+            });
+            const prioritiesArr = await res.json();
+            const prioritiesMap = {};
+            if (Array.isArray(prioritiesArr)) {
+              prioritiesArr.forEach((item) => {
+                if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
+                  prioritiesMap[item.id] = item.priority;
+                }
+              });
+            }
+            allPriorities[period] = prioritiesMap;
+          } catch (e) {
+            // fallback: all medium
+            const prioritiesMap = {};
+            timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
+            allPriorities[period] = prioritiesMap;
+          }
+        }
+        localStorage.setItem('trackingQuestionPriorities', JSON.stringify(allPriorities));
+        setIsFinishing(false);
+        router.push('/');
+    };
 
     return (
          <div className="p-6 bg-card h-full flex flex-col">
@@ -492,7 +606,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: an
 
             <div className="mt-auto flex-shrink-0 pt-4 border-t border-border">
                 <PrimaryButton onClick={() => router.push('/diagnose/plan')}>
-                    {allQuestionsConsideredAnswered ? 'View My Full Plan' : 'Finish For Now & Go to Home'}
+                    {allQuestionsConsideredAnswered ? 'View Insights' : 'Finish For Now & Go to Home'}
                 </PrimaryButton>
             </div>
          </div>
@@ -504,6 +618,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState('splash');
   const [answers, setAnswers] = useState<any>({});
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Load answers from localStorage on initial mount
   useEffect(() => {
@@ -526,11 +641,94 @@ export default function OnboardingPage() {
   }, [answers, currentStep]);
 
 
-  const handleFinishOnboarding = () => {
+  const handleFinishOnboarding = async () => {
+    setIsFinishing(true);
     console.log('Onboarding data collected:', answers);
     localStorage.setItem('isOnboarded', 'true');
     // Ensure final answers are saved before redirecting
     localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+    // Clear tracking question priorities cache so it will be recalculated
+    localStorage.removeItem('trackingQuestionPriorities');
+    // Clear anytime task allocation cache so it will be recalculated
+    localStorage.removeItem('anytimeTaskAllocation');
+
+    // Allocate anytime tasks ONCE and store in localStorage
+    const { trackingQuestions } = await import('@/data/trackingQuestions');
+    const anytimeQuestions: string[] = [];
+    Object.values(trackingQuestions).forEach((questions: any[]) => {
+      questions.forEach((q: any) => {
+        if (q.timeOfDay === 'Anytime' && q.id) {
+          anytimeQuestions.push(q.id);
+        }
+      });
+    });
+    // Shuffle and allocate
+    const shuffled: string[] = anytimeQuestions.slice().sort(() => Math.random() - 0.5);
+    const allocation: Record<string, string> = {};
+    shuffled.forEach((qid: string, i: number) => {
+      if (i < 10) allocation[qid] = 'Morning';
+      else if (i < 16) allocation[qid] = 'Afternoon';
+      else allocation[qid] = 'Evening';
+    });
+    localStorage.setItem('anytimeTaskAllocation', JSON.stringify(allocation));
+
+    // Generate priorities for all time periods
+    const periods = ['morning', 'afternoon', 'evening'];
+    const allPriorities: { [key: string]: Record<string, 'high' | 'medium' | 'low'> } = {};
+    const { getQuestionTime } = await import('@/utils/taskAllocation');
+    const categoryMapping: { [key: string]: string } = {
+      'Digestive Health': 'digestive',
+      'Medication & Supplement Use': 'medication',
+      'Nutrition & Diet Habits': 'nutrition',
+      'Personalized Goals & Achievements': 'goals',
+      'Physical Activity & Movement': 'activity',
+      'Stress, Sleep, and Recovery': 'stress',
+    };
+    for (const period of periods) {
+      const timeTasks: TrackingQuestionForLLM[] = [];
+      Object.entries(trackingQuestions).forEach(([category, questions]) => {
+        questions.forEach((q) => {
+          if ((q as any).condition && typeof (q as any).condition === 'function' && !(q as any).condition(answers)) return;
+          const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+          if (assignedTime === period.charAt(0).toUpperCase() + period.slice(1)) {
+            const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            timeTasks.push({
+              id: `${categoryId}__${q.id}`,
+              type: q.type,
+              text: q.text,
+              timeOfDay: q.timeOfDay,
+              options: q.options,
+              placeholder: 'placeholder' in q ? q.placeholder?.toString() || '' : '',
+              condition: 'condition' in q ? q.condition : undefined,
+            });
+          }
+        });
+      });
+      try {
+        const res = await fetch('/api/ai-prioritize-tracking-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
+        });
+        const prioritiesArr = await res.json();
+        const prioritiesMap = {};
+        if (Array.isArray(prioritiesArr)) {
+          prioritiesArr.forEach((item) => {
+            if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
+              prioritiesMap[item.id] = item.priority;
+            }
+          });
+        }
+        allPriorities[period] = prioritiesMap;
+      } catch (e) {
+        // fallback: all medium
+        const prioritiesMap = {};
+        timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
+        allPriorities[period] = prioritiesMap;
+      }
+    }
+    localStorage.setItem('trackingQuestionPriorities', JSON.stringify(allPriorities));
+    setIsFinishing(false);
     router.push('/');
   };
 

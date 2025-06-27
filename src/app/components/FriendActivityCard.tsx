@@ -1,9 +1,8 @@
-
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThumbsUp, MessageCircle, Bike, CalendarDays } from "lucide-react";
+import { ThumbsUp, MessageCircle, Bike, CalendarDays, MoreHorizontal } from "lucide-react";
 
 const friendActivity = {
   friend: {
@@ -26,7 +25,16 @@ export function FriendActivityCard() {
   const ActivityIcon = friendActivity.activityIcon || Bike;
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg relative">
+      {/* Top right icon button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 z-10 p-1 h-7 w-7 text-muted-foreground hover:text-primary"
+        aria-label="View Details"
+      >
+        <MoreHorizontal className="h-5 w-5" />
+      </Button>
       <CardHeader className="flex flex-row items-center space-x-3 pb-3">
         <Avatar className="h-10 w-10">
           <AvatarImage src={friendActivity.friend.avatarUrl} alt={friendActivity.friend.name} data-ai-hint={friendActivity.friend.avatarHint} />
@@ -67,7 +75,6 @@ export function FriendActivityCard() {
             Comment ({friendActivity.comments})
           </Button>
         </div>
-        <Button variant="outline" size="sm">View Details</Button>
       </CardFooter>
     </Card>
   );

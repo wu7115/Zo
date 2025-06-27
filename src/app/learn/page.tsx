@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -41,18 +40,68 @@ interface LearnCategory {
   defaultOpen?: boolean;
 }
 
+// AI Learning Content Feed State Management
+function useSharedAiLearningFeed(onboardingAnswers: any) {
+  const [aiLearningItems, setAiLearningItems] = React.useState<LearnItemData[]>([]);
+  const [batchIndex, setBatchIndex] = React.useState(0);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    // Try to load from localStorage
+    const stored = localStorage.getItem('aiLearningFeed');
+    if (stored) {
+      const { items, batchIndex: idx } = JSON.parse(stored);
+      setAiLearningItems(items || []);
+      setBatchIndex(idx || 0);
+    } else {
+      fetchNextBatch();
+    }
+    // eslint-disable-next-line
+  }, []);
+
+  async function fetchNextBatch() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ai-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onboardingAnswers, batchIndex: batchIndex + 1 }),
+      });
+      const newTopic = await res.json();
+      
+      // Convert AI topic to LearnItemData format
+      const newLearningItem: LearnItemData = {
+        id: newTopic.id,
+        title: newTopic.title,
+        snippet: newTopic.description,
+        source: 'AI Generated',
+        type: 'Article',
+        imageUrl: newTopic.imageUrl,
+        imageHint: 'ai generated content',
+        link: newTopic.link,
+        category: 'Article'
+      };
+      
+      const updatedItems = [...aiLearningItems, newLearningItem];
+      setAiLearningItems(updatedItems);
+      setBatchIndex(batchIndex + 1);
+      localStorage.setItem('aiLearningFeed', JSON.stringify({ items: updatedItems, batchIndex: batchIndex + 1 }));
+    } catch (e) {
+      // fallback: do nothing
+    }
+    setLoading(false);
+  }
+
+  return { aiLearningItems, fetchNextBatch, loading };
+}
+
 const learnCategories: LearnCategory[] = [
   {
     id: 'articles',
     title: 'Articles',
     icon: FileText,
     defaultOpen: true,
-    items: [
-      { id: 'article-microbiome', title: 'Understanding Your Microbiome', snippet: 'Learn the basics of gut health and its importance.', source: 'Wellness Digest', imageUrl: 'https://placehold.co/171x150.png', imageHint: 'microscope cells', link: '#', category: 'Article', type: 'Article' },
-      { id: 'article-probiotic-foods', title: 'Top 5 Probiotic Foods', snippet: 'Discover natural food sources to boost your gut flora.', source: 'Nutrition Hub', imageUrl: 'https://placehold.co/171x150.png', imageHint: 'probiotic food', link: '#', category: 'Article', type: 'Article' },
-      { id: 'article-gut-brain', title: 'The Gut-Brain Axis', snippet: 'An exploration of the communication between your digestive system and brain.', source: 'Mind & Body Journal', imageUrl: 'https://placehold.co/171x150.png', imageHint: 'brain connection', link: '#', category: 'Article', type: 'Article' },
-      { id: 'article-fiber', title: 'Benefits of Fiber', snippet: 'Why fiber is crucial for digestive health.', source: 'Healthy Living', imageUrl: 'https://placehold.co/171x150.png', imageHint: 'fiber foods', link: '#', category: 'Article', type: 'Article' },
-    ],
+    items: [], // Will be populated dynamically with AI content
   },
   {
     id: 'podcasts',
@@ -90,6 +139,18 @@ export default function LearnPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedItemForModal, setSelectedItemForModal] = React.useState<ModalItemData | null>(null);
   const currentUserContext = "interested in learning more about wellness"; // Example context
+
+  // Get onboarding answers from localStorage
+  const [onboardingAnswers, setOnboardingAnswers] = React.useState<any>({});
+  React.useEffect(() => {
+    setOnboardingAnswers(JSON.parse(localStorage.getItem('onboardingAnswers') || '{}'));
+  }, []);
+
+  // Shared AI learning feed
+  const { aiLearningItems, fetchNextBatch, loading: loadingAiLearning } = useSharedAiLearningFeed(onboardingAnswers);
+
+  // Use only AI-generated content for articles
+  const allArticles = aiLearningItems;
 
   const handleOpenModal = (item: LearnItemData) => {
     setSelectedItemForModal({
@@ -132,7 +193,11 @@ export default function LearnPage() {
           </CardHeader>
           <CardContent className="space-y-1 pb-4">
              <Accordion type="multiple" defaultValue={learnCategories.filter(c => c.defaultOpen).map(c => c.id)} className="w-full">
-              {learnCategories.map((category) => (
+              {learnCategories.map((category) => {
+                // Use combined articles for the articles category
+                const items = category.id === 'articles' ? allArticles : category.items;
+                
+                return (
                 <AccordionItem value={category.id} key={category.id} className="mb-2 rounded-lg border bg-card overflow-hidden">
                   <AccordionTrigger className="hover:bg-muted/20 data-[state=open]:bg-muted/30 p-3 text-primary font-semibold no-underline">
                     <div className="flex items-center flex-1 text-left">
@@ -142,7 +207,7 @@ export default function LearnPage() {
                   </AccordionTrigger>
                   <AccordionContent className="bg-background p-0">
                     <div className="flex overflow-x-auto space-x-3 p-3">
-                      {category.items.length > 0 ? category.items.map((item) => (
+                        {items.length > 0 ? items.map((item) => (
                         <Card key={item.id} className="w-[171px] h-[200px] flex-shrink-0 flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow rounded-lg border">
                           <Link href={item.link || '#'} target="_blank" rel="noopener noreferrer" className="block w-full h-[150px] relative rounded-t-lg overflow-hidden">
                             <Image
@@ -168,10 +233,16 @@ export default function LearnPage() {
                       )) : (
                         <p className="p-3 text-sm text-muted-foreground text-center w-full">No items in this category yet.</p>
                       )}
+                        {category.id === 'articles' && (
+                          <Button onClick={fetchNextBatch} disabled={loadingAiLearning} className="min-w-[120px] h-[200px] flex-shrink-0 flex flex-col items-center justify-center border-dashed border-2 border-primary/30 bg-muted/30 hover:bg-muted/50">
+                            {loadingAiLearning ? 'Loading...' : '+ More'}
+                          </Button>
+                        )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
-              ))}
+                );
+              })}
             </Accordion>
           </CardContent>
         </Card>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Check, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { questionnaireDataPart2 } from '@/data/questionnaireDataPart2';
+import { questionnaireData } from '@/data/questionnaireData';
 
 // --- UI Components (Adapted from onboarding/page.tsx) ---
 const PrimaryButton = ({ children, className, ...props }: React.ComponentProps<typeof Button>) => (
@@ -100,7 +99,7 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 
     const visibleQuestions = useMemo(() => {
         // Use globalAnswers for conditional logic
-        return questions.filter(q => q.condition ? q.condition(globalAnswers) : true);
+        return questions.filter(q => ('condition' in q && typeof q.condition === 'function') ? q.condition(globalAnswers) : true);
     }, [questions, globalAnswers]);
 
     const currentQuestion = visibleQuestions[qIndex];
@@ -166,16 +165,36 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
     const [answers, setAnswers] = useState<any>({});
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+    // Load answers from localStorage (sync with onboarding)
     useEffect(() => {
-        setAnswers(initialAnswers);
+        const stored = localStorage.getItem('onboardingAnswers');
+        if (stored) {
+            setAnswers(JSON.parse(stored));
+        } else {
+            setAnswers(initialAnswers);
+        }
     }, [initialAnswers]);
 
-    const allCategories = Object.keys(questionnaireDataPart2);
+    // Save answers to localStorage whenever they change
+    useEffect(() => {
+        // Merge current answers with existing onboardingAnswers
+        const existing = localStorage.getItem('onboardingAnswers');
+        let merged = { ...answers };
+        if (existing) {
+            try {
+                const parsed = JSON.parse(existing);
+                merged = { ...parsed, ...answers };
+            } catch {}
+        }
+        localStorage.setItem('onboardingAnswers', JSON.stringify(merged));
+    }, [answers]);
+
+    const allCategories = Object.keys(questionnaireData.part2);
 
     const completedCategoriesCount = useMemo(() => {
         return allCategories.filter(catName => {
-            const categoryQuestions = questionnaireDataPart2[catName as keyof typeof questionnaireDataPart2];
-            const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
+            const categoryQuestions = questionnaireData.part2[catName as keyof typeof questionnaireData.part2];
+            const visibleCategoryQuestions = categoryQuestions.filter(q => ('condition' in q && typeof q.condition === 'function') ? q.condition(answers) : true);
             if (visibleCategoryQuestions.length === 0) return true; 
             return visibleCategoryQuestions.every(q => {
               const answer = answers[q.id];
@@ -191,7 +210,7 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
     if (activeCategory) {
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
-                    questions={questionnaireDataPart2[activeCategory as keyof typeof questionnaireDataPart2]}
+                    questions={questionnaireData.part2[activeCategory as keyof typeof questionnaireData.part2]}
                     answers={answers} 
                     setAnswers={setAnswers} 
                     onExitCategory={() => setActiveCategory(null)}
@@ -203,12 +222,10 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
 
     return (
          <div className="p-6 bg-card h-full flex flex-col">
-            <p className="text-center text-muted-foreground mb-6">Tap a category to answer questions. Your progress is saved as you go.</p>
-
             <div className="flex-grow space-y-3 overflow-y-auto pr-2 -mr-2 mb-4">
                 {allCategories.map(categoryName => {
-                    const categoryQuestions = questionnaireDataPart2[categoryName as keyof typeof questionnaireDataPart2];
-                    const visibleCategoryQuestions = categoryQuestions.filter(q => q.condition ? q.condition(answers) : true);
+                    const categoryQuestions = questionnaireData.part2[categoryName as keyof typeof questionnaireData.part2];
+                    const visibleCategoryQuestions = categoryQuestions.filter(q => ('condition' in q && typeof q.condition === 'function') ? q.condition(answers) : true);
                     
                     const answeredCount = visibleCategoryQuestions.filter(q => {
                         const answer = answers[q.id];
@@ -261,35 +278,12 @@ export default function StandaloneDiagnosticSurveyPage() {
     useEffect(() => {
         let loadedAnswers: any = {};
         try {
-            const standaloneSaved = localStorage.getItem('standaloneSurveyAnswers');
-            if (standaloneSaved) {
-                loadedAnswers = JSON.parse(standaloneSaved);
-            } else {
-                const onboardingSaved = localStorage.getItem('onboardingAnswers');
-                if (onboardingSaved) {
-                    const allOnboardingAnswers = JSON.parse(onboardingSaved);
-                    const part2AnswerKeys = Object.values(questionnaireDataPart2).flat().map(q => q.id);
-                    const relevantOnboardingAnswers: any = {};
-                    for (const key of part2AnswerKeys) {
-                        if (allOnboardingAnswers.hasOwnProperty(key)) {
-                            relevantOnboardingAnswers[key] = allOnboardingAnswers[key];
-                        }
-                    }
-                    // Merge with Part 1 answers from onboarding if needed by conditions
-                    // This ensures conditions like `answers.probiotics === 'Yes'` can work if 'probiotics' was answered in Part 1
-                    const part1AnswerKeysFromOnboarding = Object.keys(allOnboardingAnswers).filter(
-                        key => !part2AnswerKeys.includes(key) && !key.startsWith('part2_') // Avoid potential naming conflicts
-                    );
-                    for (const key of part1AnswerKeysFromOnboarding) {
-                        if (allOnboardingAnswers.hasOwnProperty(key)) {
-                             relevantOnboardingAnswers[key] = allOnboardingAnswers[key];
-                        }
-                    }
-                    loadedAnswers = relevantOnboardingAnswers;
-                }
+            const onboardingSaved = localStorage.getItem('onboardingAnswers');
+            if (onboardingSaved) {
+                loadedAnswers = JSON.parse(onboardingSaved);
             }
         } catch (error) {
-            console.error("Error loading survey answers from localStorage:", error);
+            console.error("Error loading onboarding answers from localStorage:", error);
         }
         setInitialSurveyAnswers(loadedAnswers);
         setIsLoading(false);

@@ -1,0 +1,67 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { askGemini } from '@/ai/flows/ask-gemini-flow';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { onboardingAnswers } = await req.json();
+    const batchIndex = onboardingAnswers.batchIndex || 0;
+
+    // Improved prompt for Gemini
+    const prompt = `
+      User's onboarding answers: ${JSON.stringify(onboardingAnswers)}
+      Batch number: ${batchIndex}
+      
+      Generate a personalized health insight for this user. This is batch ${batchIndex}, so make sure this insight is different from previous batches.
+      
+      Create:
+      1. A short, descriptive title (3-6 words) that captures the main point
+      2. A concise health insight (under 15 words) that's specific and actionable
+      
+      Focus on different aspects of health for different batches:
+      - Batch 0: General wellness tips
+      - Batch 1: Nutrition and diet
+      - Batch 2: Exercise and movement
+      - Batch 3: Sleep and recovery
+      - Batch 4: Stress management
+      - Batch 5+: Rotate through the above categories
+      
+      Respond ONLY as a JSON object with:
+      {
+        "id": "unique-insight-id",
+        "title": "Short descriptive title (3-6 words)",
+        "insight": "A very short health tip or fact (under 15 words).",
+        "sourceUrl": "https://example.com/source" // Always include a real or placeholder URL
+      }
+      Do not include any text outside the JSON object.
+      If you cannot generate a fact, return a default object with a generic insight and a placeholder URL.
+    `;
+
+    // Call Gemini
+    const geminiResult = await askGemini({ prompt });
+    let suggestion;
+    try {
+      suggestion = JSON.parse(geminiResult.response || '{}');
+    } catch {
+      suggestion = {};
+    }
+
+    // Ensure all required fields are present with fallbacks
+    const result = {
+      id: suggestion.id || `insight-${batchIndex}-${Date.now()}`,
+      title: suggestion.title || "Fiber for IBS Relief",
+      insight: suggestion.insight || "Fiber helps IBS symptoms.",
+      sourceUrl: suggestion.sourceUrl || "https://example.com/source"
+    };
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Error in ai-insight API:', error);
+    // Return a default response on error
+    return NextResponse.json({
+      id: `insight-error-${Date.now()}`,
+      title: "Fiber for IBS Relief",
+      insight: "Fiber helps IBS symptoms.",
+      sourceUrl: "https://example.com/source"
+    });
+  }
+} 

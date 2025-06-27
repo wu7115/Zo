@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for generating an initial wellness insight based on onboarding answers.
@@ -15,59 +14,69 @@ import {z} from 'genkit';
 const OnboardingAnswersSchema = z.record(z.string(), z.any()).describe('A collection of answers from the Part 1 onboarding questionnaire.');
 const GenerateInitialInsightInputSchema = z.object({
   onboardingAnswers: OnboardingAnswersSchema,
+  trackingQuestions: z.record(z.string(), z.any()).optional(),
 });
 export type GenerateInitialInsightInput = z.infer<typeof GenerateInitialInsightInputSchema>;
 
 const GenerateInitialInsightOutputSchema = z.object({
-  insight: z.string().describe("A brief, personalized initial wellness insight based on the user's onboarding answers. Should be 1-2 sentences."),
+  categoryRecommendations: z.array(
+    z.object({
+      category: z.string(),
+      recommendation: z.string(),
+    })
+  ),
 });
 export type GenerateInitialInsightOutput = z.infer<typeof GenerateInitialInsightOutputSchema>;
 
 // Schema for the input the prompt itself will receive (pre-stringified answers)
 const InsightPromptInternalInputSchema = z.object({
   onboardingAnswersJsonString: z.string().describe('The JSON string representation of the user\'s onboarding answers.'),
+  trackingQuestionsJsonString: z.string().describe('The JSON string representation of the tracking questions.'),
 });
 
 export async function generateInitialInsight(input: GenerateInitialInsightInput): Promise<GenerateInitialInsightOutput> {
-  return generateInitialInsightFlow(input);
+  // Import trackingQuestions if not provided
+  let trackingQuestions = input.trackingQuestions;
+  if (!trackingQuestions) {
+    trackingQuestions = (await import('@/data/trackingQuestions')).trackingQuestions;
+  }
+  return generateInitialInsightFlow({ ...input, trackingQuestions });
 }
 
 const insightPrompt = ai.definePrompt({
   name: 'generateInitialInsightPrompt',
-  input: {schema: InsightPromptInternalInputSchema}, // Uses the internal schema
+  input: {schema: InsightPromptInternalInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
   prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
-The user has just completed the first part of their onboarding questionnaire.
-Review their answers provided below and generate a single, concise (1-2 sentences) initial insight or a welcoming observation.
-This is just a quick first look, so keep it light, encouraging, and very general.
-Avoid making strong diagnoses or specific recommendations at this stage.
-Focus on acknowledging something they'veshared or gently pointing towards a potential area of focus.
-Address the user by a generic friendly name like "Wellness Seeker" or "Explorer" if their name isn't in the answers.
 
-User's Onboarding Answers (Part 1):
-\`\`\`json
+The user has just completed the onboarding questionnaire. For each health category, you will:
+- Review the user's answers (see below)
+- Review the tracking questions for that category (see below)
+- Generate a recommendation in this style: "Based on your [user's answer/condition], we'll track your [tracking question 1] and [tracking question 2]." The goal is to explain to the user why each tracking question is being tracked for them, based on their answers. Be specific and reference the user's answers where possible.
+
+User's Onboarding Answers (JSON):
 {{{onboardingAnswersJsonString}}}
-\`\`\`
 
-Example insight: "Thanks for sharing, Wellness Seeker! It's great you're looking to improve your general gut health. We can definitely explore that together!"
-Another example: "Welcome to Podium, Explorer! I see you're interested in increasing your energy levels – that's a fantastic goal to work towards."
+Tracking Questions (JSON):
+{{{trackingQuestionsJsonString}}}
 
-Generate the insight:
+For each category, return an object like:
+{ "category": "Digestive Health", "recommendation": "Based on your [answer], we'll track your [tracking question 1] and [tracking question 2]." }
+
+Return an array of these objects, one per category.
 `,
 });
 
 const generateInitialInsightFlow = ai.defineFlow(
   {
     name: 'generateInitialInsightFlow',
-    inputSchema: GenerateInitialInsightInputSchema, // Flow still takes the original input type
+    inputSchema: GenerateInitialInsightInputSchema,
     outputSchema: GenerateInitialInsightOutputSchema,
   },
-  async (input: GenerateInitialInsightInput) => { // Explicitly type 'input'
-    const onboardingAnswersJsonString = JSON.stringify(input.onboardingAnswers, null, 2); // Pre-stringify
-
-    // Call prompt with the stringified version, conforming to InsightPromptInternalInputSchema
-    const {output} = await insightPrompt({ onboardingAnswersJsonString });
-
+  async (input: GenerateInitialInsightInput) => {
+    const onboardingAnswersJsonString = JSON.stringify(input.onboardingAnswers, null, 2);
+    const trackingQuestionsJsonString = JSON.stringify(input.trackingQuestions ?? (await import('@/data/trackingQuestions')).trackingQuestions, null, 2);
+    const {output} = await insightPrompt({ onboardingAnswersJsonString, trackingQuestionsJsonString });
     if (!output) {
       throw new Error('No output received from AI model for initial insight.');
     }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -123,7 +122,6 @@ export function BottomNavigationBar() {
   const moreMenuItems = [
     { id: 'learn', href: '/learn', label: 'Learn', icon: BookOpenText },
     { id: 'diagnose', href: '/diagnose', label: 'Diagnose', icon: HeartPulse },
-    { id: 'journey', href: '/journey', label: 'Journey', icon: Map },
     { id: 'gut-health', href: '/gut-health-score', label: 'Gut Health Score', icon: Activity }, 
     { id: 'profile', href: '/profile', label: 'Profile', icon: UserIcon },
   ];
@@ -189,11 +187,9 @@ export function BottomNavigationBar() {
                           {menuItem.label}
                         </Link>
                       </DropdownMenuItem>
-                      {(menuItem.id === 'diagnose' || menuItem.id === 'journey' || menuItem.id === 'gut-health') && 
+                      {(menuItem.id === 'diagnose' || menuItem.id === 'gut-health') && 
                        index < moreMenuItems.length - 1 && 
-                       (moreMenuItems[index+1].id !== 'profile') && 
-                       !((menuItem.id === 'diagnose' && moreMenuItems[index+1].id === 'journey') || 
-                         (menuItem.id === 'journey' && moreMenuItems[index+1].id === 'gut-health')) 
+                       !((menuItem.id === 'diagnose' && moreMenuItems[index+1].id === 'gut-health')) 
                          && <DropdownMenuSeparator />}
                     </React.Fragment>
                   ))}
