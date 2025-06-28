@@ -98,7 +98,7 @@ export default function DiagnosePage() {
     {
       id: 'diagnostic-surveys',
       icon: Edit, // Using Edit icon for surveys
-      title: 'Diagnostic Surveys',
+      title: 'ZoHealth Surveys',
       subtitle: 'Complete to enhance your profile',
       isSurveySection: true, // Mark this as the special survey section
       defaultOpen: false,
@@ -174,7 +174,7 @@ export default function DiagnosePage() {
                         <div className="p-3 space-y-2">
                           <Button asChild className="w-full mb-4">
                             <Link href="/diagnose/survey">
-                              Complete Full Diagnostic Survey
+                              Complete Full ZoHealth Survey
                             </Link>
                           </Button>
                           {/* TESTING BUTTONS: Clear answers for each category */}

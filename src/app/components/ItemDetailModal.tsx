@@ -83,7 +83,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ isOpen, onOpen
           <div className="mt-2">
             <h3 className="text-xs font-semibold text-muted-foreground tracking-wide uppercase mb-1 flex items-center">
               <Lightbulb className="w-3.5 h-3.5 mr-1.5 text-accent" />
-              How it helps you (from Zoe):
+              How it helps you (from Podium):
             </h3>
             {isLoadingAi && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">

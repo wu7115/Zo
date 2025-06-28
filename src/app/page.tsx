@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FeedItem, SuggestedTopicFeedData, SuggestedProductFeedData } from '@/app/types/feed';
 import { DynamicFeedCard } from './components/DynamicFeedCard';
+import { ConsolidatedMissedTasksCard } from './components/ConsolidatedMissedTasksCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { trackingQuestions } from '@/data/trackingQuestions';
 import { getQuestionTime } from '@/utils/taskAllocation';
@@ -44,13 +45,13 @@ async function fetchAiProducts(onboardingAnswers: any, batchIndex: number): Prom
   return await res.json();
 }
 
-async function fetchPersonalizedInsight(onboardingAnswers: any): Promise<{ id: string, title: string, insight: string, sourceUrl?: string }> {
+async function fetchPersonalizedInsight(onboardingAnswers: any): Promise<{ id: string, title: string, statement: string, rationale: string, sourceUrl?: string }> {
   const res = await fetch('/api/ai-insight', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ onboardingAnswers }),
   });
-  return await res.json();
+  return res.json();
 }
 
 // Function to determine current time period
@@ -68,14 +69,15 @@ const getCurrentTimePeriod = (): 'morning' | 'afternoon' | 'evening' => {
 };
 
 // Function to get appropriate greeting based on time
-const getGreeting = (timePeriod: 'morning' | 'afternoon' | 'evening'): string => {
+const getGreeting = (timePeriod: 'morning' | 'afternoon' | 'evening', userName?: string): string => {
+  const name = userName || "there";
   switch (timePeriod) {
     case 'morning':
-      return "Good morning, Alex! 🌅";
+      return `Good morning, ${name}! 🌅`;
     case 'afternoon':
-      return "Good afternoon, Alex! ☀️";
+      return `Good afternoon, ${name}! ☀️`;
     case 'evening':
-      return "Good evening, Alex! 🌙";
+      return `Good evening, ${name}! 🌙`;
   }
 };
 
@@ -242,11 +244,12 @@ export default function HomePage() {
           id: 'greeting-1',
           data: {
             id: 'greeting-1',
-            greetingText: getGreeting(currentTimePeriod),
+            greetingText: getGreeting(currentTimePeriod, onboardingAnswers.userName),
             syncStatus: "Your wearable synced: 7h 15m sleep (11:15 PM - 6:30 AM).",
             accomplishment: "You hit your sleep duration goal! 🎉",
           },
         };
+
         const timeTrackingCard: FeedItem = {
           type: `${currentTimePeriod}Tracking` as 'morningTracking' | 'afternoonTracking' | 'eveningTracking',
           id: `${currentTimePeriod}-tracking-1`,
@@ -254,7 +257,7 @@ export default function HomePage() {
             id: `${currentTimePeriod}-tracking-1`,
             timeOfDay: currentTimePeriod,
             priorities: prioritiesMap,
-          } as any, // Cast as any to allow priorities
+          } as any,
         };
         const firstBatch = await generateFeedBatch(0);
         setFeedItems([greeting, timeTrackingCard, ...firstBatch]);
@@ -283,7 +286,7 @@ export default function HomePage() {
           id: 'greeting-1',
           data: {
             id: 'greeting-1',
-            greetingText: getGreeting(currentTimePeriod),
+            greetingText: getGreeting(currentTimePeriod, onboardingAnswers.userName),
             syncStatus: "Your wearable synced: 7h 15m sleep (11:15 PM - 6:30 AM).",
             accomplishment: "You hit your sleep duration goal! 🎉",
           },

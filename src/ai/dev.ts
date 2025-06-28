@@ -8,4 +8,5 @@ import '@/ai/flows/get-item-benefit-flow.ts';
 import '@/ai/flows/estimate-activity-calories-flow.ts';
 import '@/ai/flows/generate-initial-insight-flow.ts';
 import '@/ai/flows/generate-community-post-flow.ts';
+import '@/ai/flows/generate-second-insight-flow.ts';
 

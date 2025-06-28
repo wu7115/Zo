@@ -182,6 +182,8 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
         const commonProps = { question: currentQuestion, answer: answers?.[currentQuestion?.id ?? ''], onAnswerChange: handleAnswer };
         switch (currentQuestion?.type) {
             case 'multi': return <MultiSelectQuestionComponent {...commonProps} />;
+            case 'text': return <TextInputQuestionComponent {...commonProps} />;
+            case 'number': return <NumberInputQuestionComponent {...commonProps} />;
             case 'single-dynamic': {
                 const dynamicOptions = answers?.[currentQuestion?.dependsOn ?? ''] || [];
                 if (!Array.isArray(dynamicOptions) || dynamicOptions.length === 0) {
@@ -209,14 +211,22 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
 };
 
 const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => void, answers: any }) => {
-  const [insight, setInsight] = useState<string | null>(null);
+  const [healthInsight, setHealthInsight] = useState<string | null>(null);
+  const [categoryRecommendations, setCategoryRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasGeneratedInsight = useRef(false);
 
   useEffect(() => {
     const fetchInsight = async () => {
       setIsLoading(true);
       setError(null);
+      
+      // Always generate fresh insights, but prevent duplicate generation in same session
+      if (hasGeneratedInsight.current) {
+        return;
+      }
+      
       try {
         const part1AnswerKeys = questionnaireData.part1.map(q => q.id);
         const part1Answers:any = {};
@@ -226,27 +236,34 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
             }
         }
         if (Object.keys(part1Answers).length > 0) {
+          hasGeneratedInsight.current = true; // Mark as generated before the async call
           const result = await generateInitialInsight({ onboardingAnswers: part1Answers });
-          if (result.categoryRecommendations && result.categoryRecommendations.length > 0) {
-            // Show the first recommendation, or join all if you want
-            setInsight(result.categoryRecommendations[0].recommendation);
-          } else {
-            setInsight("Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.");
-          }
+          
+          // Store the insights in localStorage for later use
+          const insightData = {
+            healthInsight: result.healthInsight,
+            categoryRecommendations: result.categoryRecommendations
+          };
+          localStorage.setItem('initialInsights', JSON.stringify(insightData));
+          
+          setHealthInsight(result.healthInsight);
+          setCategoryRecommendations(result.categoryRecommendations || []);
         } else {
-            // Default insight if no answers from part 1 are available (e.g., user skipped or an error occurred)
-            setInsight("Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.");
+            // Default insight if no answers from part 1 are available
+            const defaultInsight = "Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.";
+            setHealthInsight(defaultInsight);
+            setCategoryRecommendations([]);
         }
       } catch (e: any) {
-        console.error("Error fetching initial insight:", e);
         // Show a user-friendly error if LLM quota is exceeded or any other error
         if (e?.message?.includes('quota') || e?.message?.includes('429')) {
           setError("Sorry, our AI coach is temporarily unavailable due to high demand. Please try again later!");
-          setInsight("We're excited to help you on your wellness journey!");
+          setHealthInsight("We're excited to help you on your wellness journey!");
         } else {
           setError("Sorry, I couldn't generate an initial insight right now. Let's continue!");
-          setInsight("We're excited to help you on your wellness journey!"); // Fallback content
+          setHealthInsight("We're excited to help you on your wellness journey!"); // Fallback content
         }
+        setCategoryRecommendations([]);
       } finally {
         setIsLoading(false);
       }
@@ -255,34 +272,36 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
   }, [answers]);
 
   return (
-    <OnboardingStepContainer className="justify-between">
-      <div className="flex-grow flex flex-col items-center justify-center">
-        <h2 className="font-headline text-3xl text-primary mb-4">Initial Insights</h2>
-        {isLoading && (
-          <div className="flex flex-col items-center space-y-3 text-muted-foreground animate-pulse">
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
-            <p>Zoe is preparing your first insights...</p>
-          </div>
-        )}
-        {!isLoading && error && (
-          <div className="p-4 bg-destructive/10 rounded-lg text-center max-w-sm">
-            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-2" />
-            <p className="text-destructive-foreground font-semibold">Oops!</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-        )}
-        {!isLoading && !error && insight && (
-          <div className="p-4 bg-secondary/20 rounded-lg text-center max-w-sm border border-secondary">
-             <Lightbulb className="h-10 w-10 text-accent mx-auto mb-2" />
-            <p className="text-secondary-foreground text-lg">{insight}</p>
-          </div>
-        )}
-        <p className="mt-6 text-muted-foreground text-sm max-w-xs">This is just a quick glance. The more we know, the better we can tailor your Podium experience!</p>
+    <div className="h-full flex flex-col p-6 sm:p-8">
+      <div className="flex-grow overflow-y-auto">
+        <div className="flex flex-col items-center justify-center min-h-full">
+          <h2 className="font-headline text-3xl text-primary mb-4">Initial Insights</h2>
+          {isLoading && (
+            <div className="flex flex-col items-center space-y-3 text-muted-foreground animate-pulse">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <p>Podium is preparing your first insights...</p>
+            </div>
+          )}
+          {!isLoading && error && (
+            <div className="p-4 bg-destructive/10 rounded-lg text-center max-w-sm">
+              <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-2" />
+              <p className="text-destructive-foreground font-semibold">Oops!</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          )}
+          {!isLoading && !error && healthInsight && (
+            <div className="p-4 bg-secondary/20 rounded-lg text-center max-w-sm border border-secondary">
+               <Lightbulb className="h-10 w-10 text-accent mx-auto mb-2" />
+              <p className="text-secondary-foreground text-lg leading-relaxed">{healthInsight}</p>
+            </div>
+          )}
+          <p className="mt-6 text-muted-foreground text-sm max-w-xs text-center">This is just a quick glance. The more we know, the better we can tailor your Podium experience!</p>
+        </div>
       </div>
-      <div className="w-full max-w-sm mt-8">
+      <div className="flex-shrink-0 w-full max-w-sm mx-auto mt-8">
         <PrimaryButton onClick={onComplete}>Continue to Subscription Options</PrimaryButton>
       </div>
-    </OnboardingStepContainer>
+    </div>
   );
 };
 

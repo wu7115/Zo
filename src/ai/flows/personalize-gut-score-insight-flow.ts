@@ -20,7 +20,7 @@ const PersonalizeGutScoreInputSchema = z.object({
 export type PersonalizeGutScoreInput = z.infer<typeof PersonalizeGutScoreInputSchema>;
 
 const PersonalizeGutScoreInsightOutputSchema = z.object({
-  personalizedAdvice: z.string().describe("A brief, actionable piece of personalized advice based on the scores. Should be friendly and encouraging, from 'Zoe' the AI wellness coach."),
+  personalizedAdvice: z.string().describe("A brief, actionable piece of personalized advice based on the scores. Should be friendly and encouraging, from 'Podium' the AI wellness coach."),
 });
 export type PersonalizeGutScoreInsightOutput = z.infer<typeof PersonalizeGutScoreInsightOutputSchema>;
 
@@ -33,7 +33,7 @@ const insightPrompt = ai.definePrompt({
   name: 'personalizeGutScoreInsightPrompt',
   input: {schema: PersonalizeGutScoreInputSchema},
   output: {schema: PersonalizeGutScoreInsightOutputSchema},
-  prompt: `You are Zoe, a friendly and encouraging AI wellness coach for the Podium Pulse app.
+  prompt: `You are Podium, a friendly and encouraging AI wellness coach for the Podium Pulse app.
 The user has just viewed their Gut Health Score. Based on their scores below, provide one brief, actionable, and personalized tip to help them improve or maintain their gut health. Keep it concise (1-2 sentences).
 
 Scores:

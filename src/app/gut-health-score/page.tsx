@@ -12,7 +12,6 @@ import {
 import { ArrowLeft, FileText, Lightbulb, Loader2, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import * as React from 'react';
-import { personalizeGutScoreInsight, type PersonalizeGutScoreInsightOutput } from '@/ai/flows/personalize-gut-score-insight-flow';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const scoreData = [
@@ -32,51 +31,71 @@ const legendItems = [
 ];
 
 export default function GutHealthScorePage() {
-  const [insight, setInsight] = React.useState<PersonalizeGutScoreInsightOutput | null>(null);
+  const [onboardingInsight, setOnboardingInsight] = React.useState<string | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = React.useState(true);
   const [insightError, setInsightError] = React.useState<string | null>(null);
-  const [onboardingInsight, setOnboardingInsight] = React.useState<string | null>(null);
+
+  // Debug: Track when component mounts
+  React.useEffect(() => {
+    // Component mounted
+  }, []);
+
+  // Debug: Track when insight changes
+  React.useEffect(() => {
+    // Insight changed
+  }, [onboardingInsight]);
 
   React.useEffect(() => {
-    // Fetch onboarding-generated insight from localStorage
-    let foundInsight = null;
-    try {
-      if (typeof window !== 'undefined') {
-        const generated = localStorage.getItem('generatedInsights');
-        if (generated) {
-          const parsed = JSON.parse(generated);
-          if (parsed.summary) {
-            foundInsight = parsed.summary;
-          } else if (parsed.categoryInsights && parsed.categoryInsights.length > 0) {
-            foundInsight = parsed.categoryInsights[0].recommendation || null;
-          }
-        }
-      }
-    } catch {}
-    setOnboardingInsight(foundInsight);
-    const fetchInsight = async () => {
+    const fetchOnboardingInsight = async () => {
       try {
         setIsLoadingInsight(true);
         setInsightError(null);
-        const scoresInput = {
-          lifestyleScore: scoreData.find(s => s.name === 'Lifestyle & Environment')?.value || 0,
-          trackingScore: scoreData.find(s => s.name === 'Health Tracking')?.value || 0,
-          microbiomeScore: scoreData.find(s => s.name === 'Microbiome')?.value || 0,
-          hydrationDietScore: scoreData.find(s => s.name === 'Hydration & Diet')?.value || 0,
-          overallScore: totalScore,
-        };
-        const result = await personalizeGutScoreInsight(scoresInput);
-        setInsight(result);
-      } catch (e: any) {
-        console.error("Error fetching gut score insight:", e);
-        setInsightError("Sorry, I couldn't get a personalized tip right now. Please try again later.");
+        
+        // Fetch the insight that was generated during part 2 onboarding
+        let foundInsight = null;
+        try {
+          if (typeof window !== 'undefined') {
+            // Always try to get the most recent insights from localStorage
+            const secondInsights = localStorage.getItem('secondInsights');
+            
+            if (secondInsights) {
+              const parsed = JSON.parse(secondInsights);
+              if (parsed.healthInsight) {
+                foundInsight = parsed.healthInsight;
+              }
+            }
+            
+            // If no second insight, fall back to initial insight
+            if (!foundInsight) {
+              const initialInsights = localStorage.getItem('initialInsights');
+              
+              if (initialInsights) {
+                const parsed = JSON.parse(initialInsights);
+                if (parsed.healthInsight) {
+                  foundInsight = parsed.healthInsight;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing stored insights:', error);
+        }
+        
+        if (foundInsight) {
+          setOnboardingInsight(foundInsight);
+        } else {
+          setInsightError("No personalized insights found. Please complete the diagnostic survey to get personalized insights.");
+        }
+      } catch (error) {
+        console.error("Error fetching onboarding insight:", error);
+        setInsightError("Sorry, I couldn't load your personalized insights right now. Please try again later.");
       } finally {
         setIsLoadingInsight(false);
       }
     };
-    fetchInsight();
-  }, []);
 
+    fetchOnboardingInsight();
+  }, []);
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -169,7 +188,7 @@ export default function GutHealthScorePage() {
               </Card>
             )}
 
-            {!isLoadingInsight && !insightError && insight && (
+            {!isLoadingInsight && !insightError && onboardingInsight && (
                <Card className="bg-secondary/20 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-md font-semibold text-primary flex items-center">
@@ -177,13 +196,7 @@ export default function GutHealthScorePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {onboardingInsight && (
-                    <p className="mb-2 text-sm text-secondary-foreground">{onboardingInsight}</p>
-                  )}
-                  {onboardingInsight && insight?.personalizedAdvice && (
-                    <div className="my-2 border-t border-muted-foreground/20" />
-                  )}
-                  <p className="text-sm text-secondary-foreground">{insight?.personalizedAdvice}</p>
+                  <p className="text-sm text-secondary-foreground leading-relaxed">{onboardingInsight}</p>
                 </CardContent>
               </Card>
             )}

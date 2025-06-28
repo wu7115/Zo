@@ -12,6 +12,7 @@ import { TimeBasedTrackingCard } from './TimeBasedTrackingCard';
 import { AiInsightCard } from './AiInsightCard';
 import { SuggestedTopicCard } from './SuggestedTopicCard';
 import { SuggestedProductCard } from './SuggestedProductCard';
+import { ConsolidatedMissedTasksCard } from './ConsolidatedMissedTasksCard';
 
 interface DynamicFeedCardProps {
   item: FeedItem;
@@ -50,6 +51,8 @@ export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
       return <SuggestedTopicCard data={item.data} />;
     case 'suggestedProduct':
       return <SuggestedProductCard data={item.data} />;
+    case 'consolidatedMissedTasks':
+      return <ConsolidatedMissedTasksCard currentTimeOfDay={item.data.currentTimeOfDay} priorities={item.data?.priorities} />;
     default:
       // Exhaustive check to ensure all types are handled.
       // If TypeScript complains here, it means a new FeedItem type was added without a case.

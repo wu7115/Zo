@@ -11,8 +11,9 @@ export function AiInsightCard({ data }: { data: AiInsightFeedData }) {
           {data.title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-md text-foreground mb-2">{data.insight}</p>
+      <CardContent className="space-y-3">
+        <p className="text-md font-medium text-foreground">{data.statement}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{data.rationale}</p>
         {data.sourceUrl && (
           <a href={data.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
             Source

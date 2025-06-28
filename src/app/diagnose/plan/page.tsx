@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ export default function PlanViewPage() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<string>('');
   const [loadingSummary, setLoadingSummary] = useState(true);
+  const hasGeneratedInsight = useRef(false);
 
   useEffect(() => {
     const ALL_CATEGORIES = [
@@ -30,6 +31,12 @@ export default function PlanViewPage() {
       if (!storedAnswers) return;
     
       const parsedAnswers = JSON.parse(storedAnswers);
+      
+      // Always generate fresh insights, but prevent duplicate generation in same session
+      if (hasGeneratedInsight.current) {
+        return;
+      }
+    
       const { questionnaireData } = await import('@/data/questionnaireData');
       const part2: Record<string, any[]> = questionnaireData.part2;
       let totalQuestions = 0;
@@ -126,6 +133,7 @@ export default function PlanViewPage() {
       });
 
       // --- Call LLM with completion info and top tracking questions ---
+      hasGeneratedInsight.current = true; // Mark as generated before the async call
       const result = await generateSecondInsight({
         fullAnswers: parsedAnswers,
         overallCompletion,
@@ -138,14 +146,17 @@ export default function PlanViewPage() {
       if (overallCompletion < 0.8) {
         summaryOverride = "To get a more detailed and accurate insight, please complete at least 80% of the questions in your diagnostic survey.";
       }
-      const processedInsights = (result.categoryInsights || []).map((insight) => {
+      
+      // Use the new format: healthInsight and categoryRecommendations
+      const healthInsight = result.healthInsight || "Here are your personalized wellness insights based on your answers.";
+      const processedInsights = (result.categoryRecommendations || []).map((insight) => {
         const cat = insight.category;
         if (categoryCompletion[cat] < 0.8) {
           return { ...insight, recommendation: "To get a more detailed and accurate recommendation, please answer more questions in this category." };
         }
-        // Do not replace with positiveFallback; always show LLM's recommendation
         return insight;
       });
+      
       // Add any missing categories
       for (const cat of ALL_CATEGORIES) {
         if (!processedInsights.find(i => i.category === cat)) {
@@ -153,14 +164,13 @@ export default function PlanViewPage() {
         }
       }
       setInsights(ALL_CATEGORIES.map(cat => processedInsights.find(i => i.category === cat)!));
-      localStorage.setItem('generatedInsights', JSON.stringify({ categoryInsights: processedInsights }));
+      const secondInsightData = { healthInsight, categoryRecommendations: processedInsights };
+      localStorage.setItem('secondInsights', JSON.stringify(secondInsightData));
 
-      // Generate summary insight paragraph
+      // Use the health insight as summary
       setLoadingSummary(true);
       try {
-        const summaryResult = await generateSecondInsight({ fullAnswers: parsedAnswers });
-        const summaryParagraph = summaryResult.categoryInsights?.[0]?.recommendation || '';
-        setSummary(summaryOverride || summaryParagraph);
+        setSummary(summaryOverride || healthInsight);
       } catch (e) {
         setSummary(summaryOverride || 'Here are your personalized wellness insights based on your answers.');
       }
@@ -228,13 +238,13 @@ export default function PlanViewPage() {
           <h1 className="text-2xl font-bold text-primary text-center">Insights Paragraph</h1>
 
           {loadingSummary ? (
-            <p className="text-center text-muted-foreground">Zoe is preparing your summary insight...</p>
+            <p className="text-center text-muted-foreground">Podium is preparing your summary insight...</p>
           ) : (
             <div className="text-center text-primary text-base font-medium mb-2 bg-secondary/10 rounded-lg p-3 mx-auto max-w-md">{summary}</div>
           )}
 
           {loading ? (
-            <p className="text-center text-muted-foreground">Zoe is reviewing your answers...</p>
+            <p className="text-center text-muted-foreground">Podium is reviewing your answers...</p>
           ) : (
             <Accordion type="multiple" className="space-y-3">
               {insights.map((item, idx) => (

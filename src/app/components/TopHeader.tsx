@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle, User, Star as StarIcon, Edit2 } from 'lucide-react'; // Added Edit2
+import { PlusCircle, User, Star as StarIcon, Edit2, Bell } from 'lucide-react'; // Added Bell
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,11 +49,24 @@ function getPrioritizedTaskForCurrentPeriod() {
   try {
     priorities = JSON.parse(localStorage.getItem('trackingQuestionPriorities') || '{}');
   } catch {}
-  // Get answers from localStorage
+  
+  // Check if it's a new day and reset answers if needed
+  const today = new Date().toISOString().split('T')[0];
+  const storedDate = localStorage.getItem('trackingAnswersDate');
   let answers: Record<string, any> = {};
-  try {
-    answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
-  } catch {}
+  
+  if (storedDate === today) {
+    // Load answers from today
+    try {
+      answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
+    } catch {}
+  } else {
+    // It's a new day, reset answers
+    localStorage.removeItem('trackingAnswers');
+    localStorage.setItem('trackingAnswersDate', today);
+    answers = {};
+  }
+  
   // Gather all relevant tasks for current period only
   const tasks: any[] = [];
   const categoryMapping = {
@@ -99,10 +112,23 @@ function QuickTaskInputCurrentPeriod() {
   }, []);
   useEffect(() => {
     if (task) {
+      // Check if it's a new day and reset answers if needed
+      const today = new Date().toISOString().split('T')[0];
+      const storedDate = localStorage.getItem('trackingAnswersDate');
       let answers: Record<string, any> = {};
-      try {
-        answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
-      } catch {}
+      
+      if (storedDate === today) {
+        // Load answers from today
+        try {
+          answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
+        } catch {}
+      } else {
+        // It's a new day, reset answers
+        localStorage.removeItem('trackingAnswers');
+        localStorage.setItem('trackingAnswersDate', today);
+        answers = {};
+      }
+      
       setValue(answers[task.id] ?? '');
     }
   }, [task]);
@@ -202,28 +228,28 @@ export function TopHeader() {
       <header className="fixed top-0 left-1/2 -translate-x-1/2 z-40 h-16 w-full max-w-[408px] bg-background/95 backdrop-blur-sm shadow-sm border-b border-border">
         <div className="flex h-full items-center justify-between px-4">
           {/* Left: Logo */}
-          <Link href="/launch" className="text-2xl font-headline text-primary flex items-center">
+          <Link href="/launch" className="text-2xl font-headline text-primary flex items-center" style={{letterSpacing: '-0.5px'}}>
             Podium
           </Link>
 
           {/* Center: Score and Points */}
-          <div className="flex items-center space-x-2">
-            <Button variant="secondary" size="sm" className="px-3 py-1.5 text-xs h-auto" asChild>
+          <div className="flex items-center space-x-1">
+            <Button variant="secondary" size="sm" className="h-7 px-2 text-[12px] font-medium min-w-[70px] flex items-center justify-center" asChild>
               <Link href="/gut-health-score">
                 Score 55/100
               </Link>
             </Button>
-            <Badge variant="secondary" className="px-3 py-1.5 text-xs cursor-pointer">
+            <Badge variant="secondary" className="h-7 px-2 text-[12px] font-medium flex items-center min-w-[60px] justify-center">
               Points 421
             </Badge>
           </div>
 
           {/* Right: Icons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-primary hover:text-accent">
-                  <PlusCircle className="h-7 w-7" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-accent">
+                  <PlusCircle className="h-5 w-5" />
                   <span className="sr-only">Log Activity or Quick Updates</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -264,12 +290,11 @@ export function TopHeader() {
                           variant="ghost"
                           size="icon"
                           className={cn(
-                            "h-8 w-8 p-0 text-xl rounded-full", 
-                            mood === opt.emoji ? "bg-accent/20 ring-2 ring-accent" : "hover:bg-accent/10"
+                            "h-7 w-7 p-0 rounded-full",
+                            mood === opt.emoji ? "text-primary bg-primary-foreground" : "text-muted-foreground hover:text-primary hover:bg-primary-foreground"
                           )}
                           onClick={() => handleMoodSelect(opt.emoji)}
-                          title={opt.label}
-                          aria-label={opt.label}
+                          aria-label={`Rate ${opt.label}`}
                         >
                           {opt.emoji}
                         </Button>
@@ -277,40 +302,22 @@ export function TopHeader() {
                     </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => router.push('/track#diary-medication-&-supplement-use')} 
-                  className="w-full cursor-pointer"
-                >
-                  Log supplements
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => router.push('/track#diary')} 
-                  className="w-full cursor-pointer"
-                >
-                  Log other (Diary)
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setIsPostComposerOpen(true)}
-                  className="w-full cursor-pointer flex items-center"
-                >
-                  <Edit2 className="mr-2 h-4 w-4" /> Post to Feed
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
+            {/* Notification Bell moved right beside plus button */}
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-accent" aria-label="Notifications">
+              <Bell className="h-5 w-5" />
+            </Button>
             <Link href="/profile" passHref>
-              <Avatar className="h-9 w-9 cursor-pointer border-2 border-primary hover:border-accent transition-colors">
+              <Avatar className="h-8 w-8 cursor-pointer border border-primary hover:border-accent transition-colors">
                 <AvatarFallback className="bg-muted text-muted-foreground">
-                  <User className="h-5 w-5" />
+                  <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
             </Link>
           </div>
         </div>
       </header>
-      <PostComposerModal isOpen={isPostComposerOpen} onOpenChange={setIsPostComposerOpen} />
     </>
   );
 }

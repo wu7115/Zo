@@ -48,6 +48,13 @@ export interface TimeBasedTrackingFeedData {
   priorities?: Record<string, 'high' | 'medium' | 'low'>;
 }
 
+// Data for Consolidated Missed Tasks Card
+export interface ConsolidatedMissedTasksFeedData {
+  id: string;
+  currentTimeOfDay: 'morning' | 'afternoon' | 'evening';
+  priorities?: Record<string, 'high' | 'medium' | 'low'>;
+}
+
 // For cards that are self-contained or fetch their own data,
 // or for which we are not yet passing dynamic data.
 export interface SelfContainedFeedData {
@@ -59,7 +66,8 @@ export interface SelfContainedFeedData {
 export interface AiInsightFeedData {
   id: string;
   title: string;
-  insight: string;
+  statement: string;
+  rationale: string;
   sourceUrl?: string;
 }
 
@@ -89,6 +97,7 @@ export type FeedItem =
   | { type: 'morningTracking'; id: string; data: TimeBasedTrackingFeedData }
   | { type: 'afternoonTracking'; id: string; data: TimeBasedTrackingFeedData }
   | { type: 'eveningTracking'; id: string; data: TimeBasedTrackingFeedData }
+  | { type: 'consolidatedMissedTasks'; id: string; data: ConsolidatedMissedTasksFeedData }
   | { type: 'weeklySnapshot'; id: string; data: SelfContainedFeedData }
   | { type: 'todaysGoal'; id: string; data: SelfContainedFeedData }
   | { type: 'engagementNudge'; id: string; data: SelfContainedFeedData }

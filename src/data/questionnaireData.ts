@@ -1,6 +1,12 @@
 export const questionnaireData = {
     part1: [
       {
+        id: 'userName',
+        type: 'text',
+        text: 'What\'s your name?',
+        placeholder: 'Enter your first name'
+      },
+      {
         id: 'primaryReasons',
         type: 'multi',
         text: 'What are your primary reasons for coming to Podium?',

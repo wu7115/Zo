@@ -1,8 +1,8 @@
-
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Youtube, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface LearningItem {
   id: string;
@@ -16,43 +16,135 @@ interface LearningItem {
   imageHint: string;
 }
 
-const learningItems: LearningItem[] = [
-  {
-    id: '1',
-    type: 'article',
-    title: "The Benefits of Morning Workouts",
-    snippet: "Discover why starting your day with exercise can boost your energy and productivity...",
-    source: "Wellness Today",
-    imageUrl: "https://placehold.co/600x400.png",
-    tags: ["Fitness", "Morning Routine", "Productivity"],
-    link: "#",
-    imageHint: "sunrise workout"
-  },
-  {
-    id: '2',
-    type: 'video',
-    title: "10-Minute Guided Meditation for Stress Relief",
-    snippet: "Follow this quick guided meditation to calm your mind and reduce stress effectively.",
-    source: "Mindful Moments YT",
-    imageUrl: "https://placehold.co/600x400.png",
-    tags: ["Meditation", "Stress Relief", "Mindfulness"],
-    link: "#",
-    imageHint: "meditation nature"
-  },
-  {
-    id: '3',
-    type: 'article',
-    title: "Healthy Eating on a Budget",
-    snippet: "Learn practical tips for preparing nutritious meals without breaking the bank.",
-    source: "Nutrition Hub",
-    imageUrl: "https://placehold.co/600x400.png",
-    tags: ["Nutrition", "Healthy Eating", "Budgeting"],
-    link: "#",
-    imageHint: "healthy food"
-  },
-];
-
 export function RecommendedLearningCard() {
+  const [learningItems, setLearningItems] = useState<LearningItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLearningContent = async () => {
+      try {
+        // Get onboarding answers from localStorage
+        const onboardingAnswers = JSON.parse(localStorage.getItem('onboardingAnswers') || '{}');
+        
+        const res = await fetch('/api/ai-learning-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            onboardingAnswers,
+            batchIndex: 0 // You can implement batch rotation if needed
+          }),
+        });
+        
+        const aiContent = await res.json();
+        
+        if (Array.isArray(aiContent) && aiContent.length > 0) {
+          setLearningItems(aiContent);
+        } else {
+          // Fallback to default content if AI fails
+          setLearningItems([
+            {
+              id: '1',
+              type: 'article',
+              title: "Understanding Your Digestive Health",
+              snippet: "Learn about the factors that influence your gut health and how to optimize your digestive wellness.",
+              source: "Wellness Today",
+              imageUrl: "https://placehold.co/600x400.png",
+              tags: ["Digestive Health", "Wellness", "Education"],
+              link: "#",
+              imageHint: "digestive health illustration"
+            },
+            {
+              id: '2',
+              type: 'video',
+              title: "Nutrition for Energy and Vitality",
+              snippet: "Discover how your diet choices impact your daily energy levels and overall well-being.",
+              source: "Health Channel",
+              imageUrl: "https://placehold.co/600x400.png",
+              tags: ["Nutrition", "Energy", "Diet"],
+              link: "#",
+              imageHint: "healthy food preparation"
+            },
+            {
+              id: '3',
+              type: 'article',
+              title: "Movement and Physical Wellness",
+              snippet: "Explore how regular physical activity can improve your health and reduce digestive discomfort.",
+              source: "Fitness Hub",
+              imageUrl: "https://placehold.co/600x400.png",
+              tags: ["Exercise", "Wellness", "Movement"],
+              link: "#",
+              imageHint: "person exercising"
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching learning content:', error);
+        // Fallback to default content on error
+        setLearningItems([
+          {
+            id: '1',
+            type: 'article',
+            title: "Understanding Your Digestive Health",
+            snippet: "Learn about the factors that influence your gut health and how to optimize your digestive wellness.",
+            source: "Wellness Today",
+            imageUrl: "https://placehold.co/600x400.png",
+            tags: ["Digestive Health", "Wellness", "Education"],
+            link: "#",
+            imageHint: "digestive health illustration"
+          },
+          {
+            id: '2',
+            type: 'video',
+            title: "Nutrition for Energy and Vitality",
+            snippet: "Discover how your diet choices impact your daily energy levels and overall well-being.",
+            source: "Health Channel",
+            imageUrl: "https://placehold.co/600x400.png",
+            tags: ["Nutrition", "Energy", "Diet"],
+            link: "#",
+            imageHint: "healthy food preparation"
+          },
+          {
+            id: '3',
+            type: 'article',
+            title: "Movement and Physical Wellness",
+            snippet: "Explore how regular physical activity can improve your health and reduce digestive discomfort.",
+            source: "Fitness Hub",
+            imageUrl: "https://placehold.co/600x400.png",
+            tags: ["Exercise", "Wellness", "Movement"],
+            link: "#",
+            imageHint: "person exercising"
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLearningContent();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-headline text-primary">Expand Your Knowledge</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex overflow-x-auto space-x-4 pb-2 -mx-4 px-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-72 flex-shrink-0 border bg-card rounded-lg p-4 animate-pulse">
+                <div className="bg-muted h-48 rounded-md mb-4"></div>
+                <div className="bg-muted h-4 rounded mb-2"></div>
+                <div className="bg-muted h-3 rounded mb-2"></div>
+                <div className="bg-muted h-3 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="shadow-lg">
       <CardHeader>

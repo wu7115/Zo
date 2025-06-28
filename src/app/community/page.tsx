@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ const placeholderChallenges = [
 ];
 
 const placeholderActivity = {
-  user: { name: "Jane Runner", avatarUrl: "https://placehold.co/40x40.png?text=JR", fallback: "JR", hint: "profile runner" },
+  user: { name: "Jane Runner", avatarUrl: "https://placehold.co/40x40.png?text=JR", fallback: "JR", hint: "profile runner", timestamp: "3 hours ago" },
   timestamp: "3 hours ago",
   text: "Completed the 'Urban Explorer' 5K challenge! So much fun discovering new parts of the city. #ChallengeAccepted #RunningCommunity",
   likes: 23,

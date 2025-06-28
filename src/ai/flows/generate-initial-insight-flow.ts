@@ -19,6 +19,7 @@ const GenerateInitialInsightInputSchema = z.object({
 export type GenerateInitialInsightInput = z.infer<typeof GenerateInitialInsightInputSchema>;
 
 const GenerateInitialInsightOutputSchema = z.object({
+  healthInsight: z.string().describe('A comprehensive insight about the user\'s health situation based on their answers'),
   categoryRecommendations: z.array(
     z.object({
       category: z.string(),
@@ -47,12 +48,23 @@ const insightPrompt = ai.definePrompt({
   name: 'generateInitialInsightPrompt',
   input: {schema: InsightPromptInternalInputSchema},
   output: {schema: GenerateInitialInsightOutputSchema},
-  prompt: `You are Zoe, a friendly AI wellness coach for the Podium Pulse app.
+  prompt: `You are Zoe, the friendly AI wellness coach inside the Podium app.
 
-The user has just completed the onboarding questionnaire. For each health category, you will:
-- Review the user's answers (see below)
-- Review the tracking questions for that category (see below)
-- Generate a recommendation in this style: "Based on your [user's answer/condition], we'll track your [tracking question 1] and [tracking question 2]." The goal is to explain to the user why each tracking question is being tracked for them, based on their answers. Be specific and reference the user's answers where possible.
+The user has just completed Part 1 of the onboarding questionnaire. You need to provide two things:
+
+1. HEALTH INSIGHT: A comprehensive observation about their health situation based on their Part 1 answers. Focus on:
+   - Their primary health concerns and goals
+   - Current health status and challenges
+   - Positive habits they already have
+   - Areas that might need attention
+   - Be observational and insightful, not prescriptive
+   - Keep it concise: maximum 40 words
+
+2. CATEGORY RECOMMENDATIONS: For each health category, provide specific tracking tasks as bullet points. Focus on:
+   - The most relevant tracking questions for this user
+   - Specific actions they should track daily
+   - Why these tracking tasks are important for their situation
+   - Format as bullet points starting with "• Track" or "• Monitor"
 
 User's Onboarding Answers (JSON):
 {{{onboardingAnswersJsonString}}}
@@ -60,10 +72,28 @@ User's Onboarding Answers (JSON):
 Tracking Questions (JSON):
 {{{trackingQuestionsJsonString}}}
 
-For each category, return an object like:
-{ "category": "Digestive Health", "recommendation": "Based on your [answer], we'll track your [tracking question 1] and [tracking question 2]." }
+HEALTH INSIGHT EXAMPLE:
+"Your frequent digestive issues like diarrhea and abdominal pain are affecting your energy. You're taking daily supplements which is positive. Consider addressing your sedentary lifestyle."
 
-Return an array of these objects, one per category.
+CATEGORY RECOMMENDATIONS EXAMPLE:
+For each category, generate bullet points like:
+{
+  "category": "Digestive Health",
+  "recommendation": "• Track daily bowel movements and consistency\n• Monitor food triggers that cause bloating\n• Record abdominal pain levels and timing\n• Note stress levels before meals"
+}
+
+Return a JSON object with:
+{
+  "healthInsight": "Your comprehensive health insight here...",
+  "categoryRecommendations": [
+    { "category": "Digestive Health", "recommendation": "• Track daily bowel movements and consistency\n• Monitor food triggers that cause bloating\n• Record abdominal pain levels and timing" },
+    { "category": "Nutrition & Diet", "recommendation": "• Track daily water intake\n• Monitor meal timing and portion sizes\n• Record energy levels after meals" }
+  ]
+}
+
+Generate recommendations for ALL categories: Digestive Health, Nutrition & Diet, Physical Wellness, Mental & Emotional Wellness, Medications & Supplements, Health Goals & Body Changes.
+
+Make each recommendation specific and actionable with 3-4 bullet points per category.
 `,
 });
 

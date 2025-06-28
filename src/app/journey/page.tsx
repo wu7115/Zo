@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -74,7 +73,7 @@ export default function JourneyPage() {
   const currentJourney = allJourneys.find(j => j.id === currentJourneyId) || allJourneys[0];
   const recommendedJourneys = allJourneys.filter(j => j.id !== currentJourneyId);
 
-  const [activeAccordionItem, setActiveAccordionItem] = React.useState<string | string[]>(`journey-${currentJourney.id}`);
+  const [activeAccordionItem, setActiveAccordionItem] = React.useState<string>(`journey-${currentJourney.id}`);
 
   const renderProtocolBreakdown = (protocol: JourneyMonth[]) => (
     <div>

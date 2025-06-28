@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const { onboardingAnswers } = await req.json();
     const batchIndex = onboardingAnswers.batchIndex || 0;
 
-    // Improved prompt for Gemini
+    // Improved prompt for GPT-4o
     const prompt = `
       User's onboarding answers: ${JSON.stringify(onboardingAnswers)}
       Batch number: ${batchIndex}
@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
       
       Create:
       1. A short, descriptive title (3-6 words) that captures the main point
-      2. A concise health insight (under 15 words) that's specific and actionable
+      2. A brief statement (1 sentence, under 20 words) that states the key insight
+      3. A rationale (2-3 sentences, under 60 words) that explains why this matters for their health
       
       Focus on different aspects of health for different batches:
       - Batch 0: General wellness tips
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
       {
         "id": "unique-insight-id",
         "title": "Short descriptive title (3-6 words)",
-        "insight": "A very short health tip or fact (under 15 words).",
+        "statement": "A brief statement about the insight (under 20 words)",
+        "rationale": "A brief explanation of why this matters (under 60 words)",
         "sourceUrl": "https://example.com/source" // Always include a real or placeholder URL
       }
       Do not include any text outside the JSON object.
@@ -49,7 +51,8 @@ export async function POST(req: NextRequest) {
     const result = {
       id: suggestion.id || `insight-${batchIndex}-${Date.now()}`,
       title: suggestion.title || "Fiber for IBS Relief",
-      insight: suggestion.insight || "Fiber helps IBS symptoms.",
+      statement: suggestion.statement || "Fiber helps manage IBS symptoms effectively.",
+      rationale: suggestion.rationale || "Soluble fiber absorbs water and forms a gel that helps regulate bowel movements. This can reduce both diarrhea and constipation, providing relief for IBS sufferers.",
       sourceUrl: suggestion.sourceUrl || "https://example.com/source"
     };
 
@@ -60,7 +63,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: `insight-error-${Date.now()}`,
       title: "Fiber for IBS Relief",
-      insight: "Fiber helps IBS symptoms.",
+      statement: "Fiber helps manage IBS symptoms effectively.",
+      rationale: "Soluble fiber absorbs water and forms a gel that helps regulate bowel movements. This can reduce both diarrhea and constipation, providing relief for IBS sufferers.",
       sourceUrl: "https://example.com/source"
     });
   }

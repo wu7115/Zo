@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Clock, Sun, SunMedium, Moon } from 'lucide-react';
+import { CheckCircle2, Clock, Sun, SunMedium, Moon, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { trackingQuestions } from '@/data/trackingQuestions';
 import { getQuestionTime } from '@/utils/taskAllocation';
@@ -111,7 +111,7 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
   }, []);
 
   useEffect(() => {
-    // Generate tasks for this time of day and previous unfinished time periods
+    // Generate tasks for this time of day only (not previous time periods)
     const timeTasks: TrackingTask[] = [];
     
     // Category mapping to match track page format
@@ -124,23 +124,13 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       'Stress, Sleep, and Recovery': 'sleep-&-recovery',
     };
     
-    // Determine which time periods to include based on current time
-    const timePeriodsToInclude: ('morning' | 'afternoon' | 'evening')[] = [];
-    if (timeOfDay === 'morning') {
-      timePeriodsToInclude.push('morning');
-    } else if (timeOfDay === 'afternoon') {
-      timePeriodsToInclude.push('morning', 'afternoon');
-    } else if (timeOfDay === 'evening') {
-      timePeriodsToInclude.push('morning', 'afternoon', 'evening');
-    }
-    
     Object.entries(trackingQuestions).forEach(([category, questions]) => {
       questions.forEach((q: any) => {
         const assignedTime = getQuestionTime(q.id, q.timeOfDay);
         const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
         
-        // Only include tasks from relevant time periods
-        if (taskTime && timePeriodsToInclude.includes(taskTime)) {
+        // Only include tasks from the current time period
+        if (taskTime === timeOfDay) {
           // Use the same category ID format as track page
           const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           
@@ -157,32 +147,11 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       });
     });
     
-    // Filter out answered tasks from previous time periods (only for current day)
-    const filteredTasks = timeTasks.filter(task => {
-      const isAnswered = answers[task.id] !== undefined && answers[task.id] !== '';
-      // Keep current time period tasks regardless of answer status
-      if (task.time === timeOfDay) {
-        return true;
-      }
-      // Only keep previous time period tasks if they're unanswered (for current day)
-      return !isAnswered;
-    });
-    
-    // Sort by time period first, then by priority
+    // Sort by priority
     if (priorities) {
-      const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
       const priorityOrder = { high: 1, medium: 2, low: 3 };
       
-      filteredTasks.sort((a, b) => {
-        // First sort by time period
-        const aTimeOrder = timeOrder[a.time];
-        const bTimeOrder = timeOrder[b.time];
-        
-        if (aTimeOrder !== bTimeOrder) {
-          return aTimeOrder - bTimeOrder;
-        }
-        
-        // Then sort by priority
+      timeTasks.sort((a, b) => {
         const aPriority = priorities[a.id] ?? 'medium';
         const bPriority = priorities[b.id] ?? 'medium';
         const aPriorityOrder = priorityOrder[aPriority];
@@ -192,7 +161,7 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       });
     }
     
-    setTasks(filteredTasks);
+    setTasks(timeTasks);
   }, [timeOfDay, priorities, Object.keys(answers).length, currentDate]);
 
   const handleAnswerChange = (taskId: string, value: any) => {
@@ -228,6 +197,49 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
   const timeColor = getTimeColor(timeOfDay);
   const timeRange = getTimeRange(timeOfDay);
 
+  // Helper to compute missed tasks from previous periods
+  const getMissedTasksSummary = () => {
+    const categoryMapping = {
+      'Digestive Health': 'digestive-health-&-symptoms',
+      'Medication & Supplement Use': 'medication-&-supplement-use',
+      'Nutrition & Diet Habits': 'diet-&-nutrition',
+      'Personalized Goals & Achievements': 'lifestyle-factors',
+      'Physical Activity & Movement': 'lifestyle-factors',
+      'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+    };
+    // Determine which time periods to check
+    const timePeriodsToCheck: ('morning' | 'afternoon' | 'evening')[] = [];
+    if (timeOfDay === 'afternoon') {
+      timePeriodsToCheck.push('morning');
+    } else if (timeOfDay === 'evening') {
+      timePeriodsToCheck.push('morning', 'afternoon');
+    }
+    const missedByPeriod: Record<string, { missed: number; total: number }> = {};
+    Object.entries(trackingQuestions).forEach(([category, questions]) => {
+      questions.forEach((q: any) => {
+        const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+        const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
+        if (taskTime && timePeriodsToCheck.includes(taskTime)) {
+          const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const taskId = `${categoryId}__${q.id}`;
+          const isAnswered = answers[taskId] !== undefined && answers[taskId] !== '';
+          
+          if (!missedByPeriod[taskTime]) {
+            missedByPeriod[taskTime] = { missed: 0, total: 0 };
+          }
+          missedByPeriod[taskTime].total += 1;
+          if (!isAnswered) {
+            missedByPeriod[taskTime].missed += 1;
+          }
+        }
+      });
+    });
+    return missedByPeriod;
+  };
+
+  const missedTasksByPeriod = getMissedTasksSummary();
+  const totalMissedTasks = Object.values(missedTasksByPeriod).reduce((sum, period) => sum + period.missed, 0);
+
   if (tasks.length === 0) {
     return null; // Don't render card if no tasks for this time
   }
@@ -254,6 +266,57 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       </CardHeader>
       <CardContent>
         <div className="flex overflow-x-auto space-x-4 pb-2 -mx-4 px-4">
+          {/* Consolidated missed tasks sub-card (if any) */}
+          {(timeOfDay === 'afternoon' || timeOfDay === 'evening') && (
+            <div className="tracking-question-subcard p-4 w-56 flex-shrink-0 border-4 !border-rose-300 bg-rose-50">
+              {totalMissedTasks > 0 ? (
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <span className="font-semibold text-red-700 flex items-center">
+                        <Clock className="h-4 w-4 mr-1" /> Missed Tasks
+                      </span>
+                    </div>
+                    <div className="space-y-1 mb-3">
+                      {Object.entries(missedTasksByPeriod)
+                        .sort(([a], [b]) => {
+                          const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
+                          return timeOrder[a as keyof typeof timeOrder] - timeOrder[b as keyof typeof timeOrder];
+                        })
+                        .map(([period, count]) => (
+                        <div key={period} className="flex items-center text-sm text-indigo-900">
+                          <span className={
+                            period === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
+                            period === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
+                            'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2'
+                          }>
+                            {period.charAt(0).toUpperCase() + period.slice(1)}
+                          </span>
+                          {count.missed}/{count.total} missed
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={() => window.location.href = '/track'}
+                      className="w-full"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-2" /> Go and Complete
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Complete these tasks to stay on track with your health goals
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col h-full justify-center items-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 mb-1" />
+                  <span className="font-semibold text-green-700">All Caught Up!</span>
+                  <span className="text-xs text-muted-foreground text-center mt-1">Great job! You've completed all your tasks from earlier today.</span>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Render current time period's tasks */}
           {tasks.map((task) => {
             const isAnswered = answers[task.id] !== undefined && answers[task.id] !== '';
             // Determine priority badge

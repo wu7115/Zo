@@ -328,7 +328,7 @@ export default function StandaloneDiagnosticSurveyPage() {
                                   </Link>
                                 </Button>
                                 <CardTitle className="text-2xl font-headline text-primary">
-                                    Diagnostic Survey
+                                    ZoHealth Survey
                                 </CardTitle>
                             </div>
                         </div>

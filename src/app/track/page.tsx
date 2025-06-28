@@ -698,6 +698,7 @@ export default function TrackPage() {
                                     const newAnswers = { ...trackingAnswers, [task.id]: val };
                                     setTrackingAnswers(newAnswers);
                                     localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
+                                    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
                                   })}
                                 </div>
                               );
@@ -723,6 +724,7 @@ export default function TrackPage() {
                                   const newAnswers = { ...trackingAnswers, [task.id]: val };
                                   setTrackingAnswers(newAnswers);
                                   localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
+                                  localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
                                 })}
                               </div>
                             ))}

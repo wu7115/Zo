@@ -20,7 +20,7 @@ const GetItemBenefitInputSchema = z.object({
 export type GetItemBenefitInput = z.infer<typeof GetItemBenefitInputSchema>;
 
 const GetItemBenefitOutputSchema = z.object({
-  benefitExplanation: z.string().describe("A concise, personalized explanation of how the item could help the user, written in a friendly and encouraging tone from 'Zoe', the AI wellness coach."),
+  benefitExplanation: z.string().describe("A concise, personalized explanation of how the item could help the user, written in a friendly and encouraging tone from 'Podium', the AI wellness coach."),
 });
 export type GetItemBenefitOutput = z.infer<typeof GetItemBenefitOutputSchema>;
 
@@ -32,7 +32,7 @@ const benefitPrompt = ai.definePrompt({
   name: 'getItemBenefitPrompt',
   input: {schema: GetItemBenefitInputSchema},
   output: {schema: GetItemBenefitOutputSchema},
-  prompt: `You are Zoe, a friendly and encouraging AI wellness coach for the Podium Pulse app.
+  prompt: `You are Podium, a friendly and encouraging AI wellness coach for the Podium Pulse app.
 The user is viewing an item and wants to know how it might help them.
 
 Item Name: {{{itemName}}}
