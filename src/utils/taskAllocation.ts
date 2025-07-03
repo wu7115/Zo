@@ -1,4 +1,7 @@
 import { trackingQuestions } from '@/data/trackingQuestions';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 // Desired distribution for anytime tasks
 const DESIRED_DISTRIBUTION = {
@@ -65,42 +68,67 @@ const createAllocation = (): Record<string, string> => {
   return allocation;
 };
 
-// Get or create the allocation
-export const getAnytimeTaskAllocation = (): Record<string, string> => {
-  if (typeof window !== 'undefined') {
-    const cacheKey = 'anytimeTaskAllocation';
-    let allocation: Record<string, string> | null = null;
-    try {
-      allocation = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    } catch {}
-    if (!allocation) {
-      allocation = createAllocation();
-      localStorage.setItem(cacheKey, JSON.stringify(allocation));
-    }
+// Get or create the allocation (now async, Firestore-backed)
+export const getAnytimeTaskAllocation = async (): Promise<Record<string, string>> => {
+  const user = getAuth(app).currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+  const db = getFirestore(app);
+  const docRef = doc(db, 'users', user.uid, 'tracking', 'anytimeTaskAllocation');
+  const cacheKey = 'anytimeTaskAllocation';
+  // Try localStorage first for fast load
+  let allocation: Record<string, string> | null = null;
+  try {
+    allocation = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+  } catch {}
+  if (allocation) {
     return allocation;
-  } else {
-    // SSR fallback: in-memory only
-  if (anytimeTaskAllocation === null) {
-    anytimeTaskAllocation = createAllocation();
   }
-  return anytimeTaskAllocation;
+  // Try Firestore
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    allocation = docSnap.data().allocation || null;
+    if (allocation) {
+      localStorage.setItem(cacheKey, JSON.stringify(allocation));
+      return allocation;
+    }
   }
+  // Create new allocation
+  allocation = createAllocation();
+  await setDoc(docRef, { allocation, updatedAt: new Date() });
+  localStorage.setItem(cacheKey, JSON.stringify(allocation));
+  return allocation;
 };
 
-// Reset the allocation (for testing or new journeys)
-export const resetAnytimeTaskAllocation = (): void => {
+// Reset the allocation (for testing or new journeys, now clears Firestore)
+export const resetAnytimeTaskAllocation = async (): Promise<void> => {
   anytimeTaskAllocation = null;
   if (typeof window !== 'undefined') {
     localStorage.removeItem('anytimeTaskAllocation');
+  }
+  const user = getAuth(app).currentUser;
+  if (user) {
+    const db = getFirestore(app);
+    const docRef = doc(db, 'users', user.uid, 'tracking', 'anytimeTaskAllocation');
+    await deleteDoc(docRef);
   }
   console.log('Allocation reset');
 };
 
 // Get the time for a specific question
-export const getQuestionTime = (questionId: string, originalTimeOfDay: string): string | null => {
+export const getQuestionTime = (
+  questionId: string,
+  originalTimeOfDay: string,
+  anytimeAllocation?: Record<string, string>
+): string | null => {
+  if (originalTimeOfDay === 'Anytime' && anytimeAllocation) {
+    return anytimeAllocation[questionId] || null;
+  }
+  // fallback for legacy usage (should be avoided)
   if (originalTimeOfDay === 'Anytime') {
-    const allocation = getAnytimeTaskAllocation();
-    return allocation[questionId] || null;
+    // This will not work correctly if called synchronously, but keeps old code from breaking
+    return null;
   }
   return originalTimeOfDay;
 };

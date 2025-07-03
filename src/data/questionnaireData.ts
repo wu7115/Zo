@@ -36,24 +36,6 @@ export const questionnaireData = {
     part2: {
     'Digestive Health': [
         {
-          id: 'digestive_symptom_frequency',
-          type: 'single',
-          text: 'How often do you experience gut discomfort?',
-          options: ['Never', 'Occasionally', 'Weekly', 'Daily']
-        },
-        {
-          id: 'experiences_bloating',
-          type: 'single',
-          text: 'How often do you feel bloated after eating?',
-          options: ['Never', 'Occasionally', 'Weekly', 'Daily']
-        },
-        {
-          id: 'has_constipation',
-          type: 'single',
-          text: 'How often do you experience constipation, diarrhea, or irregular bowel movements?',
-          options: ['Never', 'Occasionally', 'Weekly', 'Daily']
-        },
-        {
           id: 'has_diarrhea',
           type: 'single',
           text: 'Do you experience diarrhoea or loose stools?',
@@ -105,24 +87,6 @@ export const questionnaireData = {
     ],
     'Nutrition & Diet': [
         {
-          id: 'diet_type',
-          type: 'single',
-          text: 'How would you describe your current diet?',
-          options: ['Balanced & whole foods', 'High processed foods', 'Mostly plant-based', 'High protein / low carb', 'Other']
-        },
-        {
-          id: 'daily_fruit_veg_servings',
-          type: 'single',
-          text: 'How many servings of fruits and vegetables do you usually have per day?',
-          options: ['0–1', '2–3', '4–5', '6+']
-        },
-        {
-          id: 'takes_probiotic_prebiotic',
-          type: 'single',
-          text: 'Do you currently take probiotics or prebiotics?',
-          options: ['Yes', 'No']
-        },
-        {
           id: 'consumes_fermented_foods',
           type: 'single',
           text: 'Do you typically consume fermented foods?',
@@ -158,33 +122,6 @@ export const questionnaireData = {
         }
     ],
     'Health Goals & Body Changes': [
-        {
-            id: 'podium_health_goals',
-            type: 'multi',
-            text: 'What are your primary reasons for coming to Podium, the best gut health app on the planet (select all that apply)?',
-            options: [
-            'Improve general gut health',
-            'Manage chronic gut health issue',
-            'Manage acute gut health issue',
-            'Weight management',
-            'Improve sleep',
-            'Enhance athletic performance',
-            'Increase energy levels',
-            'Support immune function',
-            'Reduce bloating or digestive discomfort',
-            'Improve skin health',
-            'Improve mental clarity / reduce brain fog',
-            'Balance mood / manage stress',
-            'Improve sex drive / libido',
-            'Other (text)'
-            ]
-        },
-        {
-            id: 'podium__primary_health_goal',
-            type: 'single-dynamic',
-            text: 'Of the goals you selected, which is your main focus right now?',
-            dependsOn: 'podium_health_goals'
-        },
         {
             id: 'has_skin_health_changes',
             type: 'single',
@@ -302,12 +239,6 @@ export const questionnaireData = {
             text: 'Average hours of sleep per night: ____'
         },
         {
-            id: 'typical_stress_level',
-            type: 'single',
-            text: 'Typical stress level:',
-            options: ['Low', 'Moderate', 'High', 'Very High']
-        },
-        {
             id: 'typical_mood',
             type: 'single',
             text: 'How would you describe your mood most of the time?',
@@ -324,12 +255,6 @@ export const questionnaireData = {
             type: 'single',
             text: 'How often do you engage in relaxation activities?',
             options: ['Rarely / never', '1–2 times per week', '3–4 times per week', '5–6 times per week', 'Daily']
-        },
-        {
-            id: 'feels_well_rested',
-            type: 'single',
-            text: 'Do you feel well-rested upon waking?',
-            options: ['Yes', 'No']
         },
         {
             id: 'has_trouble_falling_asleep',

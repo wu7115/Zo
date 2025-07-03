@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Check, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { questionnaireData } from '@/data/questionnaireData';
+import { AiPencilPanel } from '../../components/AiPencilPanel';
 
 // --- UI Components (Adapted from onboarding/page.tsx) ---
 const PrimaryButton = ({ children, className, ...props }: React.ComponentProps<typeof Button>) => (
@@ -343,6 +344,7 @@ export default function StandaloneDiagnosticSurveyPage() {
                     </CardContent>
                 </Card>
             </div>
+            <AiPencilPanel page="diagnose" />
         </main>
     );
 }

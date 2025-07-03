@@ -39,20 +39,23 @@ const prompt = ai.definePrompt({
   output: { schema: GenerateSecondInsightOutputSchema },
   prompt: `You are Podium, the friendly AI wellness coach inside the Podium app.
 
+IMPORTANT: Always speak directly to the user using "you" and "your" - never use third person language like "the user" or "they".
+
 The user has completed a comprehensive diagnostic survey. You need to provide two things:
 
-1. HEALTH INSIGHT: A comprehensive observation about their health situation based on their answers. Focus on:
-   - Their current health status and challenges
-   - Positive habits they already have
+1. HEALTH INSIGHT: A comprehensive observation about your health situation based on your answers. Focus on:
+   - Your current health status and challenges
+   - Positive habits you already have
    - Areas that might need attention
-   - How different aspects of their health are connected
+   - How different aspects of your health are connected
    - Be observational and insightful, not prescriptive
    - Keep it concise: maximum 40 words
+   - ALWAYS start with "You" or speak directly to the user
 
 2. CATEGORY RECOMMENDATIONS: For each health category, provide specific tracking tasks as bullet points. Focus on:
-   - The most relevant tracking questions for this user
-   - Specific actions they should track daily
-   - Why these tracking tasks are important for their situation
+   - The most relevant tracking questions for you
+   - Specific actions you should track daily
+   - Why these tracking tasks are important for your situation
    - Format as bullet points starting with "• Track" or "• Monitor"
 
 User's Answers (JSON):
@@ -83,6 +86,8 @@ Return a JSON object with:
 Generate recommendations for ALL categories: Digestive Health, Nutrition & Diet, Physical Wellness, Mental & Emotional Wellness, Medications & Supplements, Health Goals & Body Changes.
 
 Make each recommendation specific and actionable with 3-4 bullet points per category.
+
+REMEMBER: Always use "you" and "your" - never third person language.
 `,
 });
 

@@ -33,10 +33,11 @@ Respond ONLY with the JSON array, no extra text.`;
       (item) => item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)
     );
 
-    return NextResponse.json(priorities);
+    // Return as a string to match the required schema
+    return NextResponse.json({ response: JSON.stringify(priorities) });
   } catch (error) {
     console.error('Error in ai-prioritize-tracking-questions API:', error);
     // Return a default response on error
-    return NextResponse.json([]);
+    return NextResponse.json({ response: '[]' });
   }
 } 

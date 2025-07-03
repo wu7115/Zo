@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle, User, Star as StarIcon, Edit2, Bell } from 'lucide-react'; // Added Bell
+import { PlusCircle, User, Star as StarIcon, Edit2, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +16,16 @@ import {
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { PostComposerModal } from './PostComposerModal'; // Import PostComposerModal
+import { PostComposerModal } from './PostComposerModal';
 import { trackingQuestions } from '@/data/trackingQuestions';
-import { getQuestionTime } from '@/utils/taskAllocation';
+import { getQuestionTime, getAnytimeTaskAllocation } from '@/utils/taskAllocation';
+import { NotificationDropdown } from './NotificationDropdown';
+import { useToast } from "@/hooks/use-toast";
+import { useTrackingData } from '@/hooks/use-tracking-data';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, deleteObject } from 'firebase/storage';
+import { app } from '@/lib/firebase';
 
 function getCurrentTimePeriod(): 'morning' | 'afternoon' | 'evening' {
   const hour = new Date().getHours();
@@ -41,7 +48,7 @@ function getPriorityOrder(priority: string) {
   return 4;
 }
 
-function getPrioritizedTaskForCurrentPeriod() {
+function getTopPriorityTasksForCurrentPeriod(count: number = 3) {
   // Get current time period
   const now = getCurrentTimePeriod();
   // Get priorities from localStorage
@@ -77,6 +84,7 @@ function getPrioritizedTaskForCurrentPeriod() {
     'Physical Activity & Movement': 'lifestyle-factors',
     'Stress, Sleep, and Recovery': 'sleep-&-recovery',
   };
+  
   Object.entries(trackingQuestions).forEach(([category, questions]) => {
     questions.forEach((q: any) => {
       const assignedTime = getQuestionTime(q.id, q.timeOfDay);
@@ -99,101 +107,155 @@ function getPrioritizedTaskForCurrentPeriod() {
       }
     });
   });
-  // Sort by priority
+  
+  // Sort by priority and return top N tasks
   tasks.sort((a, b) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
-  return tasks[0] || null;
+  return tasks.slice(0, count);
 }
 
 function QuickTaskInputCurrentPeriod() {
-  const [task, setTask] = useState<any | null>(null);
-  const [value, setValue] = useState<any>('');
+  const { priorities, dailyAnswers, updateAnswer, getTimePeriodPriorities } = useTrackingData();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [values, setValues] = useState<Record<string, any>>({});
+  const [anytimeAllocation, setAnytimeAllocation] = useState<Record<string, string> | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    setTask(getPrioritizedTaskForCurrentPeriod());
+    (async () => {
+      const allocation = await getAnytimeTaskAllocation();
+      setAnytimeAllocation(allocation);
+      setLoading(false);
+    })();
   }, []);
+
   useEffect(() => {
-    if (task) {
-      // Check if it's a new day and reset answers if needed
-      const today = new Date().toISOString().split('T')[0];
-      const storedDate = localStorage.getItem('trackingAnswersDate');
-      let answers: Record<string, any> = {};
-      
-      if (storedDate === today) {
-        // Load answers from today
-        try {
-          answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
-        } catch {}
-      } else {
-        // It's a new day, reset answers
-        localStorage.removeItem('trackingAnswers');
-        localStorage.setItem('trackingAnswersDate', today);
-        answers = {};
-      }
-      
-      setValue(answers[task.id] ?? '');
-    }
-  }, [task]);
-  if (!task) return null;
-  const handleChange = (val: any) => {
-    setValue(val);
-    let answers: Record<string, any> = {};
-    try {
-      answers = JSON.parse(localStorage.getItem('trackingAnswers') || '{}');
-    } catch {}
-    answers[task.id] = val;
-    localStorage.setItem('trackingAnswers', JSON.stringify(answers));
-    // Also update date for daily reset
-    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
-    // Dispatch event so other components/pages update immediately
-    window.dispatchEvent(new CustomEvent('trackingAnswersChanged', {
-      detail: { taskId: task.id, value: val, allAnswers: answers }
-    }));
-    setTask(getPrioritizedTaskForCurrentPeriod()); // Move to next task if any
+    if (!anytimeAllocation) return;
+    const now = getCurrentTimePeriod();
+    const periodPriorities = getTimePeriodPriorities(now);
+    const tasksArr: any[] = [];
+    const categoryMapping = {
+      'Digestive Health': 'digestive-health-&-symptoms',
+      'Medication & Supplement Use': 'medication-&-supplement-use',
+      'Nutrition & Diet Habits': 'diet-&-nutrition',
+      'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+      'Physical Activity & Movement': 'physical-activity-&-movement',
+      'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+    };
+    Object.entries(trackingQuestions).forEach(([category, questions]) => {
+      questions.forEach((q: any) => {
+        const assignedTime = getQuestionTime(q.id, q.timeOfDay, anytimeAllocation);
+        const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
+        if (taskTime === now) {
+          const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const id = `${categoryId}__${q.id}`;
+          if (dailyAnswers[id] === undefined || dailyAnswers[id] === '') {
+            tasksArr.push({
+              id,
+              question: q.text,
+              inputType: q.type === 'number' ? 'number' : 'options',
+              options: q.options,
+              placeholder: q.placeholder,
+              time: taskTime,
+              priority: (periodPriorities?.[id]) || 'medium',
+              category
+            });
+          }
+        }
+      });
+    });
+    tasksArr.sort((a, b) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
+    setTasks(tasksArr.slice(0, 3));
+  }, [dailyAnswers, priorities, anytimeAllocation]);
+
+  useEffect(() => {
+    const initialValues: Record<string, any> = {};
+    tasks.forEach(task => {
+      initialValues[task.id] = dailyAnswers[task.id] ?? '';
+    });
+    setValues(initialValues);
+  }, [tasks, dailyAnswers]);
+
+  const handleChange = (taskId: string, val: any) => {
+    setValues(prev => ({ ...prev, [taskId]: val }));
+    updateAnswer(taskId, val);
   };
-  return (
-    <div className="px-2 py-3">
-      <div className="flex items-center mb-1">
-        <span className={
-          task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
-          task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
-          task.time === 'evening' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2' :
-          'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs mr-2'
-        }>{task.time.charAt(0).toUpperCase() + task.time.slice(1)}</span>
-        <span className="text-xs text-muted-foreground">{task.category}</span>
+
+  if (loading || !anytimeAllocation) {
+    return (
+      <div className="px-2 py-3 text-center text-muted-foreground">
+        <p className="text-sm">Loading tasks...</p>
       </div>
-      <div className="text-sm font-medium mb-2">{task.question}</div>
-      {task.inputType === 'number' ? (
-        <input
-          type="number"
-          className="border rounded px-2 py-1 w-full text-sm"
-          placeholder={task.placeholder}
-          value={value}
-          onChange={e => handleChange(e.target.value === '' ? '' : Number(e.target.value))}
-        />
-      ) : (
-        <div className="flex flex-col gap-1">
-          {task.options?.map((opt: string) => (
-            <button
-              key={opt}
-              className={
-                'border rounded px-2 py-1 text-left text-sm ' +
-                (value === opt ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted')
-              }
-              onClick={() => handleChange(opt)}
-            >
-              {opt}
-            </button>
-          ))}
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="px-2 py-3 text-center text-muted-foreground">
+        <p className="text-sm">All tasks completed for this time period!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {tasks.map((task) => (
+        <div key={task.id} className="px-2 py-3 border-b border-muted/50 last:border-b-0">
+          <div className="flex items-center mb-1">
+            <span className={
+              task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
+              task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
+              task.time === 'evening' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2' :
+              'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs mr-2'
+            }>{task.time.charAt(0).toUpperCase() + task.time.slice(1)}</span>
+            <span className="text-xs text-muted-foreground">{task.category}</span>
+            {/* Priority indicator */}
+            <div className="ml-auto">
+              {(() => {
+                const priority = task.priority;
+                const sunEmojis = priority === 'high' ? '☀️☀️☀️' : priority === 'medium' ? '☀️☀️' : '☀️';
+                return (
+                  <span className="text-xs text-muted-foreground">
+                    {sunEmojis}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+          <div className="text-sm font-medium mb-2">{task.question}</div>
+          {task.inputType === 'number' ? (
+            <input
+              type="number"
+              className="border rounded px-2 py-1 w-full text-sm"
+              placeholder={task.placeholder}
+              value={values[task.id] ?? ''}
+              onChange={e => handleChange(task.id, e.target.value === '' ? '' : Number(e.target.value))}
+            />
+          ) : (
+            <div className="flex flex-col gap-1">
+              {task.options?.map((opt: string) => (
+                <button
+                  key={opt}
+                  className={
+                    'border rounded px-2 py-1 text-left text-sm ' +
+                    (values[task.id] === opt ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted')
+                  }
+                  onClick={() => handleChange(task.id, opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
 
 export function TopHeader() {
-  const [sleepRating, setSleepRating] = useState<number | null>(null);
-  const [mood, setMood] = useState<string | null>(null);
+  const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
   const router = useRouter();
-  const [isPostComposerOpen, setIsPostComposerOpen] = useState(false); // State for Post Composer
+  const { toast } = useToast();
 
   // Daily reset of tracking answers
   useEffect(() => {
@@ -205,23 +267,59 @@ export function TopHeader() {
     }
   }, []);
 
-  const handleSleepRate = (rating: number) => {
-    setSleepRating(rating);
-    console.log(`Sleep rated: ${rating} stars`);
+  const handlePostClick = () => {
+    setIsPostComposerOpen(true);
   };
 
-  const handleMoodSelect = (selectedMoodEmoji: string) => {
-    setMood(selectedMoodEmoji);
-    console.log(`Mood selected: ${selectedMoodEmoji}`);
+  const handleDeleteAllPosts = async () => {
+    if (confirm('Are you sure you want to delete all posts? This action cannot be undone.')) {
+      // --- Firestore batch delete ---
+      const auth = getAuth(app);
+      if (!auth.currentUser) {
+        toast({ title: 'Error', description: 'You must be signed in to delete posts.', variant: 'destructive' });
+        return;
+      }
+      const db = getFirestore(app);
+      const storage = getStorage(app);
+      const postsRef = collection(db, 'users', auth.currentUser.uid, 'posts');
+      const snapshot = await getDocs(postsRef);
+      
+      // Delete both Firestore documents and Storage images
+      const deletePromises = snapshot.docs.map(async (doc) => {
+        const postData = doc.data();
+        
+        // If post has an image, delete it from Storage
+        if (postData.image) {
+          try {
+            // Extract the storage path from the download URL
+            // URL format: https://firebasestorage.googleapis.com/v0/b/bucket/o/path%2Fto%2Ffile?alt=media&token=...
+            const url = new URL(postData.image);
+            const pathMatch = url.pathname.match(/\/o\/(.+)/);
+            if (pathMatch) {
+              const storagePath = decodeURIComponent(pathMatch[1]);
+              const imageRef = storageRef(storage, storagePath);
+              await deleteObject(imageRef);
+            }
+          } catch (error) {
+            console.warn('Failed to delete image from storage:', error);
+            // Continue with document deletion even if image deletion fails
+          }
+        }
+        
+        // Delete the Firestore document
+        return deleteDoc(doc.ref);
+      });
+      
+      await Promise.all(deletePromises);
+      toast({
+        title: 'Posts Deleted',
+        description: 'All posts and associated images have been deleted successfully.',
+      });
+      // --- Old localStorage-based code (for reference) ---
+      // localStorage.removeItem('userPosts');
+      // window.dispatchEvent(new CustomEvent('postsDeleted'));
+    }
   };
-
-  const moodOptions = [
-    { emoji: '😊', label: 'Excellent' },
-    { emoji: '🙂', label: 'Good' },
-    { emoji: '😐', label: 'Neutral' },
-    { emoji: '😟', label: 'Low' },
-    { emoji: '😩', label: 'Very Low' },
-  ];
 
   return (
     <>
@@ -250,64 +348,29 @@ export function TopHeader() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-accent">
                   <PlusCircle className="h-5 w-5" />
-                  <span className="sr-only">Log Activity or Quick Updates</span>
+                  <span className="sr-only">Quick Updates & Post</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Quick Updates</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <QuickTaskInputCurrentPeriod />
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default">
-                  <div className="w-full">
-                    <p className="text-sm mb-1.5 text-foreground">Rate your sleep</p>
-                    <div className="flex justify-between items-center px-1">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <Button
-                          key={`sleep-${rating}`}
-                          variant="ghost"
-                          size="icon"
-                          className={cn(
-                            "h-7 w-7 p-0 rounded-full",
-                            sleepRating === rating ? "text-yellow-500 bg-yellow-100" : "text-muted-foreground hover:text-yellow-500 hover:bg-yellow-50"
-                          )}
-                          onClick={() => handleSleepRate(rating)}
-                          aria-label={`Rate ${rating} stars`}
-                        >
-                          <StarIcon className={cn("h-5 w-5", sleepRating !== null && rating <= sleepRating ? "fill-yellow-400 text-yellow-500" : "fill-transparent" )}/>
-                        </Button>
-                      ))}
-                    </div>
+                <DropdownMenuItem onClick={handlePostClick} className="cursor-pointer">
+                  <div className="flex items-center w-full">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span>Create Post</span>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-transparent cursor-default mt-1">
-                  <div className="w-full">
-                    <p className="text-sm mb-1.5 text-foreground">Rate your mood</p>
-                    <div className="flex justify-between items-center px-1">
-                      {moodOptions.map((opt) => (
-                        <Button
-                          key={`mood-${opt.label}`}
-                          variant="ghost"
-                          size="icon"
-                          className={cn(
-                            "h-7 w-7 p-0 rounded-full",
-                            mood === opt.emoji ? "text-primary bg-primary-foreground" : "text-muted-foreground hover:text-primary hover:bg-primary-foreground"
-                          )}
-                          onClick={() => handleMoodSelect(opt.emoji)}
-                          aria-label={`Rate ${opt.label}`}
-                        >
-                          {opt.emoji}
-                        </Button>
-                      ))}
-                    </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleDeleteAllPosts} className="cursor-pointer text-destructive">
+                  <div className="flex items-center w-full">
+                    <span className="text-xs">🗑️ Delete All Posts</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* Notification Bell moved right beside plus button */}
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-accent" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationDropdown />
             <Link href="/profile" passHref>
               <Avatar className="h-8 w-8 cursor-pointer border border-primary hover:border-accent transition-colors">
                 <AvatarFallback className="bg-muted text-muted-foreground">
@@ -318,6 +381,12 @@ export function TopHeader() {
           </div>
         </div>
       </header>
+      
+      {/* Post Composer Modal */}
+      <PostComposerModal 
+        isOpen={isPostComposerOpen} 
+        onOpenChange={setIsPostComposerOpen} 
+      />
     </>
   );
 }

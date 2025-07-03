@@ -4,13 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Clock, Sun, SunMedium, Moon, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, Sun, SunMedium, Moon, Coffee, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { trackingQuestions } from '@/data/trackingQuestions';
 import { getQuestionTime } from '@/utils/taskAllocation';
+import { useTrackingData } from '@/hooks/use-tracking-data';
 
-interface TrackingTask {
+export interface TrackingTask {
   id: string;
   question: string;
   inputType: 'number' | 'options';
@@ -23,29 +25,33 @@ interface TrackingTask {
 interface TimeBasedTrackingCardProps {
   timeOfDay: 'morning' | 'afternoon' | 'evening';
   priorities?: Record<string, 'high' | 'medium' | 'low'>;
+  anytimeAllocation?: Record<string, string>;
 }
 
-const getTimeIcon = (time: 'morning' | 'afternoon' | 'evening') => {
-  switch (time) {
+const getTimeIcon = (timeOfDay: string) => {
+  switch (timeOfDay) {
     case 'morning': return Sun;
-    case 'afternoon': return SunMedium;
+    case 'afternoon': return Coffee;
     case 'evening': return Moon;
+    default: return Clock;
   }
 };
 
-const getTimeColor = (time: 'morning' | 'afternoon' | 'evening') => {
-  switch (time) {
-    case 'morning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'afternoon': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'evening': return 'bg-purple-100 text-purple-800 border-purple-200';
+const getTimeColor = (timeOfDay: string) => {
+  switch (timeOfDay) {
+    case 'morning': return 'text-yellow-600';
+    case 'afternoon': return 'text-orange-600';
+    case 'evening': return 'text-purple-600';
+    default: return 'text-gray-600';
   }
 };
 
-const getTimeRange = (time: 'morning' | 'afternoon' | 'evening'): string => {
-  switch (time) {
-    case 'morning': return '3:00 AM - 11:59 AM';
-    case 'afternoon': return '12:00 PM - 6:00 PM';
-    case 'evening': return '6:01 PM - 2:59 AM';
+const getTimeRange = (timeOfDay: string) => {
+  switch (timeOfDay) {
+    case 'morning': return '6 AM - 12 PM';
+    case 'afternoon': return '12 PM - 6 PM';
+    case 'evening': return '6 PM - 12 AM';
+    default: return '';
   }
 };
 
@@ -86,54 +92,29 @@ const renderInput = (task: TrackingTask, value: any, onChange: (val: any) => voi
   }
 };
 
-export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTrackingCardProps) {
+export function TimeBasedTrackingCard({ timeOfDay, priorities, anytimeAllocation }: TimeBasedTrackingCardProps) {
+  // Use Firestore real-time data
+  const { dailyAnswers, updateAnswer, isTaskCompleted, getTimePeriodPriorities } = useTrackingData();
   const [tasks, setTasks] = useState<TrackingTask[]>([]);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
-    // Get current date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    setCurrentDate(today);
-    
-    // Load existing answers from localStorage with date check
-    const savedAnswers = localStorage.getItem('trackingAnswers');
-    const savedDate = localStorage.getItem('trackingAnswersDate');
-    
-    if (savedAnswers && savedDate === today) {
-      setAnswers(JSON.parse(savedAnswers));
-    } else {
-      // Reset answers if it's a new day
-      setAnswers({});
-      localStorage.setItem('trackingAnswers', JSON.stringify({}));
-      localStorage.setItem('trackingAnswersDate', today);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Generate tasks for this time of day only (not previous time periods)
+    if (!anytimeAllocation) return;
+    // Generate tasks for this time of day only
     const timeTasks: TrackingTask[] = [];
-    
-    // Category mapping to match track page format
     const categoryMapping = {
       'Digestive Health': 'digestive-health-&-symptoms',
       'Medication & Supplement Use': 'medication-&-supplement-use',
       'Nutrition & Diet Habits': 'diet-&-nutrition',
-      'Personalized Goals & Achievements': 'lifestyle-factors',
-      'Physical Activity & Movement': 'lifestyle-factors',
+      'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+      'Physical Activity & Movement': 'physical-activity-&-movement',
       'Stress, Sleep, and Recovery': 'sleep-&-recovery',
     };
-    
     Object.entries(trackingQuestions).forEach(([category, questions]) => {
       questions.forEach((q: any) => {
-        const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+        const assignedTime = getQuestionTime(q.id, q.timeOfDay, anytimeAllocation);
         const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
-        
-        // Only include tasks from the current time period
         if (taskTime === timeOfDay) {
-          // Use the same category ID format as track page
           const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          
           timeTasks.push({
             id: `${categoryId}__${q.id}`,
             question: q.text,
@@ -146,53 +127,24 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
         }
       });
     });
-    
     // Sort by priority
-    if (priorities) {
+    const periodPriorities = getTimePeriodPriorities(timeOfDay);
+    if (periodPriorities) {
       const priorityOrder = { high: 1, medium: 2, low: 3 };
-      
       timeTasks.sort((a, b) => {
-        const aPriority = priorities[a.id] ?? 'medium';
-        const bPriority = priorities[b.id] ?? 'medium';
-        const aPriorityOrder = priorityOrder[aPriority];
-        const bPriorityOrder = priorityOrder[bPriority];
-        
-        return aPriorityOrder - bPriorityOrder;
+        const aPriority = periodPriorities[a.id] ?? 'medium';
+        const bPriority = periodPriorities[b.id] ?? 'medium';
+        return priorityOrder[aPriority] - priorityOrder[bPriority];
       });
     }
-    
     setTasks(timeTasks);
-  }, [timeOfDay, priorities, Object.keys(answers).length, currentDate]);
+  }, [timeOfDay, dailyAnswers, priorities, anytimeAllocation]);
 
   const handleAnswerChange = (taskId: string, value: any) => {
-    const newAnswers = { ...answers, [taskId]: value };
-    setAnswers(newAnswers);
-    localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
-    localStorage.setItem('trackingAnswersDate', currentDate);
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('trackingAnswersChanged', {
-      detail: { taskId, value, allAnswers: newAnswers }
-    }));
+    updateAnswer(taskId, value);
   };
 
-  // Listen for changes from other components
-  useEffect(() => {
-    const handleTrackingAnswersChange = (event: CustomEvent) => {
-      setAnswers(event.detail.allAnswers);
-    };
-
-    window.addEventListener('trackingAnswersChanged', handleTrackingAnswersChange as EventListener);
-    
-    return () => {
-      window.removeEventListener('trackingAnswersChanged', handleTrackingAnswersChange as EventListener);
-    };
-  }, []);
-
-  const answeredCount = tasks.filter(task => 
-    answers[task.id] !== undefined && answers[task.id] !== ''
-  ).length;
-
+  const answeredCount = tasks.filter(task => isTaskCompleted(task.id)).length;
   const TimeIcon = getTimeIcon(timeOfDay);
   const timeColor = getTimeColor(timeOfDay);
   const timeRange = getTimeRange(timeOfDay);
@@ -203,8 +155,8 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       'Digestive Health': 'digestive-health-&-symptoms',
       'Medication & Supplement Use': 'medication-&-supplement-use',
       'Nutrition & Diet Habits': 'diet-&-nutrition',
-      'Personalized Goals & Achievements': 'lifestyle-factors',
-      'Physical Activity & Movement': 'lifestyle-factors',
+      'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+      'Physical Activity & Movement': 'physical-activity-&-movement',
       'Stress, Sleep, and Recovery': 'sleep-&-recovery',
     };
     // Determine which time periods to check
@@ -217,12 +169,12 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
     const missedByPeriod: Record<string, { missed: number; total: number }> = {};
     Object.entries(trackingQuestions).forEach(([category, questions]) => {
       questions.forEach((q: any) => {
-        const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+        const assignedTime = getQuestionTime(q.id, q.timeOfDay, anytimeAllocation);
         const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
         if (taskTime && timePeriodsToCheck.includes(taskTime)) {
           const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           const taskId = `${categoryId}__${q.id}`;
-          const isAnswered = answers[taskId] !== undefined && answers[taskId] !== '';
+          const isAnswered = isTaskCompleted(taskId);
           
           if (!missedByPeriod[taskTime]) {
             missedByPeriod[taskTime] = { missed: 0, total: 0 };
@@ -240,6 +192,10 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
   const missedTasksByPeriod = getMissedTasksSummary();
   const totalMissedTasks = Object.values(missedTasksByPeriod).reduce((sum, period) => sum + period.missed, 0);
 
+  if (!anytimeAllocation) {
+    return <div className="p-4 text-center text-muted-foreground">Loading tasks...</div>;
+  }
+
   if (tasks.length === 0) {
     return null; // Don't render card if no tasks for this time
   }
@@ -249,7 +205,7 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <TimeIcon className="h-5 w-5" />
+            <TimeIcon className={`h-5 w-5 ${timeColor}`} />
             <div>
               <CardTitle className="text-xl font-headline text-primary">
                 Daily Tasks
@@ -266,59 +222,57 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
       </CardHeader>
       <CardContent>
         <div className="flex overflow-x-auto space-x-4 pb-2 -mx-4 px-4">
-          {/* Consolidated missed tasks sub-card (if any) */}
-          {(timeOfDay === 'afternoon' || timeOfDay === 'evening') && (
-            <div className="tracking-question-subcard p-4 w-56 flex-shrink-0 border-4 !border-rose-300 bg-rose-50">
-              {totalMissedTasks > 0 ? (
-                <div className="flex flex-col h-full justify-between">
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <span className="font-semibold text-red-700 flex items-center">
-                        <Clock className="h-4 w-4 mr-1" /> Missed Tasks
-                      </span>
-                    </div>
-                    <div className="space-y-1 mb-3">
-                      {Object.entries(missedTasksByPeriod)
-                        .sort(([a], [b]) => {
-                          const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
-                          return timeOrder[a as keyof typeof timeOrder] - timeOrder[b as keyof typeof timeOrder];
-                        })
-                        .map(([period, count]) => (
-                        <div key={period} className="flex items-center text-sm text-indigo-900">
-                          <span className={
-                            period === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
-                            period === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
-                            'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2'
-                          }>
-                            {period.charAt(0).toUpperCase() + period.slice(1)}
-                          </span>
-                          {count.missed}/{count.total} missed
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={() => window.location.href = '/track'}
-                      className="w-full"
-                    >
-                      <ArrowRight className="h-4 w-4 mr-2" /> Go and Complete
-                    </Button>
+          {/* Always show missed tasks sub-card as the first sub-card */}
+          <div className="tracking-question-subcard p-4 w-56 flex-shrink-0 border-4 !border-rose-300 bg-rose-50">
+            {totalMissedTasks > 0 ? (
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <div className="flex items-center mb-2">
+                    <span className="font-semibold text-red-700 flex items-center">
+                      <Clock className="h-4 w-4 mr-1" /> Missed Tasks
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Complete these tasks to stay on track with your health goals
-                  </p>
+                  <div className="space-y-1 mb-3">
+                    {Object.entries(missedTasksByPeriod)
+                      .sort(([a], [b]) => {
+                        const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
+                        return timeOrder[a as keyof typeof timeOrder] - timeOrder[b as keyof typeof timeOrder];
+                      })
+                      .map(([period, count]) => (
+                      <div key={period} className="flex items-center text-sm text-indigo-900">
+                        <span className={
+                          period === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2' :
+                          period === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs mr-2' :
+                          'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs mr-2'
+                        }>
+                          {period.charAt(0).toUpperCase() + period.slice(1)}
+                        </span>
+                        {count.missed}/{count.total} missed
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={() => window.location.href = '/track'}
+                    className="w-full"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" /> Go and Complete
+                  </Button>
                 </div>
-              ) : (
-                <div className="flex flex-col h-full justify-center items-center">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mb-1" />
-                  <span className="font-semibold text-green-700">All Caught Up!</span>
-                  <span className="text-xs text-muted-foreground text-center mt-1">Great job! You've completed all your tasks from earlier today.</span>
-                </div>
-              )}
-            </div>
-          )}
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Complete these tasks to stay on track with your health goals
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col h-full justify-center items-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600 mb-1" />
+                <span className="font-semibold text-green-700">All Caught Up!</span>
+                <span className="text-xs text-muted-foreground text-center mt-1">Great job! You've completed all your tasks from earlier today.</span>
+              </div>
+            )}
+          </div>
           {/* Render current time period's tasks */}
           {tasks.map((task) => {
-            const isAnswered = answers[task.id] !== undefined && answers[task.id] !== '';
+            const isAnswered = isTaskCompleted(task.id);
             // Determine priority badge
             let priorityBadge = null;
             if (priorities) {
@@ -402,7 +356,7 @@ export function TimeBasedTrackingCard({ timeOfDay, priorities }: TimeBasedTracki
                         );
                       })()}
                     </div>
-                    {renderInput(task, answers[task.id], (value) => handleAnswerChange(task.id, value))}
+                    {renderInput(task, dailyAnswers[task.id] || '', (value) => handleAnswerChange(task.id, value))}
                   </div>
                 </div>
               </div>

@@ -13,6 +13,9 @@ import { ArrowLeft, FileText, Lightbulb, Loader2, AlertTriangle } from 'lucide-r
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import * as React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 const scoreData = [
   { name: 'Lifestyle & Environment', value: 20, color: '#8884d8' }, // Light Blueish
@@ -50,50 +53,33 @@ export default function GutHealthScorePage() {
       try {
         setIsLoadingInsight(true);
         setInsightError(null);
-        
-        // Fetch the insight that was generated during part 2 onboarding
-        let foundInsight = null;
-        try {
-          if (typeof window !== 'undefined') {
-            // Always try to get the most recent insights from localStorage
-            const secondInsights = localStorage.getItem('secondInsights');
-            
-            if (secondInsights) {
-              const parsed = JSON.parse(secondInsights);
-              if (parsed.healthInsight) {
-                foundInsight = parsed.healthInsight;
-              }
-            }
-            
-            // If no second insight, fall back to initial insight
-            if (!foundInsight) {
-              const initialInsights = localStorage.getItem('initialInsights');
-              
-              if (initialInsights) {
-                const parsed = JSON.parse(initialInsights);
-                if (parsed.healthInsight) {
-                  foundInsight = parsed.healthInsight;
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing stored insights:', error);
+        const auth = getAuth(app);
+        if (!auth.currentUser) {
+          setInsightError('You must be signed in to view your insights.');
+          setIsLoadingInsight(false);
+          return;
         }
-        
-        if (foundInsight) {
-          setOnboardingInsight(foundInsight);
+        const db = getFirestore(app);
+        const docRef = doc(db, 'users', auth.currentUser.uid, 'onboarding', 'answers');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.initialInsight) {
+            setOnboardingInsight(data.initialInsight);
+          } else if (data && data.secondInsight) {
+            setOnboardingInsight(data.secondInsight);
+          } else {
+            setInsightError('No personalized insights found. Please complete the diagnostic survey to get personalized insights.');
+          }
         } else {
-          setInsightError("No personalized insights found. Please complete the diagnostic survey to get personalized insights.");
+          setInsightError('No personalized insights found. Please complete the diagnostic survey to get personalized insights.');
         }
       } catch (error) {
-        console.error("Error fetching onboarding insight:", error);
         setInsightError("Sorry, I couldn't load your personalized insights right now. Please try again later.");
       } finally {
         setIsLoadingInsight(false);
       }
     };
-
     fetchOnboardingInsight();
   }, []);
 

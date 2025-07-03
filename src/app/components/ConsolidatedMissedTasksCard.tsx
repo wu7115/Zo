@@ -8,6 +8,7 @@ import { Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { trackingQuestions } from '@/data/trackingQuestions';
 import { getQuestionTime } from '@/utils/taskAllocation';
+import { useTrackingData } from '@/hooks/use-tracking-data';
 
 interface ConsolidatedMissedTasksCardProps {
   currentTimeOfDay: 'morning' | 'afternoon' | 'evening';
@@ -31,37 +32,24 @@ const getTimeColor = (time: 'morning' | 'afternoon' | 'evening') => {
 };
 
 export function ConsolidatedMissedTasksCard({ currentTimeOfDay, priorities }: ConsolidatedMissedTasksCardProps) {
+  const { dailyAnswers } = useTrackingData();
   const [missedTasksByPeriod, setMissedTasksByPeriod] = useState<Record<string, number>>({});
   const [totalMissedTasks, setTotalMissedTasks] = useState(0);
-  const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
-    // Get current date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    setCurrentDate(today);
-    
-    // Load existing answers from localStorage with date check
-    const savedAnswers = localStorage.getItem('trackingAnswers');
-    const savedDate = localStorage.getItem('trackingAnswersDate');
-    
-    if (savedAnswers && savedDate === today) {
-      const answers = JSON.parse(savedAnswers);
-      calculateMissedTasks(answers);
-    } else {
-      calculateMissedTasks({});
-    }
-  }, []);
+    calculateMissedTasks(dailyAnswers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyAnswers, currentTimeOfDay]);
 
   const calculateMissedTasks = (answers: Record<string, any>) => {
     const categoryMapping = {
       'Digestive Health': 'digestive-health-&-symptoms',
       'Medication & Supplement Use': 'medication-&-supplement-use',
       'Nutrition & Diet Habits': 'diet-&-nutrition',
-      'Personalized Goals & Achievements': 'lifestyle-factors',
-      'Physical Activity & Movement': 'lifestyle-factors',
+      'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+      'Physical Activity & Movement': 'physical-activity-&-movement',
       'Stress, Sleep, and Recovery': 'sleep-&-recovery',
     };
-
     // Determine which time periods to check based on current time
     const timePeriodsToCheck: ('morning' | 'afternoon' | 'evening')[] = [];
     if (currentTimeOfDay === 'afternoon') {
@@ -69,19 +57,15 @@ export function ConsolidatedMissedTasksCard({ currentTimeOfDay, priorities }: Co
     } else if (currentTimeOfDay === 'evening') {
       timePeriodsToCheck.push('morning', 'afternoon');
     }
-
     const missedByPeriod: Record<string, number> = {};
-
     Object.entries(trackingQuestions).forEach(([category, questions]) => {
       questions.forEach((q: any) => {
         const assignedTime = getQuestionTime(q.id, q.timeOfDay);
         const taskTime = assignedTime === 'Morning' ? 'morning' : assignedTime === 'Afternoon' ? 'afternoon' : assignedTime === 'Evening' ? 'evening' : null;
-        
         // Only check tasks from previous time periods
         if (taskTime && timePeriodsToCheck.includes(taskTime)) {
           const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           const taskId = `${categoryId}__${q.id}`;
-          
           // Check if task is missed (not answered)
           const isAnswered = answers[taskId] !== undefined && answers[taskId] !== '';
           if (!isAnswered) {
@@ -90,23 +74,9 @@ export function ConsolidatedMissedTasksCard({ currentTimeOfDay, priorities }: Co
         }
       });
     });
-
     setMissedTasksByPeriod(missedByPeriod);
     setTotalMissedTasks(Object.values(missedByPeriod).reduce((sum, count) => sum + count, 0));
   };
-
-  // Listen for changes from other components
-  useEffect(() => {
-    const handleTrackingAnswersChange = (event: CustomEvent) => {
-      calculateMissedTasks(event.detail.allAnswers);
-    };
-
-    window.addEventListener('trackingAnswersChanged', handleTrackingAnswersChange as EventListener);
-    
-    return () => {
-      window.removeEventListener('trackingAnswersChanged', handleTrackingAnswersChange as EventListener);
-    };
-  }, []);
 
   const handleGoToTrack = () => {
     window.location.href = '/track';

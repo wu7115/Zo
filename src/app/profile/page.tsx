@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -51,6 +50,8 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 import type { SVGProps } from 'react';
+import { getAuth, signOut } from 'firebase/auth';
+import { app } from '@/lib/firebase';
 
 // LabubuIcon definition
 const LabubuIcon = (props: SVGProps<SVGSVGElement>) => (
@@ -334,35 +335,9 @@ export default function ProfilePage() {
 
             <Separator />
 
-            <div>
-              <SectionTitle title="Current Journey" />
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center justify-between mb-1">
-                    <p className="text-md font-semibold text-primary">{activeJourney.name}</p>
-                    <activeJourney.icon className="h-5 w-5 text-accent"/>
-                </div>
-                <Progress value={activeJourney.progress} className="w-full h-3 mb-1" />
-                <p className="text-xs text-muted-foreground text-right">
-                  {activeJourney.progress}% ({activeJourney.daysCompleted}/{activeJourney.totalDays} days)
-                </p>
-                <div className="mt-3 flex space-x-2">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                     <Link href="/journey">
-                        <Map className="mr-2 h-4 w-4" /> Modify Journey
-                     </Link>
-                  </Button>
-                  <Button variant="secondary" size="sm" className="flex-1" asChild>
-                    <Link href="/journey">
-                        <Map className="mr-2 h-4 w-4" /> Choose Another
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-
             <Separator />
 
-             <Accordion type="multiple" className="w-full">
+            <Accordion type="multiple" className="w-full">
               <AccordionItem value="bookmarks">
                 <AccordionTrigger className="text-md font-semibold text-primary hover:no-underline">
                    <div className="flex items-center">
@@ -400,7 +375,11 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Button variant="destructive" className="w-full mt-4">
+            <Button variant="destructive" className="w-full mt-4" onClick={async () => {
+              const auth = getAuth(app);
+              await signOut(auth);
+              window.location.href = '/onboarding';
+            }}>
               Log Out
             </Button>
 

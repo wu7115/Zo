@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -19,6 +18,10 @@ import { Label } from '@/components/ui/label';
 import { Camera, ImagePlus, XCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from '@/lib/firebase';
 
 interface PostComposerModalProps {
   isOpen: boolean;
@@ -75,14 +78,40 @@ export function PostComposerModal({ isOpen, onOpenChange }: PostComposerModalPro
     onOpenChange(open);
   };
 
-  const handlePost = () => {
-    console.log('Posting:', { text: postText, image: imageFile?.name });
-    // In a real app, this would submit to a backend.
-    toast({
-      title: 'Post Submitted!',
-      description: 'Your post has been (simulated) successfully.',
-    });
-    handleOpenModalChange(false); // Close and reset modal
+  const handlePost = async () => {
+    const auth = getAuth(app);
+    if (!auth.currentUser) {
+      toast({ title: 'Error', description: 'You must be signed in to post.', variant: 'destructive' });
+      return;
+    }
+    let imageUrl = null;
+    if (imageFile) {
+      try {
+        const storage = getStorage(app);
+        const imgRef = storageRef(storage, `users/${auth.currentUser.uid}/posts/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(imgRef, imageFile);
+        imageUrl = await getDownloadURL(imgRef);
+      } catch (err) {
+        toast({ title: 'Error', description: 'Failed to upload image.', variant: 'destructive' });
+        return;
+      }
+    }
+    const newPost = {
+      text: postText,
+      image: imageUrl,
+      timestamp: serverTimestamp(),
+      likes: 0,
+      comments: [],
+    };
+    try {
+      const db = getFirestore(app);
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'posts'), newPost);
+      toast({ title: 'Post Submitted!', description: 'Your post has been shared successfully.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save your post. Please try again.', variant: 'destructive' });
+      return;
+    }
+    handleOpenModalChange(false);
   };
 
   const canPost = postText.trim().length > 0 || imageFile !== null;
@@ -96,7 +125,7 @@ export function PostComposerModal({ isOpen, onOpenChange }: PostComposerModalPro
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <Textarea
-            placeholder="What's on your mind, Alex?"
+            placeholder="What's on your mind?"
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
             className="min-h-[100px] bg-background"

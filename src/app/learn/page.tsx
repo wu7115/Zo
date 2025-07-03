@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, BookOpenText, FileText, Podcast, PlayCircle, Bell, Menu, Plus } from 'lucide-react';
 import * as React from 'react';
 import { ItemDetailModal, type ModalItemData } from '@/app/components/ItemDetailModal';
+import { AiPencilPanel } from '../components/AiPencilPanel';
 
 interface LearnItemData {
   id: string;
@@ -253,6 +254,7 @@ export default function LearnPage() {
         item={selectedItemForModal}
         userContext={currentUserContext}
       />
+      <AiPencilPanel page="learn" />
     </main>
   );
 }

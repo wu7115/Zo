@@ -91,6 +91,11 @@ export interface SuggestedProductFeedData {
   price: string;
 }
 
+// Data for Posts Section
+export interface PostsSectionFeedData {
+  id: string;
+}
+
 // Discriminated Union for Feed Items
 export type FeedItem =
   | { type: 'greeting'; id: string; data: GreetingFeedData }
@@ -107,4 +112,5 @@ export type FeedItem =
   | { type: 'productRecommendations'; id: string; data: SelfContainedFeedData }
   | { type: 'aiInsight'; id: string; data: AiInsightFeedData }
   | { type: 'suggestedTopic'; id: string; data: SuggestedTopicFeedData }
-  | { type: 'suggestedProduct'; id: string; data: SuggestedProductFeedData };
+  | { type: 'suggestedProduct'; id: string; data: SuggestedProductFeedData }
+  | { type: 'postsSection'; id: string; data: PostsSectionFeedData };

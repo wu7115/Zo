@@ -1,4 +1,3 @@
-
 'use client'; // Required for usePathname
 
 import type {Metadata} from 'next'; // Keep if you have static metadata elsewhere
@@ -48,8 +47,8 @@ export default function RootLayout({
           {showMainLayout ? <GlobalSwipeNavigator>{children}</GlobalSwipeNavigator> : children}
         </div>
         {showMainLayout && <BottomNavigationBar />}
-        {showMainLayout && <AiAgentFab />}
-        {showMainLayout && <ContextualHelpFab />}
+        {/* {showMainLayout && <AiAgentFab />} */}
+        {/* {showMainLayout && <ContextualHelpFab />} */}
         <Toaster />
       </body>
     </html>

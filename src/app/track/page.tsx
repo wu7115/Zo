@@ -1,48 +1,21 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import * as React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from '@/components/ui/card';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { ArrowLeft, ClipboardList, PlusCircle, BarChart3, Utensils, HeartPulse, Pill, BedDouble, Smile, Target, CheckCircle2, TrendingUp, Activity, Star, Edit3, ListChecks, Loader2, AlertTriangle, Brain } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { estimateActivityCalories, type EstimateActivityCaloriesInput, type EstimateActivityCaloriesOutput } from '@/ai/flows/estimate-activity-calories-flow';
-import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle2, ArrowLeft, ClipboardList, PlusCircle, Brain, BarChart3, TrendingUp, Smile, Utensils, Activity, Heart, Droplets, Zap, Target, Dumbbell, Bed, Coffee, Sun, Moon } from 'lucide-react';
 import { trackingQuestions } from '@/data/trackingQuestions';
-import { useEffect, useState } from 'react';
-import { getQuestionTime, resetAnytimeTaskAllocation, getAnytimeTaskAllocation } from '@/utils/taskAllocation';
-
+import { getAnytimeTaskAllocation, resetAnytimeTaskAllocation } from '@/utils/taskAllocation';
+import { useTrackingData } from '@/hooks/use-tracking-data';
+import { AiPencilPanel } from '../components/AiPencilPanel';
 
 interface TrackingTask {
   id: string;
@@ -65,165 +38,163 @@ interface TrackingCategory {
   badgeCount?: number;
 }
 
-const renderInputType = (task: TrackingTask, value: any, onChange: (val: any) => void) => {
-  const baseButtonClass = "rounded-full py-3 text-sm font-medium w-full justify-start px-4";
-  const selectedButtonClass = "bg-primary text-primary-foreground hover:bg-primary/90";
-  const unselectedButtonClass = "bg-secondary text-secondary-foreground hover:bg-secondary/80";
-
+const renderInputType = (task: TrackingTask, value: any, onChange: (val: any) => void, priorities?: Record<string, Record<string, 'high' | 'medium' | 'low'>>) => {
   switch (task.inputType) {
     case 'number':
       return (
         <Input
           type="number"
-          placeholder={task.placeholder}
-          className="mt-1 w-full"
-          value={value ?? ''}
-          onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={task.placeholder || 'Enter number'}
+          className="w-full"
         />
       );
     case 'text':
       return (
         <Input
           type="text"
-          placeholder={task.placeholder}
-          className="mt-1 w-full"
-          value={value ?? ''}
-          onChange={e => onChange(e.target.value)}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={task.placeholder || 'Enter text'}
+          className="w-full"
         />
       );
     case 'textarea':
       return (
         <Textarea
-          placeholder={task.placeholder}
-          className="mt-1 w-full"
-          value={value ?? ''}
-          onChange={e => onChange(e.target.value)}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={task.placeholder || 'Enter text'}
+          className="w-full"
         />
       );
     case 'options':
-    case 'bristol': {
-      const isBristol = task.inputType === 'bristol';
       return (
-        <div className="mt-1 flex flex-col space-y-2">
-          {task.options?.map(opt => {
-            let optionValue = opt;
-            const isSelected = value === optionValue;
-            return (
-              <Button
-                key={opt}
-                variant="outline"
-                className={cn(baseButtonClass, isSelected ? selectedButtonClass : unselectedButtonClass)}
-                onClick={() => onChange(optionValue)}
-              >
-                {opt}
-                {isSelected && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
-              </Button>
-            );
-          })}
+        <div className="space-y-2">
+          {task.options?.map((option) => (
+            <Button
+              key={option}
+              variant={value === option ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(option)}
+              className="w-full justify-start"
+            >
+              {option}
+              {value === option && <CheckCircle2 className="ml-2 h-4 w-4" />}
+            </Button>
+          ))}
         </div>
       );
-    }
     case 'boolean':
       return (
-        <div className="mt-1 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+        <div className="space-y-2">
           <Button
-            variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", value === true ? selectedButtonClass : unselectedButtonClass)}
-            onClick={() => onChange(true)}
+            variant={value === 'true' ? "default" : "outline"}
+            size="sm"
+            onClick={() => onChange('true')}
+            className="w-full justify-start"
           >
             Yes
-            {value === true && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
+            {value === 'true' && <CheckCircle2 className="ml-2 h-4 w-4" />}
           </Button>
           <Button
-            variant="outline"
-            className={cn(baseButtonClass, "flex-1 justify-center", value === false ? selectedButtonClass : unselectedButtonClass)}
-            onClick={() => onChange(false)}
+            variant={value === 'false' ? "default" : "outline"}
+            size="sm"
+            onClick={() => onChange('false')}
+            className="w-full justify-start"
           >
             No
-            {value === false && <CheckCircle2 className="ml-2 h-4 w-4 text-green-600" />}
+            {value === 'false' && <CheckCircle2 className="ml-2 h-4 w-4" />}
           </Button>
         </div>
       );
     case 'rating-5':
       return (
-        <div className="mt-1 flex space-x-1 justify-center">
-          {[1, 2, 3, 4, 5].map(starRating => (
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((rating) => (
             <Button
-              key={starRating}
-              variant="ghost"
-              size="icon"
-              className="p-1"
-              onClick={() => onChange(starRating)}
+              key={rating}
+              variant={value == rating ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(rating)}
+              className="w-8 h-8 p-0"
             >
-              <Star className={`h-6 w-6 ${ (value && typeof value === 'number' && value >= starRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+              {rating}
             </Button>
           ))}
         </div>
       );
+    case 'bristol':
+      return (
+        <div className="space-y-2">
+          {['Type 1', 'Type 2', 'Type 3', 'Type 4', 'Type 5', 'Type 6', 'Type 7'].map((type) => (
+            <Button
+              key={type}
+              variant={value === type ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(type)}
+              className="w-full justify-start"
+            >
+              {type}
+              {value === type && <CheckCircle2 className="ml-2 h-4 w-4" />}
+            </Button>
+          ))}
+        </div>
+      );
+    case 'time':
+      return (
+        <Input
+          type="time"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full"
+        />
+      );
     default:
-      return <p className="text-sm text-red-500 mt-1">Unsupported input type</p>;
+      return <Input value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full" />;
   }
 };
 
-// Category to icon mapping
-const categoryIconMap: Record<string, React.ElementType> = {
-  'Diet & Nutrition': Utensils,
-  'Digestive Health & Symptoms': HeartPulse,
-  'Non-Gut Health Conditions': Pill,
-  'Gut-to-Brain / Nervous System': Brain,
-  'Medication & Supplement Use': Pill,
-  'Lifestyle Factors': Activity,
-  'Stress, Sleep, and Recovery': BedDouble,
-};
-
-// Helper function to get priority for a task
 const getTaskPriority = (taskId: string, priorities: Record<string, Record<string, 'high' | 'medium' | 'low'>>): 'high' | 'medium' | 'low' => {
-  // Search through all time periods for the task priority
-  for (const timePeriod of ['morning', 'afternoon', 'evening']) {
-    if (priorities[timePeriod] && priorities[timePeriod][taskId]) {
+  for (const timePeriod of Object.keys(priorities)) {
+    if (priorities[timePeriod][taskId]) {
       return priorities[timePeriod][taskId];
     }
   }
-  return 'medium'; // Default priority
+  return 'medium';
 };
 
-// Helper function to sort tasks by time period and priority
 const sortTasksByTimeAndPriority = (tasks: TrackingTask[], priorities: Record<string, Record<string, 'high' | 'medium' | 'low'>>): TrackingTask[] => {
-  const timeOrder = { 'morning': 1, 'afternoon': 2, 'evening': 3 };
-  const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 };
+  const priorityOrder = { high: 1, medium: 2, low: 3 };
+  const timeOrder = { morning: 1, afternoon: 2, evening: 3 };
   
-  return [...tasks].sort((a, b) => {
-    // First sort by time period
-    const aTimeOrder = a.time ? timeOrder[a.time] : 4; // null time goes last
-    const bTimeOrder = b.time ? timeOrder[b.time] : 4;
-    
-    if (aTimeOrder !== bTimeOrder) {
-      return aTimeOrder - bTimeOrder;
-    }
+  return tasks.sort((a, b) => {
+    // First sort by time
+    const aTime = a.time ? timeOrder[a.time] : 4;
+    const bTime = b.time ? timeOrder[b.time] : 4;
+    if (aTime !== bTime) return aTime - bTime;
     
     // Then sort by priority
     const aPriority = getTaskPriority(a.id, priorities);
     const bPriority = getTaskPriority(b.id, priorities);
-    const aPriorityOrder = priorityOrder[aPriority];
-    const bPriorityOrder = priorityOrder[bPriority];
-    
-    return aPriorityOrder - bPriorityOrder;
+    return priorityOrder[aPriority] - priorityOrder[bPriority];
   });
 };
 
-// Helper function to convert trackingQuestions to the expected plan format
-const convertTrackingQuestionsToPlan = (questions: typeof trackingQuestions) => {
+// Helper function to convert trackingQuestions to the expected plan format (now async)
+const convertTrackingQuestionsToPlan = async (questions: typeof trackingQuestions) => {
   const categoryMapping = {
     'Digestive Health': 'digestive-health-&-symptoms',
     'Medication & Supplement Use': 'medication-&-supplement-use',
     'Nutrition & Diet Habits': 'diet-&-nutrition',
-    'Personalized Goals & Achievements': 'lifestyle-factors',
-    'Physical Activity & Movement': 'lifestyle-factors',
+    'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+    'Physical Activity & Movement': 'physical-activity-&-movement',
     'Stress, Sleep, and Recovery': 'sleep-&-recovery',
   };
 
   // Get persistent anytime allocation
-  const anytimeAllocation = getAnytimeTaskAllocation();
+  const anytimeAllocation = await getAnytimeTaskAllocation();
 
   const plan = [];
 
@@ -261,50 +232,39 @@ const convertTrackingQuestionsToPlan = (questions: typeof trackingQuestions) => 
   return plan;
 };
 
-// Helper: get ordered categories from trackingQuestions
-const getTrackingCategories = () => {
-  // Use the order from Object.keys(trackingQuestions)
-  const iconMap: Record<string, React.ElementType> = {
-    'Digestive Health': HeartPulse,
-    'Medication & Supplement Use': Pill,
-    'Nutrition & Diet Habits': Utensils,
-    'Personalized Goals & Achievements': Star,
-    'Physical Activity & Movement': Activity,
-    'Stress, Sleep, and Recovery': BedDouble,
-  };
-  return Object.keys(trackingQuestions).map((cat) => ({
-    id: cat.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    title: cat,
-    icon: iconMap[cat] || ClipboardList,
-  }));
-};
+const getTrackingCategories = () => [
+  { id: 'digestive-health-&-symptoms', title: 'Digestive Health', icon: Activity },
+  { id: 'medication-&-supplement-use', title: 'Medication & Supplement Use', icon: Heart },
+  { id: 'diet-&-nutrition', title: 'Nutrition & Diet Habits', icon: Droplets },
+  { id: 'personalized-goals-&-achievements', title: 'Personalized Goals & Achievements', icon: Target },
+  { id: 'physical-activity-&-movement', title: 'Physical Activity & Movement', icon: Dumbbell },
+  { id: 'sleep-&-recovery', title: 'Stress, Sleep, and Recovery', icon: Bed },
+];
 
 export default function TrackPage() {
   const [activeTab, setActiveTab] = React.useState("dashboard");
-  const { toast } = useToast();
+  const [isActivityLoggerOpen, setIsActivityLoggerOpen] = useState(false);
+  const [activityName, setActivityName] = useState('');
+  const [activityDuration, setActivityDuration] = useState('');
+  const [activityIntensity, setActivityIntensity] = useState('');
+  const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
+  const [loggedActivities, setLoggedActivities] = useState<Array<{ name: string; duration: string; intensity: string; calories: number }>>([]);
 
-  const [isActivityLoggerOpen, setIsActivityLoggerOpen] = React.useState(false);
-  const [activityName, setActivityName] = React.useState('');
-  const [timeMinutes, setTimeMinutes] = React.useState('');
-  const [effortLevel, setEffortLevel] = React.useState<number | null>(null);
-  const [estimatedCalories, setEstimatedCalories] = React.useState<EstimateActivityCaloriesOutput | null>(null);
-  const [isCalculating, setIsCalculating] = React.useState(false);
-  const [calculationError, setCalculationError] = React.useState<string | null>(null);
-
-  const effortLevels = [
-    { label: 'Very Light', value: 1 },
-    { label: 'Light', value: 2 },
-    { label: 'Moderate', value: 3 },
-    { label: 'Very Intense', value: 4 },
-  ];
+  // Use the new tracking service
+  const { 
+    priorities, 
+    dailyAnswers, 
+    isLoading: trackingLoading, 
+    updateAnswer, 
+    isTaskCompleted,
+    getTimePeriodPriorities 
+  } = useTrackingData();
 
   const resetLoggerState = () => {
     setActivityName('');
-    setTimeMinutes('');
-    setEffortLevel(null);
-    setEstimatedCalories(null);
-    setCalculationError(null);
-    setIsCalculating(false);
+    setActivityDuration('');
+    setActivityIntensity('');
+    setCalculatedCalories(null);
   };
 
   const handleModalOpenChange = (open: boolean) => {
@@ -315,51 +275,40 @@ export default function TrackPage() {
   };
 
   const handleCalculateCalories = async () => {
-    if (!activityName.trim() || !timeMinutes.trim() || !effortLevel) {
-      setCalculationError("Please fill in all fields: Activity Name, Time, and Effort Level.");
-      return;
-    }
-    const time = parseInt(timeMinutes, 10);
-    if (isNaN(time) || time <= 0) {
-      setCalculationError("Please enter a valid positive number for time.");
+    if (!activityName || !activityDuration || !activityIntensity) {
+      alert('Please fill in all fields');
       return;
     }
 
-    setIsCalculating(true);
-    setCalculationError(null);
-    setEstimatedCalories(null);
-
-    try {
-      const input: EstimateActivityCaloriesInput = {
-        activityName,
-        timeMinutes: time,
-        effortLevel,
-      };
-      const result = await estimateActivityCalories(input);
-      setEstimatedCalories(result);
-    } catch (e: any) {
-      console.error("Error estimating calories:", e);
-      setCalculationError(e.message || "Failed to estimate calories. Please try again.");
-    } finally {
-      setIsCalculating(false);
-    }
+    // Mock calorie calculation - in a real app, this would call an API
+    const durationMinutes = parseInt(activityDuration);
+    const baseCalories = {
+      'low': 3,
+      'moderate': 6,
+      'high': 10
+    };
+    
+    const calories = Math.round(durationMinutes * baseCalories[activityIntensity as keyof typeof baseCalories]);
+    setCalculatedCalories(calories);
   };
 
   const handleLogActivity = () => {
-    // In a real app, this would save to a database or global state.
-    console.log("Activity Logged:", {
-      activityName,
-      timeMinutes: parseInt(timeMinutes, 10),
-      effortLevel,
-      calories: estimatedCalories?.estimatedCalories,
-    });
-    toast({
-        title: "Activity Logged!",
-        description: `${activityName} for ${timeMinutes} min - ${estimatedCalories?.estimatedCalories} kcal (est.)`,
-    });
-    handleModalOpenChange(false); // Closes modal and resets state
-  };
+    if (!activityName || !activityDuration || !activityIntensity || calculatedCalories === null) {
+      alert('Please calculate calories first');
+      return;
+    }
 
+    const newActivity = {
+      name: activityName,
+      duration: activityDuration,
+      intensity: activityIntensity,
+      calories: calculatedCalories
+    };
+
+    setLoggedActivities(prev => [...prev, newActivity]);
+    resetLoggerState();
+    setIsActivityLoggerOpen(false);
+  };
 
   React.useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '');
@@ -381,108 +330,65 @@ export default function TrackPage() {
     }
   }, []);
 
-  const [trackingData, setTrackingData] = React.useState<TrackingCategory[]>([]); // ← define this at the top
+  const [trackingData, setTrackingData] = React.useState<TrackingCategory[]>([]);
+  const [loadingAllocation, setLoadingAllocation] = React.useState(true);
 
-  const [trackingAnswers, setTrackingAnswers] = useState<{ [taskId: string]: any }>(() => {
-    if (typeof window !== 'undefined') {
-      const savedAnswers = localStorage.getItem('trackingAnswers');
-      const savedDate = localStorage.getItem('trackingAnswersDate');
-      const today = new Date().toISOString().split('T')[0];
-      
-      if (savedAnswers && savedDate === today) {
-        return JSON.parse(savedAnswers);
-      } else {
-        // Reset answers if it's a new day
-        localStorage.setItem('trackingAnswers', JSON.stringify({}));
-        localStorage.setItem('trackingAnswersDate', today);
-        return {};
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingAllocation(true);
+    (async () => {
+      // Use the new hard-coded tracking questions from trackingQuestions.ts
+      const hardcodedTrackingPlan = await convertTrackingQuestionsToPlan(trackingQuestions);
+      // Get categories in the same order and names as trackingQuestions
+      const ALL_TRACKING_CATEGORIES = getTrackingCategories();
+      const activityMap = new Map<string, { dailyTasks: TrackingTask[]; weeklyTasks: TrackingTask[] }>();
+      for (const cat of hardcodedTrackingPlan as any[]) {
+        // Sort daily tasks by time period and priority
+        const sortedDailyTasks = sortTasksByTimeAndPriority(
+          Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+          priorities
+        );
+        activityMap.set(cat.title, {
+          dailyTasks: sortedDailyTasks,
+          weeklyTasks: Array.isArray(cat.weeklyTasks) ? cat.weeklyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+        });
       }
-    }
-    return {};
-  });
-
-  useEffect(() => {
-    localStorage.setItem('trackingAnswers', JSON.stringify(trackingAnswers));
-    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
-  }, [trackingAnswers]);
-
-  // Listen for trackingAnswersChanged and refresh trackingAnswers from localStorage
-  useEffect(() => {
-    const handleTrackingAnswersChanged = () => {
-      // Reload answers from localStorage
-      const savedAnswers = localStorage.getItem('trackingAnswers');
-      const savedDate = localStorage.getItem('trackingAnswersDate');
-      const today = new Date().toISOString().split('T')[0];
-      if (savedAnswers && savedDate === today) {
-        setTrackingAnswers(JSON.parse(savedAnswers));
-      } else {
-        setTrackingAnswers({});
-      }
-    };
-    window.addEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
-    return () => {
-      window.removeEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
-    };
-  }, []);
-
-  const [trackingPriorities, setTrackingPriorities] = React.useState<Record<string, Record<string, 'high' | 'medium' | 'low'>>>({});
-
-  useEffect(() => {
-    // Load priorities from localStorage
-    const cacheKey = 'trackingQuestionPriorities';
-    let allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-    try {
-      allPriorities = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-    } catch {}
-    setTrackingPriorities(allPriorities);
-  }, []);
-
-  useEffect(() => {
-    // Use the new hard-coded tracking questions from trackingQuestions.ts
-    const hardcodedTrackingPlan = convertTrackingQuestionsToPlan(trackingQuestions);
-
-    // Get categories in the same order and names as trackingQuestions
-    const ALL_TRACKING_CATEGORIES = getTrackingCategories();
-
-    const activityMap = new Map<string, { dailyTasks: TrackingTask[]; weeklyTasks: TrackingTask[] }>();
-    for (const cat of hardcodedTrackingPlan as any[]) {
-      // Sort daily tasks by time period and priority
-      const sortedDailyTasks = sortTasksByTimeAndPriority(
-        Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
-        trackingPriorities
-      );
-      
-      activityMap.set(cat.title, {
-        dailyTasks: sortedDailyTasks,
-        weeklyTasks: Array.isArray(cat.weeklyTasks) ? cat.weeklyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+      const fullCategories: TrackingCategory[] = ALL_TRACKING_CATEGORIES.map(({ id, title, icon }) => {
+        const tasks = activityMap.get(title) || { dailyTasks: [], weeklyTasks: [] };
+        // Count unanswered daily tasks
+        const unansweredCount = tasks.dailyTasks.filter(task => !isTaskCompleted(task.id)).length;
+        return {
+          id,
+          title,
+          icon,
+          badgeCount: unansweredCount,
+          dailyTasks: tasks.dailyTasks,
+          weeklyTasks: tasks.weeklyTasks,
+        };
       });
-    }
-
-    const fullCategories: TrackingCategory[] = ALL_TRACKING_CATEGORIES.map(({ id, title, icon }) => {
-      const tasks = activityMap.get(title) || { dailyTasks: [], weeklyTasks: [] };
-      // Count unanswered daily tasks (not present or empty in trackingAnswers)
-      const unansweredCount = tasks.dailyTasks.filter(task => trackingAnswers[task.id] === undefined || trackingAnswers[task.id] === '').length;
-      
-      return {
-        id,
-        title,
-        icon,
-        badgeCount: unansweredCount,
-        dailyTasks: tasks.dailyTasks,
-        weeklyTasks: tasks.weeklyTasks,
-      };
-    });
-
-    setTrackingData(fullCategories);
-  }, [trackingAnswers, trackingPriorities]);
+      if (isMounted) {
+        setTrackingData(fullCategories);
+        setLoadingAllocation(false);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [dailyAnswers, priorities, isTaskCompleted]);
 
   const [defaultOpenItems, setDefaultOpenItems] = React.useState<string[]>([]);
 
   // Add reset button for anytime allocation
-  const handleResetAllocation = () => {
-    resetAnytimeTaskAllocation();
+  const handleResetAllocation = async () => {
+    await resetAnytimeTaskAllocation();
     window.location.reload();
   };
+
+  if (trackingLoading) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center p-4 md:p-6 bg-app-content">
+        <p className="text-muted-foreground">Loading tracking data...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 md:p-6 bg-app-content overflow-y-auto">
@@ -494,11 +400,18 @@ export default function TrackPage() {
                 <ClipboardList className="h-7 w-7 mr-2 text-accent" />
                 Track
               </CardTitle>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/notifications-test">
+                    Test Notifications
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/">
+                    <ArrowLeft className="h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-1 pb-4">
@@ -570,180 +483,194 @@ export default function TrackPage() {
                               id="activityName"
                               value={activityName}
                               onChange={(e) => setActivityName(e.target.value)}
-                              placeholder="e.g., Brisk Walking, Cycling"
+                              placeholder="e.g., Walking, Running, Yoga"
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="timeMinutes">Time (min)</Label>
+                            <Label htmlFor="activityDuration">Duration (minutes)</Label>
                             <Input
-                              id="timeMinutes"
+                              id="activityDuration"
                               type="number"
-                              value={timeMinutes}
-                              onChange={(e) => setTimeMinutes(e.target.value)}
-                              placeholder="e.g., 30"
+                              value={activityDuration}
+                              onChange={(e) => setActivityDuration(e.target.value)}
+                              placeholder="30"
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label>Effort Level (1-4)</Label>
-                            <div className="flex space-x-2">
-                              {effortLevels.map((level) => (
-                                <Button
-                                  key={level.value}
-                                  variant={effortLevel === level.value ? "default" : "outline"}
-                                  onClick={() => setEffortLevel(level.value)}
-                                  className="flex-1"
-                                >
-                                  {level.value}
-                                </Button>
-                              ))}
-                            </div>
-                             {effortLevel && <p className="text-xs text-muted-foreground text-center mt-1">{effortLevels.find(l => l.value === effortLevel)?.label}</p>}
+                            <Label htmlFor="activityIntensity">Intensity</Label>
+                            <Select value={activityIntensity} onValueChange={setActivityIntensity}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select intensity" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="moderate">Moderate</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                           <Button onClick={handleCalculateCalories} disabled={isCalculating || !activityName || !timeMinutes || !effortLevel}>
-                            {isCalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Calculate Calories
-                          </Button>
-
-                          {calculationError && (
-                            <div className="mt-2 flex items-center space-x-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                                <AlertTriangle className="h-4 w-4 shrink-0" />
-                                <p>{calculationError}</p>
-                            </div>
-                          )}
-                          {estimatedCalories && !calculationError && (
-                            <div className="mt-4 p-3 bg-secondary/20 rounded-md text-center">
-                              <p className="text-sm text-secondary-foreground">Estimated Calories Burned:</p>
-                              <p className="text-2xl font-bold text-primary">{estimatedCalories.estimatedCalories} kcal</p>
-                              {estimatedCalories.reasoning && <p className="text-xs text-muted-foreground mt-1">{estimatedCalories.reasoning}</p>}
-                            </div>
+                          <div className="flex gap-2">
+                            <Button onClick={handleCalculateCalories} className="flex-1">
+                              Calculate Calories
+                            </Button>
+                            {calculatedCalories !== null && (
+                              <div className="flex items-center justify-center px-4 bg-muted rounded-md">
+                                <span className="font-semibold text-primary">{calculatedCalories} cal</span>
+                              </div>
+                            )}
+                          </div>
+                          {calculatedCalories !== null && (
+                            <Button onClick={handleLogActivity} className="w-full">
+                              Log Activity
+                            </Button>
                           )}
                         </div>
-                        <DialogFooter>
-                          <Button
-                            onClick={handleLogActivity}
-                            disabled={!estimatedCalories || isCalculating || !!calculationError}
-                          >
-                            Log Activity
-                          </Button>
-                        </DialogFooter>
                       </DialogContent>
                     </Dialog>
                 </div>
-                <Accordion type="multiple" defaultValue={defaultOpenItems} className="w-full space-y-3">
-                  {trackingData.map((category) => (
-                    <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
-                      <AccordionTrigger className="bg-muted/20 hover:bg-muted/30 p-3 text-md font-semibold text-primary data-[state=open]:bg-muted/40 data-[state=open]:border-b">
-                        <div className="flex items-center flex-1 text-left justify-between w-full">
-                          <div className="flex items-center">
-                            <category.icon className="h-5 w-5 mr-2 text-accent" />
-                            {category.title}
+                <Accordion type="multiple" value={defaultOpenItems} onValueChange={setDefaultOpenItems} className="space-y-3">
+                  {loadingAllocation ? (
+                    <div className="flex justify-center items-center h-32">Loading task allocation...</div>
+                  ) : (
+                    trackingData.map((category) => (
+                      <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
+                        <AccordionTrigger className="px-4 py-3 font-semibold text-primary text-base rounded-lg hover:bg-primary/5 focus:outline-none">
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-1">
+                              <category.icon className="h-4 w-4 text-accent" />
+                              <span className="text-sm whitespace-nowrap">{category.title}</span>
+                            </div>
+                            {category.badgeCount && category.badgeCount > 0 && (
+                              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                                {category.badgeCount}
+                              </span>
+                            )}
                           </div>
-                          {category.badgeCount !== undefined && category.badgeCount > 0 && (
-                            <Badge className="h-5 min-w-[1.25rem] flex items-center justify-center p-1 text-xs bg-red-600 text-white">
-                              {category.badgeCount}
-                            </Badge>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-0">
-                        <div className="p-3 space-y-3 bg-card">
-                          <div>
-                            <h4 className="font-semibold text-primary mb-2">Daily Tasks</h4>
-                            {category.dailyTasks.length === 0 && <p className="text-muted-foreground text-sm">No daily tasks for this category.</p>}
-                            {category.dailyTasks.map((task) => {
-                              const answered = trackingAnswers[task.id] !== undefined && trackingAnswers[task.id] !== '';
-                              return (
-                                <div
-                                  key={task.id}
-                                  className={cn(
-                                    "mb-4 p-3 border rounded-lg flex flex-col gap-2 transition-all",
-                                    answered ? "border-green-500 bg-green-50" : "bg-muted/10 border"
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-primary flex items-center">
-                                      Goal: {task.goal}
-                                    </span>
-                                    {task.time && (
-                                      <span className={
-                                        task.time === 'morning' ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                        task.time === 'afternoon' ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                        task.time === 'evening' ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs ml-2' :
-                                        'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs ml-2'
-                                      }>
-                                        {task.time.charAt(0).toUpperCase() + task.time.slice(1)}
-                                      </span>
-                                    )}
-                                    {/* Priority indicator */}
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="font-semibold text-primary mb-2">Daily Tasks</h4>
+                              {category.dailyTasks.length === 0 && <p className="text-muted-foreground text-sm">No daily tasks for this category.</p>}
+                              {category.dailyTasks.map((task) => {
+                                const answered = isTaskCompleted(task.id);
+                                const taskPriority = getTaskPriority(task.id, priorities);
+
+                                return (
+                                  <div
+                                    key={task.id}
+                                    className={`tracking-question-subcard${answered ? ' answered' : ''} mb-4 p-3 flex flex-col gap-2`}
+                                  >
                                     <div className="flex items-center gap-2">
-                                      {(() => {
-                                        const priority = getTaskPriority(task.id, trackingPriorities);
-                                        const sunEmojis = priority === 'high' ? '☀️☀️☀️' : priority === 'medium' ? '☀️☀️' : '☀️';
-                                        return (
-                                          <span className="text-xs text-muted-foreground">
-                                            Priority: {sunEmojis}
-                                          </span>
-                                        );
-                                      })()}
+                                      <span className="font-semibold text-primary flex items-center">
+                                        Goal: {task.goal}
+                                      </span>
+                                      {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
                                     </div>
-                                    {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
+                                    <hr className="my-1 border-muted" />
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground text-sm flex items-center">
+                                        {task.question}
+                                      </span>
+                                    </div>
+                                    {/* Time period and priority badges */}
+                                    <div className="flex items-center justify-between mb-2 w-full">
+                                      {/* Time period badge on the left */}
+                                      {task.time && (
+                                        <span className={
+                                          task.time === 'morning'
+                                            ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs font-medium border border-yellow-300'
+                                            : task.time === 'afternoon'
+                                              ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs font-medium border border-blue-300'
+                                              : task.time === 'evening'
+                                                ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs font-medium border border-purple-300'
+                                                : 'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs font-medium border border-gray-300'
+                                        }>
+                                          {task.time.charAt(0).toUpperCase() + task.time.slice(1)}
+                                        </span>
+                                      )}
+                                      {/* Priority badge on the right */}
+                                      <span className="text-[13px] align-middle whitespace-nowrap">
+                                        Your Benefit {
+                                          taskPriority === 'high' ? '☀️☀️☀️' : 
+                                          taskPriority === 'medium' ? '☀️☀️' : '☀️'
+                                        }
+                                      </span>
+                                    </div>
+                                    {renderInputType(task, dailyAnswers[task.id], (val) => {
+                                      updateAnswer(task.id, val);
+                                    }, priorities)}
                                   </div>
-                                  <hr className="my-1 border-muted" />
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground text-sm flex items-center">
-                                      {task.question}
-                                    </span>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-4">
+                              <h4 className="font-semibold text-primary mb-2">Weekly Tasks</h4>
+                              {category.weeklyTasks.length === 0 && <p className="text-muted-foreground text-sm">No weekly tasks for this category.</p>}
+                              {category.weeklyTasks.map((task) => {
+                                const answered = isTaskCompleted(task.id);
+                                const taskPriority = getTaskPriority(task.id, priorities);
+
+                                return (
+                                  <div
+                                    key={task.id}
+                                    className={`tracking-question-subcard${answered ? ' answered' : ''} mb-4 p-3 flex flex-col gap-2`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-primary flex items-center">
+                                        Goal: {task.goal}
+                                      </span>
+                                      {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
+                                    </div>
+                                    <hr className="my-1 border-muted" />
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground text-sm flex items-center">
+                                        {task.question}
+                                      </span>
+                                    </div>
+                                    {/* Time period and priority badges */}
+                                    <div className="flex items-center justify-between mb-2 w-full">
+                                      {/* Time period badge on the left */}
+                                      {task.time && (
+                                        <span className={
+                                          task.time === 'morning'
+                                            ? 'bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs font-medium border border-yellow-300'
+                                            : task.time === 'afternoon'
+                                              ? 'bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-xs font-medium border border-blue-300'
+                                              : task.time === 'evening'
+                                                ? 'bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-xs font-medium border border-purple-300'
+                                                : 'bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs font-medium border border-gray-300'
+                                        }>
+                                          {task.time.charAt(0).toUpperCase() + task.time.slice(1)}
+                                        </span>
+                                      )}
+                                      {/* Priority badge on the right */}
+                                      <span className="text-[13px] align-middle whitespace-nowrap">
+                                        Your Benefit {
+                                          taskPriority === 'high' ? '☀️☀️☀️' : 
+                                          taskPriority === 'medium' ? '☀️☀️' : '☀️'
+                                        }
+                                      </span>
+                                    </div>
+                                    {renderInputType(task, dailyAnswers[task.id], (val) => {
+                                      updateAnswer(task.id, val);
+                                    }, priorities)}
                                   </div>
-                                  {renderInputType(task, trackingAnswers[task.id], (val) => {
-                                    const newAnswers = { ...trackingAnswers, [task.id]: val };
-                                    setTrackingAnswers(newAnswers);
-                                    localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
-                                    localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
-                                  })}
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
-                          <div className="mt-4">
-                            <h4 className="font-semibold text-primary mb-2">Weekly Tasks</h4>
-                            {category.weeklyTasks.length === 0 && <p className="text-muted-foreground text-sm">No weekly tasks for this category.</p>}
-                            {category.weeklyTasks.map((task) => (
-                              <div key={task.id} className="mb-4 p-3 border rounded-lg bg-muted/10 flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-primary flex items-center">
-                                    Goal: {task.goal}
-                                  </span>
-                                </div>
-                                <hr className="my-1 border-muted" />
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground text-sm flex items-center">
-                                    {task.question}
-                                  </span>
-                                </div>
-                                {renderInputType(task, trackingAnswers[task.id], (val) => {
-                                  const newAnswers = { ...trackingAnswers, [task.id]: val };
-                                  setTrackingAnswers(newAnswers);
-                                  localStorage.setItem('trackingAnswers', JSON.stringify(newAnswers));
-                                  localStorage.setItem('trackingAnswersDate', new Date().toISOString().split('T')[0]);
-                                })}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))
+                  )}
                 </Accordion>
                 <div className="flex justify-center mt-6 space-x-2">
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      const emptyAnswers = {};
-                      setTrackingAnswers(emptyAnswers);
-                      if (typeof window !== 'undefined') {
-                        localStorage.removeItem('trackingAnswers');
-                        localStorage.removeItem('trackingAnswersDate');
-                      }
+                      // Clear all answers - this would need to be implemented in the tracking service
+                      console.log('Clear all answers functionality to be implemented');
                     }}
                     className="w-full max-w-xs"
                   >
@@ -762,6 +689,7 @@ export default function TrackPage() {
           </CardContent>
         </Card>
       </div>
+      <AiPencilPanel page="track" />
     </main>
   );
 }

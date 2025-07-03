@@ -5,9 +5,14 @@ import { useRouter } from 'next/navigation';
 import type { FeedItem, SuggestedTopicFeedData, SuggestedProductFeedData } from '@/app/types/feed';
 import { DynamicFeedCard } from './components/DynamicFeedCard';
 import { ConsolidatedMissedTasksCard } from './components/ConsolidatedMissedTasksCard';
+import { PostsSection } from './components/PostsSection';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { trackingQuestions } from '@/data/trackingQuestions';
-import { getQuestionTime } from '@/utils/taskAllocation';
+import { getQuestionTime, getAnytimeTaskAllocation } from '@/utils/taskAllocation';
+import { useTrackingData } from '@/hooks/use-tracking-data';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 type TrackingQuestionForLLM = {
   id: string;
@@ -17,6 +22,17 @@ type TrackingQuestionForLLM = {
   options?: string[];
   placeholder?: string;
 };
+
+// List of images to use for community (LLM) posts, in order
+const communityPostImages = [
+  '/images/posts/ride_bike.jpeg',
+  '/images/posts/yoga.jpeg',
+  '/images/posts/exercise.jpeg',
+  '/images/posts/diet.jpeg',
+  '/images/posts/ride_bike2.jpeg',
+  '/images/posts/person_in_sunset.png',
+  '/images/posts/sunset.png',
+];
 
 async function fetchPersonalizedTopic(onboardingAnswers: any): Promise<SuggestedTopicFeedData> {
   const res = await fetch('/api/ai-topic', {
@@ -81,6 +97,78 @@ const getGreeting = (timePeriod: 'morning' | 'afternoon' | 'evening', userName?:
   }
 };
 
+// Function to generate priorities for all time periods
+const generateAllTimePeriodPriorities = async (onboardingAnswers: any, priorities: any, savePriorities: any) => {
+  const timePeriods: ('morning' | 'afternoon' | 'evening')[] = ['morning', 'afternoon', 'evening'];
+  const categoryMapping: Record<string, string> = {
+    'Digestive Health': 'digestive-health-&-symptoms',
+    'Medication & Supplement Use': 'medication-&-supplement-use',
+    'Nutrition & Diet Habits': 'diet-&-nutrition',
+    'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+    'Physical Activity & Movement': 'physical-activity-&-movement',
+    'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+  };
+
+  const newPriorities = { ...priorities };
+
+  for (const timePeriod of timePeriods) {
+    // Skip if priorities already exist for this time period
+    if (Object.keys(newPriorities[timePeriod] || {}).length > 0) {
+      continue;
+    }
+
+    const timeTasks: TrackingQuestionForLLM[] = [];
+    
+    Object.entries(trackingQuestions).forEach(([category, questions]) => {
+      questions.forEach((q: any) => {
+        const assignedTime = getQuestionTime(q.id, q.timeOfDay);
+        if (assignedTime === timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)) {
+          const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          timeTasks.push({
+            id: `${categoryId}__${q.id}`,
+            type: q.type,
+            text: q.text,
+            timeOfDay: q.timeOfDay,
+            options: q.options,
+            placeholder: q.placeholder,
+          });
+        }
+      });
+    });
+
+    if (timeTasks.length > 0) {
+      try {
+        const res = await fetch('/api/ai-prioritize-tracking-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboardingAnswers, trackingQuestions: timeTasks }),
+        });
+        const prioritiesArr = await res.json();
+        const prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = {};
+        
+        if (Array.isArray(prioritiesArr)) {
+          prioritiesArr.forEach((item) => {
+            if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
+              prioritiesMap[item.id] = item.priority;
+            }
+          });
+        }
+        
+        newPriorities[timePeriod] = prioritiesMap;
+      } catch (e) {
+        // fallback: all medium
+        const prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = {};
+        timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
+        newPriorities[timePeriod] = prioritiesMap;
+      }
+    }
+  }
+
+  // Save all priorities at once
+  await savePriorities(newPriorities);
+  return newPriorities;
+};
+
 // Helper to fetch AI-generated community post
 const fetchAiCommunityPost = async (onboardingAnswers: any, batchIndex: number) => {
   try {
@@ -117,7 +205,69 @@ export default function HomePage() {
   const [loadingAI, setLoadingAI] = useState(true);
   const [batchIndex, setBatchIndex] = useState(0);
   const [onboardingAnswers, setOnboardingAnswers] = useState<any>({});
-  const [trackingPriorities, setTrackingPriorities] = useState<Record<string, 'high' | 'medium' | 'low'>>({});
+  const [user, setUser] = useState<any>(null);
+  const [anytimeAllocation, setAnytimeAllocation] = useState<Record<string, string> | null>(null);
+  
+  // Use the new tracking service
+  const { 
+    priorities, 
+    dailyAnswers, 
+    isLoading: trackingLoading, 
+    savePriorities, 
+    getTimePeriodPriorities 
+  } = useTrackingData();
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load onboarding answers from Firestore
+  useEffect(() => {
+    const loadOnboardingAnswers = async () => {
+      try {
+        // Try to load from Firestore first
+        if (user) {
+          const db = getFirestore(app);
+          const docRef = doc(db, 'users', user.uid, 'onboarding', 'answers');
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setOnboardingAnswers(data || {});
+            setIsLoadingRedirect(false);
+            return;
+          }
+        }
+        // Fallback to localStorage
+        const stored = localStorage.getItem('onboardingAnswers');
+        if (stored) {
+          setOnboardingAnswers(JSON.parse(stored));
+        } else {
+          setOnboardingAnswers({});
+        }
+        setIsLoadingRedirect(false);
+      } catch (error) {
+        console.error('Error loading onboarding answers:', error);
+        setOnboardingAnswers({});
+        setIsLoadingRedirect(false);
+      }
+    };
+    if (user !== undefined) {
+      loadOnboardingAnswers();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const allocation = await getAnytimeTaskAllocation();
+      setAnytimeAllocation(allocation);
+    })();
+  }, [user]);
 
   // Helper to generate a batch of feed items with unique keys
   const generateFeedBatch = async (batchNum: number): Promise<FeedItem[]> => {
@@ -144,101 +294,52 @@ export default function HomePage() {
 
     // Fetch other content - generate unique insight for each batch
     const [insight, topic, community] = await Promise.all([
-      fetchPersonalizedInsight({ ...onboardingAnswers, batchIndex: batchNum }), // Pass batch index to ensure uniqueness
+      fetchPersonalizedInsight({ ...onboardingAnswers, batchIndex: batchNum }),
       fetchPersonalizedTopic(onboardingAnswers),
-      fetchAiCommunityPost(onboardingAnswers, batchNum), // Fetch AI-generated community post
+      fetchAiCommunityPost(onboardingAnswers, batchNum),
     ]);
     
     const communityId = `community-${batchNum + 1}`;
+    const insightId = `insight-${batchNum + 1}`;
+    const topicId = `topic-${batchNum + 1}`;
     
     return [
-      { type: 'aiInsight', id: `insight-${batchNum + 1}-${insight.id}`, data: insight },
-      { type: 'friendActivity', id: communityId, data: { ...community, id: communityId } },
-      { type: 'suggestedTopic', id: `topic-${batchNum + 1}-${topic.id}`, data: topic },
-      ...productItems, // This will be either 1 Zo product or 2 AI products
+      {
+        type: 'aiInsight' as const,
+        id: insightId,
+        data: insight
+      },
+      {
+        type: 'suggestedTopic' as const,
+        id: topicId,
+        data: topic
+      },
+      {
+        type: 'friendActivity' as const,
+        id: communityId,
+        data: community
+      },
+      ...productItems
     ];
   };
 
-  useEffect(() => {
-    const isOnboarded = localStorage.getItem('isOnboarded');
-    if (!isOnboarded) {
-      router.replace('/launch');
-    } else {
-      setIsLoadingRedirect(false);
-      setOnboardingAnswers(JSON.parse(localStorage.getItem('onboardingAnswers') || '{}'));
-    }
-  }, [router]);
-
   // Initial load: greeting, tracking, and first batch
   useEffect(() => {
-    if (!isLoadingRedirect && onboardingAnswers) {
+    if (!isLoadingRedirect && onboardingAnswers && !trackingLoading && user && anytimeAllocation) {
       (async () => {
         setLoadingAI(true);
         const currentTimePeriod = getCurrentTimePeriod();
-
         // --- LLM Prioritization for tracking questions ---
-        // Use cached priorities for all time periods
-        const cacheKey = 'trackingQuestionPriorities';
-        let allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-        try {
-          allPriorities = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-        } catch {}
-        let prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = allPriorities[currentTimePeriod] || {};
-        if (!Object.keys(prioritiesMap).length) {
-          // Gather all tracking questions for this time period
-          const timeTasks: TrackingQuestionForLLM[] = [];
-          const categoryMapping: Record<string, string> = {
-            'Digestive Health': 'digestive-health-&-symptoms',
-            'Medication & Supplement Use': 'medication-&-supplement-use',
-            'Nutrition & Diet Habits': 'diet-&-nutrition',
-            'Personalized Goals & Achievements': 'lifestyle-factors',
-            'Physical Activity & Movement': 'lifestyle-factors',
-            'Stress, Sleep, and Recovery': 'sleep-&-recovery',
-          };
-          Object.entries(trackingQuestions).forEach(([category, questions]) => {
-            questions.forEach((q: any) => {
-              const assignedTime = getQuestionTime(q.id, q.timeOfDay);
-              if (assignedTime === currentTimePeriod.charAt(0).toUpperCase() + currentTimePeriod.slice(1)) {
-                const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                timeTasks.push({
-                  id: `${categoryId}__${q.id}`,
-                  type: q.type,
-                  text: q.text,
-                  timeOfDay: q.timeOfDay,
-                  options: q.options,
-                  placeholder: q.placeholder,
-                });
-              }
-            });
-          });
-          try {
-            const res = await fetch('/api/ai-prioritize-tracking-questions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ onboardingAnswers, trackingQuestions: timeTasks }),
-            });
-            const prioritiesArr = await res.json();
-            prioritiesMap = {};
-            if (Array.isArray(prioritiesArr)) {
-              prioritiesArr.forEach((item) => {
-                if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
-                  prioritiesMap[item.id] = item.priority;
-                }
-              });
-            }
-            // Save/merge to cache for all time periods
-            allPriorities[currentTimePeriod] = prioritiesMap;
-            localStorage.setItem(cacheKey, JSON.stringify(allPriorities));
-          } catch (e) {
-            // fallback: all medium
-            timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
-            allPriorities[currentTimePeriod] = prioritiesMap;
-            localStorage.setItem(cacheKey, JSON.stringify(allPriorities));
-          }
+        // Check if onboarding was just completed
+        const onboardingCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+        if (onboardingCompleted) {
+          // Clear the flag
+          localStorage.removeItem('onboardingCompleted');
+          // Generate priorities for all time periods using the tracking service
+          await generateAllTimePeriodPriorities(onboardingAnswers, priorities, savePriorities);
         }
-        setTrackingPriorities(prioritiesMap);
-        // --- END LLM Prioritization ---
-
+        // Use priorities from Firestore for current time period
+        const prioritiesMap = getTimePeriodPriorities(currentTimePeriod);
         const greeting: FeedItem = {
           type: 'greeting',
           id: 'greeting-1',
@@ -249,7 +350,6 @@ export default function HomePage() {
             accomplishment: "You hit your sleep duration goal! 🎉",
           },
         };
-
         const timeTrackingCard: FeedItem = {
           type: `${currentTimePeriod}Tracking` as 'morningTracking' | 'afternoonTracking' | 'eveningTracking',
           id: `${currentTimePeriod}-tracking-1`,
@@ -257,15 +357,23 @@ export default function HomePage() {
             id: `${currentTimePeriod}-tracking-1`,
             timeOfDay: currentTimePeriod,
             priorities: prioritiesMap,
+            anytimeAllocation: anytimeAllocation,
           } as any,
         };
+        const postsSection: FeedItem = {
+          type: 'postsSection',
+          id: 'posts-section-1',
+          data: {
+            id: 'posts-section-1',
+          },
+        };
         const firstBatch = await generateFeedBatch(0);
-        setFeedItems([greeting, timeTrackingCard, ...firstBatch]);
+        setFeedItems([greeting, timeTrackingCard, postsSection, ...firstBatch]);
         setBatchIndex(1);
         setLoadingAI(false);
       })();
     }
-  }, [isLoadingRedirect, onboardingAnswers]);
+  }, [isLoadingRedirect, onboardingAnswers, trackingLoading, priorities, getTimePeriodPriorities, savePriorities, user, anytimeAllocation]);
 
   // Listen for trackingAnswersChanged and refresh tracking priorities/feed
   useEffect(() => {
@@ -274,13 +382,8 @@ export default function HomePage() {
       (async () => {
         setLoadingAI(true);
         const currentTimePeriod = getCurrentTimePeriod();
-        const cacheKey = 'trackingQuestionPriorities';
-        let allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-        try {
-          allPriorities = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-        } catch {}
-        let prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = allPriorities[currentTimePeriod] || {};
-        setTrackingPriorities(prioritiesMap);
+        const prioritiesMap = getTimePeriodPriorities(currentTimePeriod);
+        
         const greeting: FeedItem = {
           type: 'greeting',
           id: 'greeting-1',
@@ -298,10 +401,18 @@ export default function HomePage() {
             id: `${currentTimePeriod}-tracking-1`,
             timeOfDay: currentTimePeriod,
             priorities: prioritiesMap,
+            anytimeAllocation: anytimeAllocation,
           } as any,
         };
+        const postsSection: FeedItem = {
+          type: 'postsSection',
+          id: 'posts-section-1',
+          data: {
+            id: 'posts-section-1',
+          },
+        };
         const firstBatch = await generateFeedBatch(0);
-        setFeedItems([greeting, timeTrackingCard, ...firstBatch]);
+        setFeedItems([greeting, timeTrackingCard, postsSection, ...firstBatch]);
         setBatchIndex(1);
         setLoadingAI(false);
       })();
@@ -309,6 +420,19 @@ export default function HomePage() {
     window.addEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
     return () => {
       window.removeEventListener('trackingAnswersChanged', handleTrackingAnswersChanged);
+    };
+  }, [onboardingAnswers, getTimePeriodPriorities, anytimeAllocation]);
+
+  // Listen for new post creation to refresh feed immediately
+  useEffect(() => {
+    const handleNewPostCreated = () => {
+      // Force a re-render of the feed items to show the new post
+      setFeedItems(prevItems => [...prevItems]);
+    };
+    
+    window.addEventListener('newPostCreated', handleNewPostCreated);
+    return () => {
+      window.removeEventListener('newPostCreated', handleNewPostCreated);
     };
   }, []);
 
@@ -321,7 +445,7 @@ export default function HomePage() {
     setLoadingAI(false);
   };
 
-  if (isLoadingRedirect || loadingAI && feedItems.length === 0) {
+  if (isLoadingRedirect || trackingLoading || (loadingAI && feedItems.length === 0) || !anytimeAllocation) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Loading...</p>
@@ -337,9 +461,10 @@ export default function HomePage() {
             dataLength={feedItems.length}
             next={fetchMoreData}
             hasMore={true}
-            loader={<p className="text-center text-muted-foreground">Loading more...</p>}
+            loader={<p className="text-center text-muted-foreground py-4">Loading more...</p>}
+            endMessage={<p className="text-center text-muted-foreground py-4">You've reached the end!</p>}
           >
-            <div className="space-y-6 sm:space-y-8">
+            <div className="space-y-6">
               {feedItems.map((item) => (
                 <DynamicFeedCard key={item.id} item={item} />
               ))}

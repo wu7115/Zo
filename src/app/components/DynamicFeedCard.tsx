@@ -13,9 +13,17 @@ import { AiInsightCard } from './AiInsightCard';
 import { SuggestedTopicCard } from './SuggestedTopicCard';
 import { SuggestedProductCard } from './SuggestedProductCard';
 import { ConsolidatedMissedTasksCard } from './ConsolidatedMissedTasksCard';
+import { PostsSection } from './PostsSection';
 
 interface DynamicFeedCardProps {
   item: FeedItem;
+}
+
+interface TimeBasedTrackingFeedData {
+  id: string;
+  timeOfDay: 'morning' | 'afternoon' | 'evening';
+  priorities?: Record<string, 'high' | 'medium' | 'low'>;
+  anytimeAllocation?: Record<string, string>;
 }
 
 export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
@@ -23,11 +31,11 @@ export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
     case 'greeting':
       return <GreetingCard data={item.data} />;
     case 'morningTracking':
-      return <TimeBasedTrackingCard timeOfDay="morning" priorities={item.data?.priorities} />;
+      return <TimeBasedTrackingCard {...(item.data as TimeBasedTrackingFeedData)} />;
     case 'afternoonTracking':
-      return <TimeBasedTrackingCard timeOfDay="afternoon" priorities={item.data?.priorities} />;
+      return <TimeBasedTrackingCard {...(item.data as TimeBasedTrackingFeedData)} />;
     case 'eveningTracking':
-      return <TimeBasedTrackingCard timeOfDay="evening" priorities={item.data?.priorities} />;
+      return <TimeBasedTrackingCard {...(item.data as TimeBasedTrackingFeedData)} />;
     case 'weeklySnapshot':
       return <WeeklySnapshotCard />; // Assumes WeeklySnapshotCard has its own data
     case 'todaysGoal':
@@ -53,6 +61,8 @@ export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
       return <SuggestedProductCard data={item.data} />;
     case 'consolidatedMissedTasks':
       return <ConsolidatedMissedTasksCard currentTimeOfDay={item.data.currentTimeOfDay} priorities={item.data?.priorities} />;
+    case 'postsSection':
+      return <PostsSection />;
     default:
       // Exhaustive check to ensure all types are handled.
       // If TypeScript complains here, it means a new FeedItem type was added without a case.

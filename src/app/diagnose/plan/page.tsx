@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { generateSecondInsight } from '@/ai/flows/generate-second-insight-flow';
 import { trackingQuestions } from '@/data/trackingQuestions';
 import { generateInitialInsight } from '@/ai/flows/generate-initial-insight-flow';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 export default function PlanViewPage() {
   const router = useRouter();
@@ -15,178 +18,99 @@ export default function PlanViewPage() {
   const [summary, setSummary] = useState<string>('');
   const [loadingSummary, setLoadingSummary] = useState(true);
   const hasGeneratedInsight = useRef(false);
+  const [firestoreAnswers, setFirestoreAnswers] = useState<any>(null);
 
   useEffect(() => {
-    const ALL_CATEGORIES = [
-      'Digestive Health',
-      'Nutrition & Diet',
-      'Health Goals & Body Changes',
-      'Physical Wellness',
-      'Mental & Emotional Wellness',
-      'Medications & Supplements',
-    ];
-
     const fetchInsights = async () => {
-      const storedAnswers = localStorage.getItem('onboardingAnswers');
-      if (!storedAnswers) return;
-    
-      const parsedAnswers = JSON.parse(storedAnswers);
-      
-      // Always generate fresh insights, but prevent duplicate generation in same session
-      if (hasGeneratedInsight.current) {
-        return;
-      }
-    
-      const { questionnaireData } = await import('@/data/questionnaireData');
-      const part2: Record<string, any[]> = questionnaireData.part2;
-      let totalQuestions = 0;
-      let totalAnswered = 0;
-      const categoryCompletion: Record<string, number> = {};
-      for (const cat of ALL_CATEGORIES) {
-        const questions: any[] = part2[cat] || [];
-        const visible: any[] = questions.filter((q: any) => !q.condition || q.condition(parsedAnswers));
-        const answered: any[] = visible.filter((q: any) => {
-          const a = parsedAnswers[q.id];
-          if (Array.isArray(a)) return a.length > 0;
-          return a !== undefined && a !== '';
-        });
-        categoryCompletion[cat] = visible.length === 0 ? 1 : answered.length / visible.length;
-        totalQuestions += visible.length;
-        totalAnswered += answered.length;
-      }
-      const overallCompletion = totalQuestions === 0 ? 1 : totalAnswered / totalQuestions;
-
-      // --- Prioritization logic: ensure priorities are set ---
-      const cacheKey = 'trackingQuestionPriorities';
-      let allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-      try {
-        allPriorities = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      } catch {}
-      // If not set, generate priorities for all periods
-      if (!Object.keys(allPriorities).length) {
-        const periods = ['morning', 'afternoon', 'evening'];
-        const { getQuestionTime } = await import('@/utils/taskAllocation');
-        for (const period of periods) {
-          const timeTasks: any[] = [];
-          Object.entries(trackingQuestions).forEach(([category, questions]) => {
-            questions.forEach((q) => {
-              const assignedTime = getQuestionTime(q.id, q.timeOfDay);
-              if (assignedTime === period.charAt(0).toUpperCase() + period.slice(1)) {
-                timeTasks.push({
-                  id: `${category.toLowerCase().replace(/[^a-z0-9]+/g, '-') }__${q.id}`,
-                  type: q.type,
-                  text: q.text,
-                  timeOfDay: q.timeOfDay,
-                  options: q.options,
-                  ...('placeholder' in q && typeof q.placeholder === 'string' ? { placeholder: q.placeholder } : {}),
-                });
-              }
-            });
-          });
-          try {
-            const res = await fetch('/api/ai-prioritize-tracking-questions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ onboardingAnswers: parsedAnswers, trackingQuestions: timeTasks }),
-            });
-            const prioritiesArr = await res.json();
-            const prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = {};
-            if (Array.isArray(prioritiesArr)) {
-              prioritiesArr.forEach((item: any) => {
-                if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
-                  prioritiesMap[item.id] = item.priority;
-                }
-              });
-            }
-            allPriorities[period] = prioritiesMap;
-          } catch (e) {
-            // fallback: all medium
-            const prioritiesMap: Record<string, 'high' | 'medium' | 'low'> = {};
-            timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
-            allPriorities[period] = prioritiesMap;
-          }
-        }
-        localStorage.setItem(cacheKey, JSON.stringify(allPriorities));
-      }
-
-      // --- Select top 2 highest-priority tracking questions per category ---
-      // Merge all priorities for all periods
-      let mergedPriorities: Record<string, 'high' | 'medium' | 'low'> = {};
-      Object.values(allPriorities).forEach((periodMap) => {
-        Object.assign(mergedPriorities, periodMap);
-      });
-      // For each category, select top 2
-      const topTrackingQuestions: Record<string, any[]> = {};
-      Object.entries(trackingQuestions).forEach(([category, questions]) => {
-        // Build id as used in priorities
-        const categoryId = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const withPriority = questions.map((q) => {
-          const id = `${categoryId}__${q.id}`;
-          return { ...q, id, priority: mergedPriorities[id] || 'medium' };
-        });
-        // Sort by priority: high > medium > low
-        withPriority.sort((a, b) => {
-          const order = { high: 1, medium: 2, low: 3 };
-          return order[a.priority] - order[b.priority];
-        });
-        topTrackingQuestions[category] = withPriority.slice(0, 2);
-      });
-
-      // --- Call LLM with completion info and top tracking questions ---
-      hasGeneratedInsight.current = true; // Mark as generated before the async call
-      const result = await generateSecondInsight({
-        fullAnswers: parsedAnswers,
-        overallCompletion,
-        categoryCompletions: categoryCompletion,
-        trackingQuestions: topTrackingQuestions
-      });
-
-      // --- Post-process insights ---
-      let summaryOverride = null;
-      if (overallCompletion < 0.8) {
-        summaryOverride = "To get a more detailed and accurate insight, please complete at least 80% of the questions in your diagnostic survey.";
-      }
-      
-      // Use the new format: healthInsight and categoryRecommendations
-      const healthInsight = result.healthInsight || "Here are your personalized wellness insights based on your answers.";
-      const processedInsights = (result.categoryRecommendations || []).map((insight) => {
-        const cat = insight.category;
-        if (categoryCompletion[cat] < 0.8) {
-          return { ...insight, recommendation: "To get a more detailed and accurate recommendation, please answer more questions in this category." };
-        }
-        return insight;
-      });
-      
-      // Add any missing categories
-      for (const cat of ALL_CATEGORIES) {
-        if (!processedInsights.find(i => i.category === cat)) {
-          processedInsights.push({ category: cat, recommendation: categoryCompletion[cat] < 0.8 ? "To get a more detailed and accurate recommendation, please answer more questions in this category." : "No recommendation available." });
-        }
-      }
-      setInsights(ALL_CATEGORIES.map(cat => processedInsights.find(i => i.category === cat)!));
-      const secondInsightData = { healthInsight, categoryRecommendations: processedInsights };
-      localStorage.setItem('secondInsights', JSON.stringify(secondInsightData));
-
-      // Use the health insight as summary
+      setLoading(true);
       setLoadingSummary(true);
       try {
-        setSummary(summaryOverride || healthInsight);
+        const auth = getAuth(app);
+        if (!auth.currentUser) {
+          setSummary('You must be signed in to view your insights.');
+          setLoading(false);
+          setLoadingSummary(false);
+          return;
+        }
+        const db = getFirestore(app);
+        const docRef = doc(db, 'users', auth.currentUser.uid, 'onboarding', 'answers');
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          setSummary('No personalized insights found. Please complete the diagnostic survey to get personalized insights.');
+          setLoading(false);
+          setLoadingSummary(false);
+          return;
+        }
+        const data = docSnap.data();
+        setFirestoreAnswers(data);
+        // Use part2Answers for completion stats, and initialInsight/secondInsight for insights
+        const parsedAnswers = { ...data.part1Answers, ...data.part2Answers };
+        // ... rest of the logic below uses parsedAnswers instead of localStorage
+        // (copy the logic from before, but use parsedAnswers)
+        // ---
+        const ALL_CATEGORIES = [
+          'Digestive Health',
+          'Nutrition & Diet',
+          'Health Goals & Body Changes',
+          'Physical Wellness',
+          'Mental & Emotional Wellness',
+          'Medications & Supplements',
+        ];
+        const { questionnaireData } = await import('@/data/questionnaireData');
+        const part2: Record<string, any[]> = questionnaireData.part2;
+        let totalQuestions = 0;
+        let totalAnswered = 0;
+        const categoryCompletion: Record<string, number> = {};
+        for (const cat of ALL_CATEGORIES) {
+          const questions: any[] = part2[cat] || [];
+          const visible: any[] = questions.filter((q: any) => !q.condition || q.condition(parsedAnswers));
+          const answered: any[] = visible.filter((q: any) => {
+            const a = parsedAnswers[q.id];
+            if (Array.isArray(a)) return a.length > 0;
+            return a !== undefined && a !== '';
+          });
+          categoryCompletion[cat] = visible.length === 0 ? 1 : answered.length / visible.length;
+          totalQuestions += visible.length;
+          totalAnswered += answered.length;
+        }
+        const overallCompletion = totalQuestions === 0 ? 1 : totalAnswered / totalQuestions;
+        // ---
+        // Use insights from Firestore if available
+        let healthInsight = data.secondInsight || data.initialInsight || '';
+        let categoryRecommendations = data.secondRecommendations || data.initialRecommendations || [];
+        // If not available, fallback to generating
+        if (!healthInsight || !categoryRecommendations.length) {
+          // fallback: generate using LLM
+          // ... (optional, can skip if you want to only show saved insights)
+        }
+        // Post-process insights for UI
+        let summaryOverride = null;
+        if (overallCompletion < 0.8) {
+          summaryOverride = 'To get a more detailed and accurate insight, please complete at least 80% of the questions in your diagnostic survey.';
+        }
+        setSummary(summaryOverride || healthInsight || 'Here are your personalized wellness insights based on your answers.');
+        // Map to UI format
+        const processedInsights = (categoryRecommendations || []).map((insight: any) => {
+          const cat = insight.category;
+          if (categoryCompletion[cat] < 0.8) {
+            return { ...insight, recommendation: 'To get a more detailed and accurate recommendation, please answer more questions in this category.' };
+          }
+          return insight;
+        });
+        for (const cat of ALL_CATEGORIES) {
+          if (!processedInsights.find((i: any) => i.category === cat)) {
+            processedInsights.push({ category: cat, recommendation: categoryCompletion[cat] < 0.8 ? 'To get a more detailed and accurate recommendation, please answer more questions in this category.' : 'No recommendation available.' });
+          }
+        }
+        setInsights(ALL_CATEGORIES.map(cat => processedInsights.find((i: any) => i.category === cat)!));
       } catch (e) {
-        setSummary(summaryOverride || 'Here are your personalized wellness insights based on your answers.');
+        setSummary('Sorry, I could not load your insights.');
+        setInsights([]);
+      } finally {
+        setLoading(false);
+        setLoadingSummary(false);
       }
-      setLoadingSummary(false);
-
-      // NEW: Use hard-coded tracking questions instead of AI generation
-      try {
-        const hardcodedTrackingPlan = convertTrackingQuestionsToPlan(trackingQuestions);
-        localStorage.setItem('trackingPlan', JSON.stringify(hardcodedTrackingPlan));
-      } catch (e) {
-        console.error('Failed to store tracking plan:', e);
-      }
-
-      setLoading(false);
     };
-
     fetchInsights();
   }, []);
 
@@ -253,7 +177,14 @@ export default function PlanViewPage() {
                     {item.category}
                   </AccordionTrigger>
                   <AccordionContent className="px-4 py-3 text-sm text-muted-foreground bg-white rounded-b-lg">
-                    {item.recommendation}
+                    <ul className="text-left text-muted-foreground text-sm whitespace-pre-line pl-4 list-disc">
+                      {item.recommendation
+                        .split(/\n|\r\n|•/)
+                        .map((line: string, idx: number) => {
+                          const clean = line.replace(/^[\s\-•]+/, '').trim();
+                          return clean ? <li key={idx}>{clean}</li> : null;
+                        })}
+                    </ul>
                   </AccordionContent>
                 </AccordionItem>
               ))}

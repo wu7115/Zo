@@ -105,16 +105,9 @@ export function BottomNavigationBar() {
     { id: 'track', href: '/track', label: 'Track', icon: ClipboardList },
     {
       id: 'ask',
-      href: '#', 
+      href: '/ask',
       label: 'Ask AI',
-      icon: LabubuIcon,
-      action: (hasTipsFromClick) => { 
-        if (hasTipsFromClick) {
-          window.dispatchEvent(new CustomEvent('toggleAiTipsPanel'));
-        } else {
-          window.dispatchEvent(new CustomEvent('toggleAiChatPanel'));
-        }
-      }
+      icon: LabubuIcon
     },
     { id: 'more', href: '#', label: 'More', icon: MenuIcon, isMoreMenu: true },
   ];
@@ -134,33 +127,25 @@ export function BottomNavigationBar() {
           
           if (item.id === 'ask') {
             return (
-              <a
-                key={item.id}
-                href={item.href} 
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Check hasMounted before calling action
-                  if (hasMounted && typeof item.action === 'function') {
-                    item.action(showTipsBadge);
-                  }
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground transition-colors duration-150",
-                  hasMounted ? askAiDynamicClasses : "cursor-default opacity-75 pointer-events-none" // Apply dynamic classes only if mounted
-                )}
-              >
-                <div className="relative"> {/* Container for icon and badge */}
-                  <item.icon className={cn("h-6 w-6 mb-0.5")} />
-                  {/* Badge visibility controlled by opacity based on hasMounted and showTipsBadge */}
-                  <span
-                    className={cn(
-                      "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
-                      (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                  />
-                </div>
-                <span className={cn("text-xs font-medium")}>{item.label}</span>
-              </a>
+              <Link key={item.id} href={item.href} legacyBehavior>
+                <a
+                  className={cn(
+                    "flex flex-col items-center justify-center w-1/5 h-full p-2 text-muted-foreground hover:text-primary transition-colors duration-150",
+                    hasMounted ? askAiDynamicClasses : "cursor-default opacity-75 pointer-events-none"
+                  )}
+                >
+                  <div className="relative">
+                    <item.icon className={cn("h-6 w-6 mb-0.5")} />
+                    <span
+                      className={cn(
+                        "absolute top-0 right-0 block h-2.5 w-2.5 transform translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600 ring-1 ring-background transition-opacity duration-200",
+                        (hasMounted && showTipsBadge) ? "opacity-100" : "opacity-0 pointer-events-none"
+                      )}
+                    />
+                  </div>
+                  <span className={cn("text-xs font-medium")}>{item.label}</span>
+                </a>
+              </Link>
             );
           }
           

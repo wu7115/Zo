@@ -22,6 +22,7 @@ import { ItemDetailModal, type ModalItemData } from '@/app/components/ItemDetail
 import { products as zoProducts } from '@/data/products';
 import type { Product } from '@/data/products';
 import { SuggestedProductCard } from '@/app/components/SuggestedProductCard';
+import { AiPencilPanel } from '../components/AiPencilPanel';
 
 interface ShopItem {
   id: string;
@@ -249,6 +250,7 @@ export default function BuyPage() {
         item={selectedItemForModal}
         userContext={currentUserContext}
       />
+      <AiPencilPanel page="buy" />
     </main>
   );
 }

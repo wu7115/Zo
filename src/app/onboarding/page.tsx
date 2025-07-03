@@ -9,6 +9,12 @@ import { cn } from '@/lib/utils';
 import { Check, ArrowLeft, CheckCircle, Loader2, Lightbulb, AlertTriangle } from 'lucide-react';
 import { generateInitialInsight, type GenerateInitialInsightInput, type GenerateInitialInsightOutput } from '@/ai/flows/generate-initial-insight-flow';
 import { questionnaireData } from '@/data/questionnaireData';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { generateSecondInsight } from '@/ai/flows/generate-second-insight-flow';
+import { trackingQuestions } from '@/data/trackingQuestions';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 
 type TrackingQuestionForLLM = {
   id: string;
@@ -117,22 +123,115 @@ const SplashScreenComponent = ({ onComplete }: { onComplete: () => void }) => {
     return <OnboardingStepContainer><h1 className="font-headline text-5xl text-primary animate-pulse">Podium</h1></OnboardingStepContainer>;
 };
 
-const LoginPageComponent = ({ onComplete }: { onComplete: () => void }) => (
+const SignUpPageComponent = ({ onComplete, onSwitchToLogin }: { onComplete: () => void, onSwitchToLogin: () => void }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const auth = getAuth(app);
+
+    const handleSignUp = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            onComplete();
+        } catch (err: any) {
+            setError(err.message || 'Failed to sign up.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <OnboardingStepContainer>
+            <h1 className="font-headline text-3xl text-center mb-2 text-primary">Create Account</h1>
+            <p className="text-center text-muted-foreground mb-8">Sign up to start your journey.</p>
+            <div className="w-full max-w-sm space-y-4">
+                <Input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    disabled={loading}
+                />
+                <Input
+                    type="password"
+                    placeholder="Password"
+                    className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={loading}
+                />
+            </div>
+            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+            <div className="w-full max-w-sm mt-6">
+                <PrimaryButton onClick={handleSignUp} disabled={loading || !email || !password}>
+                    {loading ? 'Signing up...' : 'Create Account'}
+                </PrimaryButton>
+            </div>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+                Already have an account? <a href="#" className="font-semibold text-primary hover:underline" onClick={e => { e.preventDefault(); onSwitchToLogin(); }}>Sign In</a>
+            </p>
+        </OnboardingStepContainer>
+    );
+};
+
+const LoginPageComponent = ({ onComplete, onSwitchToSignUp }: { onComplete: () => void, onSwitchToSignUp: () => void }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const auth = getAuth(app);
+
+    const handleSignIn = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            onComplete();
+        } catch (err: any) {
+            setError(err.message || 'Failed to sign in.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
     <OnboardingStepContainer>
         <h1 className="font-headline text-3xl text-center mb-2 text-primary">Welcome Back</h1>
         <p className="text-center text-muted-foreground mb-8">Sign in to continue your journey.</p>
         <div className="w-full max-w-sm space-y-4">
-            <Input type="email" placeholder="Email" className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"/>
-            <Input type="password" placeholder="Password" className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"/>
+                <Input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    disabled={loading}
+                />
+                <Input
+                    type="password"
+                    placeholder="Password"
+                    className="w-full p-3 bg-card border-2 border-input rounded-lg text-base h-auto"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={loading}
+                />
         </div>
+            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
         <div className="w-full max-w-sm mt-6">
-            <PrimaryButton onClick={onComplete}>Continue</PrimaryButton>
+                <PrimaryButton onClick={handleSignIn} disabled={loading || !email || !password}>
+                    {loading ? 'Signing in...' : 'Continue'}
+                </PrimaryButton>
         </div>
         <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account? <a href="#" className="font-semibold text-primary hover:underline">Sign Up</a>
+                Don't have an account? <a href="#" className="font-semibold text-primary hover:underline" onClick={e => { e.preventDefault(); onSwitchToSignUp(); }}>Sign Up</a>
         </p>
     </OnboardingStepContainer>
 );
+};
 
 const IntroCarouselComponent = ({ onComplete }: { onComplete: () => void }) => {
     const [page, setPage] = useState(0);
@@ -161,8 +260,15 @@ const IntroCarouselComponent = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
-const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onComplete: () => void, answers: any, setAnswers: React.Dispatch<React.SetStateAction<any>> }) => {
+const Part1QuestionnaireComponent = ({ initialAnswers, onComplete }: { initialAnswers: any, onComplete: (answers: any) => void }) => {
     const [qIndex, setQIndex] = useState(0);
+    const [answers, setAnswers] = useState(initialAnswers || {});
+    
+    useEffect(() => {
+      console.log('Part1QuestionnaireComponent received initialAnswers:', initialAnswers);
+      setAnswers(initialAnswers || {});
+    }, [initialAnswers]);
+    
     const questions = questionnaireData.part1;
     const currentQuestion = questions[qIndex];
 
@@ -174,7 +280,7 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
         if (qIndex < questions.length - 1) {
             setQIndex(q => q + 1);
         } else {
-            onComplete();
+            onComplete(answers);
         }
     };
 
@@ -197,7 +303,6 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
 
     const isNextDisabled = currentQuestion?.type === 'single-dynamic' && (!answers?.[currentQuestion?.dependsOn ?? ''] || answers?.[currentQuestion?.dependsOn ?? ''].length === 0) && (!answers?.[currentQuestion?.id ?? '']);
 
-
     return (
          <div className="p-6 sm:p-8 h-full flex flex-col">
             <h2 className="font-headline text-2xl mb-6 text-center text-primary">Set Your Goals</h2>
@@ -210,7 +315,7 @@ const Part1QuestionnaireComponent = ({ onComplete, answers, setAnswers }: { onCo
     );
 };
 
-const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => void, answers: any }) => {
+const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: (insightData: any) => void, answers: any }) => {
   const [healthInsight, setHealthInsight] = useState<string | null>(null);
   const [categoryRecommendations, setCategoryRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -221,12 +326,9 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
     const fetchInsight = async () => {
       setIsLoading(true);
       setError(null);
-      
-      // Always generate fresh insights, but prevent duplicate generation in same session
       if (hasGeneratedInsight.current) {
         return;
       }
-      
       try {
         const part1AnswerKeys = questionnaireData.part1.map(q => q.id);
         const part1Answers:any = {};
@@ -236,32 +338,26 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
             }
         }
         if (Object.keys(part1Answers).length > 0) {
-          hasGeneratedInsight.current = true; // Mark as generated before the async call
+          hasGeneratedInsight.current = true;
           const result = await generateInitialInsight({ onboardingAnswers: part1Answers });
-          
-          // Store the insights in localStorage for later use
           const insightData = {
             healthInsight: result.healthInsight,
             categoryRecommendations: result.categoryRecommendations
           };
-          localStorage.setItem('initialInsights', JSON.stringify(insightData));
-          
           setHealthInsight(result.healthInsight);
           setCategoryRecommendations(result.categoryRecommendations || []);
         } else {
-            // Default insight if no answers from part 1 are available
             const defaultInsight = "Welcome to Podium! We're excited to help you on your wellness journey. Let's personalize it further in the next steps.";
             setHealthInsight(defaultInsight);
             setCategoryRecommendations([]);
         }
       } catch (e: any) {
-        // Show a user-friendly error if LLM quota is exceeded or any other error
         if (e?.message?.includes('quota') || e?.message?.includes('429')) {
           setError("Sorry, our AI coach is temporarily unavailable due to high demand. Please try again later!");
           setHealthInsight("We're excited to help you on your wellness journey!");
         } else {
           setError("Sorry, I couldn't generate an initial insight right now. Let's continue!");
-          setHealthInsight("We're excited to help you on your wellness journey!"); // Fallback content
+          setHealthInsight("We're excited to help you on your wellness journey!");
         }
         setCategoryRecommendations([]);
       } finally {
@@ -270,6 +366,14 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
     };
     fetchInsight();
   }, [answers]);
+
+  useEffect(() => {
+    if (categoryRecommendations && categoryRecommendations.length > 0) {
+      categoryRecommendations.forEach((rec: any) => {
+        console.log('RECOMMENDATION RAW:', rec.recommendation);
+      });
+    }
+  }, [categoryRecommendations]);
 
   return (
     <div className="h-full flex flex-col p-6 sm:p-8">
@@ -290,16 +394,16 @@ const InitialInsightsComponent = ({ onComplete, answers }: { onComplete: () => v
             </div>
           )}
           {!isLoading && !error && healthInsight && (
-            <div className="p-4 bg-secondary/20 rounded-lg text-center max-w-sm border border-secondary">
-               <Lightbulb className="h-10 w-10 text-accent mx-auto mb-2" />
-              <p className="text-secondary-foreground text-lg leading-relaxed">{healthInsight}</p>
+            <div className="p-4 bg-secondary/20 border border-secondary rounded-lg max-w-sm mx-auto flex flex-col items-center">
+              <Lightbulb className="h-8 w-8 text-accent mb-2" />
+              <p className="text-secondary-foreground text-base leading-relaxed text-center">{healthInsight}</p>
             </div>
           )}
           <p className="mt-6 text-muted-foreground text-sm max-w-xs text-center">This is just a quick glance. The more we know, the better we can tailor your Podium experience!</p>
         </div>
       </div>
       <div className="flex-shrink-0 w-full max-w-sm mx-auto mt-8">
-        <PrimaryButton onClick={onComplete}>Continue to Subscription Options</PrimaryButton>
+        <PrimaryButton onClick={() => onComplete({ healthInsight, categoryRecommendations })}>Continue to Subscription Options</PrimaryButton>
       </div>
     </div>
   );
@@ -464,8 +568,12 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
 };
 
 
-const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Record<string, any>, setAnswers: React.Dispatch<React.SetStateAction<Record<string, any>>>, onComplete: () => void }) => {
+const Part2SurveyComponent = ({ initialAnswers, onComplete }: { initialAnswers: Record<string, any>, onComplete: (answers: Record<string, any>) => void }) => {
     const router = useRouter();
+    const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers || {});
+    useEffect(() => {
+      setAnswers(initialAnswers || {});
+    }, [initialAnswers]);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [isFinishing, setIsFinishing] = useState(false);
 
@@ -487,7 +595,6 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Re
         }).length;
     }, [answers, allCategories]);
 
-
     if (activeCategory) {
         return <CategoryQuestionFlowComponent
                     categoryName={activeCategory}
@@ -503,93 +610,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Re
 
     const handleFinishOnboarding = async () => {
         setIsFinishing(true);
-        console.log('Onboarding data collected:', answers);
-        localStorage.setItem('isOnboarded', 'true');
-        // Ensure final answers are saved before redirecting
-        localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
-        // Clear tracking question priorities cache so it will be recalculated
-        localStorage.removeItem('trackingQuestionPriorities');
-        // Clear anytime task allocation cache so it will be recalculated
-        localStorage.removeItem('anytimeTaskAllocation');
-
-        // Allocate anytime tasks ONCE and store in localStorage
-        const { trackingQuestions } = await import('@/data/trackingQuestions');
-        const anytimeQuestions: string[] = [];
-        Object.values(trackingQuestions).forEach((questions: any[]) => {
-          questions.forEach((q: any) => {
-            if (q.timeOfDay === 'Anytime' && q.id) {
-              anytimeQuestions.push(q.id);
-            }
-          });
-        });
-        // Shuffle and allocate
-        const shuffled: string[] = anytimeQuestions.slice().sort(() => Math.random() - 0.5);
-        const allocation: Record<string, string> = {};
-        shuffled.forEach((qid: string, i: number) => {
-          if (i < 10) allocation[qid] = 'Morning';
-          else if (i < 16) allocation[qid] = 'Afternoon';
-          else allocation[qid] = 'Evening';
-        });
-        localStorage.setItem('anytimeTaskAllocation', JSON.stringify(allocation));
-
-        // Generate priorities for all time periods
-        const periods = ['morning', 'afternoon', 'evening'];
-        const allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-        const { getQuestionTime } = await import('@/utils/taskAllocation');
-        const categoryMapping: { [key: string]: string } = {
-          'Digestive Health': 'digestive',
-          'Medication & Supplement Use': 'medication',
-          'Nutrition & Diet Habits': 'nutrition',
-          'Personalized Goals & Achievements': 'goals',
-          'Physical Activity & Movement': 'activity',
-          'Stress, Sleep, and Recovery': 'stress',
-        };
-        for (const period of periods) {
-          const timeTasks: TrackingQuestionForLLM[] = [];
-          Object.entries(trackingQuestions).forEach(([category, questions]) => {
-            questions.forEach((q) => {
-              if ((q as any).condition && typeof (q as any).condition === 'function' && !(q as any).condition(answers)) return;
-              const assignedTime = getQuestionTime(q.id, q.timeOfDay);
-              if (assignedTime === period.charAt(0).toUpperCase() + period.slice(1)) {
-                const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                timeTasks.push({
-                  id: `${categoryId}__${q.id}`,
-                  type: q.type,
-                  text: q.text,
-                  timeOfDay: q.timeOfDay,
-                  options: q.options,
-                  placeholder: 'placeholder' in q ? q.placeholder?.toString() || '' : '',
-                  condition: 'condition' in q ? q.condition : undefined,
-                });
-              }
-            });
-          });
-          try {
-            const res = await fetch('/api/ai-prioritize-tracking-questions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
-            });
-            const prioritiesArr = await res.json();
-            const prioritiesMap: Record<string, any> = {};
-            if (Array.isArray(prioritiesArr)) {
-              prioritiesArr.forEach((item) => {
-                if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
-                  prioritiesMap[item.id] = item.priority;
-                }
-              });
-            }
-            allPriorities[period] = prioritiesMap;
-          } catch (e) {
-            // fallback: all medium
-            const prioritiesMap: Record<string, any> = {};
-            timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
-            allPriorities[period] = prioritiesMap;
-          }
-        }
-        localStorage.setItem('trackingQuestionPriorities', JSON.stringify(allPriorities));
-        setIsFinishing(false);
-        router.push('/');
+        onComplete(answers);
     };
 
     return (
@@ -618,7 +639,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Re
                             key={categoryName}
                             onClick={() => setActiveCategory(categoryName)}
                             className="w-full text-left p-4 border-2 rounded-lg flex items-center justify-between hover:bg-muted/30 transition-colors"
-                            disabled={visibleCategoryQuestions.length === 0 && !isComplete} // Disable if no questions and not marked complete
+                            disabled={visibleCategoryQuestions.length === 0 && !isComplete}
                         >
                             <div>
                                 <p className="font-semibold text-primary">{categoryName}</p>
@@ -635,7 +656,7 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Re
             </div>
 
             <div className="mt-auto flex-shrink-0 pt-4 border-t border-border">
-                <PrimaryButton onClick={() => router.push('/diagnose/plan')}>
+                <PrimaryButton onClick={handleFinishOnboarding}>
                     {allQuestionsConsideredAnswered ? 'View Insights' : 'Finish For Now & Go to Home'}
                 </PrimaryButton>
             </div>
@@ -643,142 +664,347 @@ const Part2SurveyComponent = ({ answers, setAnswers, onComplete }: { answers: Re
     );
 };
 
-// Main Onboarding Page Component
-export default function OnboardingPage() {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState('splash');
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [isFinishing, setIsFinishing] = useState(false);
+// Replace the placeholder async LLM function for final insights
+async function generateFinalInsightAndRecs({ part1Answers, part2Answers }: { part1Answers: any, part2Answers: any }) {
+  // Merge answers
+  const fullAnswers = { ...part1Answers, ...part2Answers };
+  // Call the LLM
+  const result = await generateSecondInsight({
+    fullAnswers,
+    trackingQuestions
+  });
+  // Convert array to object for compatibility with old prop
+  const recommendationsObj: Record<string, string[]> = {};
+  (result.categoryRecommendations || []).forEach((rec) => {
+    recommendationsObj[rec.category] = rec.recommendation.split('\n').map(s => s.trim()).filter(Boolean);
+  });
+  return {
+    insight: result.healthInsight,
+    recommendations: recommendationsObj,
+    // Also return the array for new UI
+    recommendationsArray: result.categoryRecommendations || []
+  };
+}
 
-  // Load answers from localStorage on initial mount
+// FinalInsightsComponent now handles loading and fetches the insight itself
+const FinalInsightsComponent = ({ part1Answers, part2Answers }: { part1Answers: any, part2Answers: any }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [healthInsight, setHealthInsight] = useState<string | null>(null);
+  const [recommendationsArray, setRecommendationsArray] = useState<Array<{ category: string, recommendation: string }>>([]);
+
   useEffect(() => {
-    const savedAnswers = localStorage.getItem('onboardingAnswers');
-    if (savedAnswers) {
+    const fetchInsights = async () => {
       try {
-        setAnswers(JSON.parse(savedAnswers));
-      } catch (e) {
-        console.error("Error parsing saved answers from localStorage", e);
-      }
+        const result = await generateFinalInsightAndRecs({ part1Answers, part2Answers });
+        setHealthInsight(result.insight);
+        setRecommendationsArray(result.recommendationsArray);
+      } catch (err) {
+        setError('Failed to generate insights. Please try again.');
+        console.error('Error generating insights:', err);
+      } finally {
+        setLoading(false);
     }
-  }, []);
-
-  // Save answers to localStorage whenever they change,
-  // but only if currentStep is not splash or login to avoid saving empty/default object early.
-  useEffect(() => {
-    if (currentStep !== 'splash' && currentStep !== 'login') {
-        localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
-    }
-  }, [answers, currentStep]);
-
-
-  const handleFinishOnboarding = async () => {
-    setIsFinishing(true);
-    console.log('Onboarding data collected:', answers);
-    localStorage.setItem('isOnboarded', 'true');
-    // Ensure final answers are saved before redirecting
-    localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
-    // Clear tracking question priorities cache so it will be recalculated
-    localStorage.removeItem('trackingQuestionPriorities');
-    // Clear anytime task allocation cache so it will be recalculated
-    localStorage.removeItem('anytimeTaskAllocation');
-
-    // Allocate anytime tasks ONCE and store in localStorage
-    const { trackingQuestions } = await import('@/data/trackingQuestions');
-    const anytimeQuestions: string[] = [];
-    Object.values(trackingQuestions).forEach((questions: any[]) => {
-      questions.forEach((q: any) => {
-        if (q.timeOfDay === 'Anytime' && q.id) {
-          anytimeQuestions.push(q.id);
-        }
-      });
-    });
-    // Shuffle and allocate
-    const shuffled: string[] = anytimeQuestions.slice().sort(() => Math.random() - 0.5);
-    const allocation: Record<string, string> = {};
-    shuffled.forEach((qid: string, i: number) => {
-      if (i < 10) allocation[qid] = 'Morning';
-      else if (i < 16) allocation[qid] = 'Afternoon';
-      else allocation[qid] = 'Evening';
-    });
-    localStorage.setItem('anytimeTaskAllocation', JSON.stringify(allocation));
-
-    // Generate priorities for all time periods
-    const periods = ['morning', 'afternoon', 'evening'];
-    const allPriorities: Record<string, Record<string, 'high' | 'medium' | 'low'>> = {};
-    const { getQuestionTime } = await import('@/utils/taskAllocation');
-    const categoryMapping: { [key: string]: string } = {
-      'Digestive Health': 'digestive',
-      'Medication & Supplement Use': 'medication',
-      'Nutrition & Diet Habits': 'nutrition',
-      'Personalized Goals & Achievements': 'goals',
-      'Physical Activity & Movement': 'activity',
-      'Stress, Sleep, and Recovery': 'stress',
     };
-    for (const period of periods) {
-      const timeTasks: TrackingQuestionForLLM[] = [];
+
+    fetchInsights();
+  }, [part1Answers, part2Answers]);
+
+  const handleGoToHome = async () => {
+    try {
+      // Generate priorities for all time periods before going to home
+      const mergedAnswers = { ...part1Answers, ...part2Answers };
+      
+      // Call the priority generation API for all time periods
+      const timePeriods = ['morning', 'afternoon', 'evening'];
+      const categoryMapping = {
+        'Digestive Health': 'digestive-health-&-symptoms',
+        'Medication & Supplement Use': 'medication-&-supplement-use',
+        'Nutrition & Diet Habits': 'diet-&-nutrition',
+        'Personalized Goals & Achievements': 'personalized-goals-&-achievements',
+        'Physical Activity & Movement': 'physical-activity-&-movement',
+        'Stress, Sleep, and Recovery': 'sleep-&-recovery',
+      };
+
+      // Import trackingQuestions dynamically to avoid circular dependencies
+    const { trackingQuestions } = await import('@/data/trackingQuestions');
+    const { getQuestionTime } = await import('@/utils/taskAllocation');
+
+      for (const timePeriod of timePeriods) {
+        const timeTasks: any[] = [];
+        
       Object.entries(trackingQuestions).forEach(([category, questions]) => {
-        questions.forEach((q) => {
-          if ((q as any).condition && typeof (q as any).condition === 'function' && !(q as any).condition(answers)) return;
+          questions.forEach((q: any) => {
           const assignedTime = getQuestionTime(q.id, q.timeOfDay);
-          if (assignedTime === period.charAt(0).toUpperCase() + period.slice(1)) {
-            const categoryId = categoryMapping[category] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            if (assignedTime === timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)) {
+              const categoryId = categoryMapping[category as keyof typeof categoryMapping] || category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             timeTasks.push({
               id: `${categoryId}__${q.id}`,
               type: q.type,
               text: q.text,
               timeOfDay: q.timeOfDay,
               options: q.options,
-              placeholder: 'placeholder' in q ? q.placeholder?.toString() || '' : '',
-              condition: 'condition' in q ? q.condition : undefined,
+                placeholder: q.placeholder,
             });
           }
         });
       });
+
+        if (timeTasks.length > 0) {
       try {
-        const res = await fetch('/api/ai-prioritize-tracking-questions', {
+            await fetch('/api/ai-prioritize-tracking-questions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ onboardingAnswers: answers, trackingQuestions: timeTasks }),
+              body: JSON.stringify({ onboardingAnswers: mergedAnswers, trackingQuestions: timeTasks }),
         });
-        const prioritiesArr = await res.json();
-        const prioritiesMap: Record<string, any> = {};
-        if (Array.isArray(prioritiesArr)) {
-          prioritiesArr.forEach((item) => {
-            if (item && typeof item.id === 'string' && ['high', 'medium', 'low'].includes(item.priority)) {
-              prioritiesMap[item.id] = item.priority;
-            }
-          });
+          } catch (e) {
+            console.warn(`Failed to generate priorities for ${timePeriod}:`, e);
+          }
         }
-        allPriorities[period] = prioritiesMap;
-      } catch (e) {
-        // fallback: all medium
-        const prioritiesMap: Record<string, any> = {};
-        timeTasks.forEach((q) => { prioritiesMap[q.id] = 'medium'; });
-        allPriorities[period] = prioritiesMap;
       }
+
+      // Set a flag to indicate onboarding is complete
+      localStorage.setItem('onboardingCompleted', 'true');
+      
+      // Redirect to home
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error generating priorities:', error);
+      // Still redirect to home even if priority generation fails
+      localStorage.setItem('onboardingCompleted', 'true');
+      window.location.href = '/';
     }
-    localStorage.setItem('trackingQuestionPriorities', JSON.stringify(allPriorities));
-    setIsFinishing(false);
-    router.push('/');
   };
 
+  return (
+    <OnboardingStepContainer className="justify-between">
+      <div className="flex-1 overflow-y-auto">
+        <div className="text-center mb-6">
+          <h2 className="font-headline text-3xl text-primary mb-3">Your Personalized Insights</h2>
+          <p className="text-muted-foreground">Based on your responses, here's what we've learned about your health journey.</p>
+        </div>
+
+        {loading && (
+          <div className="flex flex-col items-center space-y-3 text-muted-foreground animate-pulse">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p>Generating your personalized insights...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 bg-destructive/10 rounded-lg text-center max-w-sm mx-auto">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-2" />
+            <p className="text-destructive-foreground font-semibold">Oops!</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && healthInsight && (
+          <div className="p-4 bg-secondary/20 border border-secondary rounded-lg max-w-sm mx-auto mb-6">
+            <Lightbulb className="h-8 w-8 text-accent mb-2" />
+            <p className="text-secondary-foreground text-base leading-relaxed text-center">{healthInsight}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="flex-1 overflow-y-auto px-4 pb-6">
+            <Accordion type="multiple" className="space-y-3">
+              {recommendationsArray.map(({ category, recommendation }) => (
+                <AccordionItem key={category} value={category} className="bg-white border border-primary/30 rounded-lg shadow-sm">
+                  <AccordionTrigger className="px-4 py-3 font-semibold text-primary text-base rounded-lg hover:bg-primary/5 focus:outline-none">
+                    {category}
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 text-left">
+                    <ul className="list-disc ml-5 text-sm text-foreground text-left">
+                      {recommendation.split('\n').map((rec, i) => {
+                        // Remove leading bullet and whitespace if present
+                        const clean = rec.replace(/^•\s*/, '');
+                        return <li key={i}>{clean}</li>;
+                      })}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        )}
+        {!loading && !error && (
+          <div className="flex-shrink-0 px-6 pb-6 pt-2">
+            <PrimaryButton onClick={handleGoToHome}>Go To Home</PrimaryButton>
+          </div>
+        )}
+      </div>
+    </OnboardingStepContainer>
+  );
+};
+
+// Utility to recursively check for functions in an object
+function findFunctionInObject(obj: any, path: string[] = []): string | null {
+  if (typeof obj === 'function') return path.join('.') || '<root>';
+  if (obj && typeof obj === 'object') {
+    for (const key of Object.keys(obj)) {
+      const found = findFunctionInObject(obj[key], [...path, key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// Utility to save onboarding data to Firestore
+async function saveOnboardingDataToFirestore(uid: string, onboardingData: any) {
+  console.log('Saving to Firestore:', onboardingData);
+  const functionPath = findFunctionInObject(onboardingData);
+  if (functionPath) {
+    console.warn('Not saving to Firestore: function found at', functionPath);
+    return;
+  }
+  const db = getFirestore(app);
+  await setDoc(doc(db, 'users', uid, 'onboarding', 'answers'), onboardingData, { merge: true });
+}
+
+// Utility to load onboarding data from Firestore
+async function loadOnboardingDataFromFirestore(uid: string) {
+  console.log('Loading onboarding data for user:', uid);
+  const db = getFirestore(app);
+  
+  // Try the original path first
+  const docRef = doc(db, 'users', uid, 'onboarding', 'answers');
+  console.log('Trying path:', 'users', uid, 'onboarding', 'answers');
+  
+  try {
+    const docSnap = await getDoc(docRef);
+    console.log('Document exists:', docSnap.exists());
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      console.log('Loaded data:', data);
+      return data || {};
+    }
+  } catch (error) {
+    console.log('Error with onboarding path:', error);
+    
+    // Try alternative path structure
+    try {
+      const altDocRef = doc(db, 'users', uid, 'answers');
+      console.log('Trying alternative path:', 'users', uid, 'answers');
+      const altDocSnap = await getDoc(altDocRef);
+      console.log('Alternative document exists:', altDocSnap.exists());
+      if (altDocSnap.exists()) {
+        const data = altDocSnap.data();
+        console.log('Loaded data from alternative path:', data);
+        return data || {};
+      }
+    } catch (altError) {
+      console.log('Error with alternative path:', altError);
+    }
+  }
+  
+  console.log('No data found, returning empty object');
+  return {};
+}
+
+// Main Onboarding Page Component
+export default function OnboardingPage() {
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<'splash' | 'login' | 'signup' | 'intro' | 'part1' | 'initial_insights' | 'subscription' | 'confirmation' | 'part2_intro' | 'part2_survey' | 'final_insights'>('splash');
+  const [onboardingData, setOnboardingData] = useState<any>({});
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [loadingAnswers, setLoadingAnswers] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [finalPart1Answers, setFinalPart1Answers] = useState<any>(null);
+  const [finalPart2Answers, setFinalPart2Answers] = useState<any>(null);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      console.log('Auth state changed, user:', user?.uid);
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load onboarding data from Firestore when user is authenticated
+  useEffect(() => {
+    const fetchData = async () => {
+      console.log('User state changed:', user?.uid);
+      if (user) {
+        setLoadingAnswers(true);
+        try {
+          const firestoreData = await loadOnboardingDataFromFirestore(user.uid);
+          console.log('Final onboardingData loaded:', firestoreData);
+          console.log('part1Answers:', firestoreData.part1Answers);
+          setOnboardingData(firestoreData);
+          setCurrentStep('part1'); // Always start at part 1, regardless of progress
+      } catch (e) {
+          console.error('Error loading onboarding data:', e);
+          setOnboardingData({});
+          setCurrentStep('part1');
+        } finally {
+          setLoadingAnswers(false);
+        }
+      } else {
+        console.log('No user logged in');
+        setLoadingAnswers(false);
+      }
+    };
+    fetchData();
+  }, [user]); // Now depends on user state
+
+  // Save onboarding data to Firestore whenever it changes (except splash/login)
+  useEffect(() => {
+    if (currentStep !== 'splash' && currentStep !== 'login' && user) {
+      saveOnboardingDataToFirestore(user.uid, onboardingData);
+    }
+  }, [onboardingData, currentStep, user]);
+
+  // Handlers for each onboarding part
+  const handlePart1Complete = (part1Answers: any) => {
+    setOnboardingData((prev: any) => ({ ...prev, part1Answers }));
+    setCurrentStep('initial_insights');
+  };
+
+  const handleInitialInsight = (insightData: any) => {
+    setOnboardingData((prev: any) => ({ ...prev, initialInsight: insightData.healthInsight, initialRecommendations: insightData.categoryRecommendations }));
+    setCurrentStep('subscription');
+  };
+
+  const handlePart2Complete = async (part2Answers: any) => {
+    setOnboardingData((prev: any) => ({ ...prev, part2Answers }));
+    setFinalPart1Answers(onboardingData.part1Answers || {});
+    setFinalPart2Answers(part2Answers);
+    setCurrentStep('final_insights');
+  };
+
+  // Pass onboardingData.part1Answers, onboardingData.part2Answers, etc. to components as needed
   const renderCurrentStep = () => {
+    if (loadingAnswers) {
+      return <OnboardingStepContainer><p>Loading your onboarding data...</p></OnboardingStepContainer>;
+    }
     switch (currentStep) {
       case 'splash': return <SplashScreenComponent onComplete={() => setCurrentStep('login')} />;
-      case 'login': return <LoginPageComponent onComplete={() => setCurrentStep('intro')} />;
+      case 'login': return <LoginPageComponent onComplete={() => setCurrentStep('intro')} onSwitchToSignUp={() => setCurrentStep('signup')} />;
+      case 'signup': return <SignUpPageComponent onComplete={() => setCurrentStep('intro')} onSwitchToLogin={() => setCurrentStep('login')} />;
       case 'intro': return <IntroCarouselComponent onComplete={() => setCurrentStep('part1')} />;
-      case 'part1': return <Part1QuestionnaireComponent answers={answers} setAnswers={setAnswers} onComplete={() => setCurrentStep('initial_insights')} />;
-      case 'initial_insights': return <InitialInsightsComponent answers={answers} onComplete={() => setCurrentStep('subscription')} />;
+      case 'part1':
+        return <Part1QuestionnaireComponent
+          initialAnswers={onboardingData.part1Answers || {}}
+          onComplete={handlePart1Complete}
+        />;
+      case 'initial_insights': return <InitialInsightsComponent answers={onboardingData.part1Answers || {}} onComplete={handleInitialInsight} />;
       case 'subscription': return <SubscriptionPageComponent onComplete={() => setCurrentStep('confirmation')} />;
       case 'confirmation': return <ConfirmationPageComponent onComplete={() => setCurrentStep('part2_intro')} />;
       case 'part2_intro':
         return <Part2SurveyIntroComponent
                     onBeginSurvey={() => setCurrentStep('part2_survey')}
-                    onSkipSurvey={handleFinishOnboarding} // This correctly finishes onboarding if skipped
+                    onSkipSurvey={() => setCurrentStep('part2_survey')}
                />;
       case 'part2_survey':
-        // When Part 2 Survey is completed (button inside Part2SurveyComponent is clicked), it calls onComplete, which is handleFinishOnboarding.
-        return <Part2SurveyComponent answers={answers} setAnswers={setAnswers} onComplete={handleFinishOnboarding} />;
+        return <Part2SurveyComponent
+          initialAnswers={onboardingData.part2Answers || {}}
+          onComplete={handlePart2Complete}
+        />;
+      case 'final_insights':
+        return <FinalInsightsComponent part1Answers={finalPart1Answers || onboardingData.part1Answers || {}} part2Answers={finalPart2Answers || onboardingData.part2Answers || {}} />;
       default: return <OnboardingStepContainer><p>Loading...</p></OnboardingStepContainer>;
     }
   };
