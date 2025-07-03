@@ -13,6 +13,9 @@ import { useTrackingData } from '@/hooks/use-tracking-data';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
+import { loadUserBuyProducts } from '@/lib/trackingService';
+import { loadUserLearnArticles } from '@/lib/trackingService';
+import { products as zoProducts } from '@/data/products';
 
 type TrackingQuestionForLLM = {
   id: string;
@@ -207,6 +210,8 @@ export default function HomePage() {
   const [onboardingAnswers, setOnboardingAnswers] = useState<any>({});
   const [user, setUser] = useState<any>(null);
   const [anytimeAllocation, setAnytimeAllocation] = useState<Record<string, string> | null>(null);
+  const [userBuyProducts, setUserBuyProducts] = useState<any[]>([]);
+  const [userLearnArticles, setUserLearnArticles] = useState<any[]>([]);
   
   // Use the new tracking service
   const { 
@@ -230,7 +235,6 @@ export default function HomePage() {
   useEffect(() => {
     const loadOnboardingAnswers = async () => {
       try {
-        // Try to load from Firestore first
         if (user) {
           const db = getFirestore(app);
           const docRef = doc(db, 'users', user.uid, 'onboarding', 'answers');
@@ -238,14 +242,9 @@ export default function HomePage() {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setOnboardingAnswers(data || {});
-            setIsLoadingRedirect(false);
-            return;
+          } else {
+            setOnboardingAnswers({});
           }
-        }
-        // Fallback to localStorage
-        const stored = localStorage.getItem('onboardingAnswers');
-        if (stored) {
-          setOnboardingAnswers(JSON.parse(stored));
         } else {
           setOnboardingAnswers({});
         }
@@ -269,57 +268,75 @@ export default function HomePage() {
     })();
   }, [user]);
 
+  // Load LLM buy products from Firestore
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const products = await loadUserBuyProducts(user.uid);
+      setUserBuyProducts(products);
+      const articles = await loadUserLearnArticles(user.uid);
+      setUserLearnArticles(articles);
+    })();
+  }, [user]);
+
   // Helper to generate a batch of feed items with unique keys
   const generateFeedBatch = async (batchNum: number): Promise<FeedItem[]> => {
-    let productItems: FeedItem[] = [];
-    
-    // Show all 8 Zo products first (batches 0-7), then switch to AI products
-    if (batchNum < 8) {
-      // Show 1 Zo product per batch for the first 8 batches
-      const zoProduct = await fetchPersonalizedProduct(onboardingAnswers, batchNum);
-      productItems = [{
-        type: 'suggestedProduct' as const,
-        id: `zo-product-${batchNum}-${zoProduct.id}`,
-        data: zoProduct
-      }];
-    } else {
-      // After all 8 Zo products are shown, show 2 AI products per batch
-      const aiProducts = await fetchAiProducts(onboardingAnswers, batchNum);
-      productItems = aiProducts.map((product, index) => ({
-        type: 'suggestedProduct' as const,
-        id: `ai-product-${batchNum}-${index + 1}-${product.id}`,
-        data: product
-      }));
-    }
-
-    // Fetch other content - generate unique insight for each batch
+    // Fetch all needed data in parallel
     const [insight, topic, community] = await Promise.all([
       fetchPersonalizedInsight({ ...onboardingAnswers, batchIndex: batchNum }),
       fetchPersonalizedTopic(onboardingAnswers),
       fetchAiCommunityPost(onboardingAnswers, batchNum),
     ]);
-    
+
+    // Learn card: show only one article per batch, matching batchNum
+    let learnItem: FeedItem[] = [];
+    if (userLearnArticles.length > batchNum) {
+      const article = userLearnArticles[batchNum];
+      learnItem = [{
+        type: 'recommendedLearning' as const,
+        id: `recommended-learning-${batchNum}`,
+        data: { id: `recommended-learning-${batchNum}`, articles: [article] }
+      }];
+    }
+
+    // Buy card: show all Zo products first, then LLM products from Firestore
+    let productItem: FeedItem[] = [];
+    if (batchNum < zoProducts.length) {
+      const zoProduct = zoProducts[batchNum];
+      productItem = [{
+        type: 'suggestedProduct' as const,
+        id: `zo-product-${batchNum}-${zoProduct.id}`,
+        data: zoProduct
+      }];
+    } else if (userBuyProducts.length > 0 && batchNum - zoProducts.length < userBuyProducts.length) {
+      // Show LLM products from Firestore
+      const idx = batchNum - zoProducts.length;
+      const llmProduct = userBuyProducts[idx];
+      productItem = [{
+        type: 'suggestedProduct' as const,
+        id: `llm-product-${idx}-${llmProduct.id}`,
+        data: llmProduct
+      }];
+    }
+
     const communityId = `community-${batchNum + 1}`;
     const insightId = `insight-${batchNum + 1}`;
     const topicId = `topic-${batchNum + 1}`;
-    
+
+    // Always: insight → learn → community → buy
     return [
       {
         type: 'aiInsight' as const,
         id: insightId,
         data: insight
       },
-      {
-        type: 'suggestedTopic' as const,
-        id: topicId,
-        data: topic
-      },
+      ...learnItem,
       {
         type: 'friendActivity' as const,
         id: communityId,
         data: community
       },
-      ...productItems
+      ...productItem
     ];
   };
 

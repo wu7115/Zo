@@ -59,6 +59,8 @@ export interface ConsolidatedMissedTasksFeedData {
 // or for which we are not yet passing dynamic data.
 export interface SelfContainedFeedData {
   id: string;
+  // For recommendedLearning, optionally include articles
+  articles?: LearnArticleFeedData[];
   // Potentially add specific identifiers if needed by the card, e.g. for fetching
 }
 
@@ -96,6 +98,20 @@ export interface PostsSectionFeedData {
   id: string;
 }
 
+// Data for Learn Article Card
+export interface LearnArticleFeedData {
+  id: string;
+  title: string;
+  snippet: string;
+  source?: string;
+  duration?: string;
+  type?: string;
+  imageUrl: string;
+  imageHint: string;
+  link: string;
+  category: string;
+}
+
 // Discriminated Union for Feed Items
 export type FeedItem =
   | { type: 'greeting'; id: string; data: GreetingFeedData }
@@ -113,4 +129,5 @@ export type FeedItem =
   | { type: 'aiInsight'; id: string; data: AiInsightFeedData }
   | { type: 'suggestedTopic'; id: string; data: SuggestedTopicFeedData }
   | { type: 'suggestedProduct'; id: string; data: SuggestedProductFeedData }
+  | { type: 'learnArticle'; id: string; data: LearnArticleFeedData }
   | { type: 'postsSection'; id: string; data: PostsSectionFeedData };

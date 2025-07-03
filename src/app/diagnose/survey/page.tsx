@@ -12,6 +12,9 @@ import { Check, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { questionnaireData } from '@/data/questionnaireData';
 import { AiPencilPanel } from '../../components/AiPencilPanel';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 // --- UI Components (Adapted from onboarding/page.tsx) ---
 const PrimaryButton = ({ children, className, ...props }: React.ComponentProps<typeof Button>) => (
@@ -162,33 +165,54 @@ const CategoryQuestionFlowComponent = ({ categoryName, questions, answers, setAn
     );
 };
 
-const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { onSurveyComplete: (surveyAnswers: any) => void, initialAnswers: any }) => {
+// Helper to load onboarding part2 answers from Firestore
+async function loadPart2AnswersFromFirestore(uid: string) {
+  const db = getFirestore(app);
+  const docRef = doc(db, 'users', uid, 'onboarding', 'answers');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    return data?.part2Answers || {};
+  }
+  return {};
+}
+
+// Helper to save onboarding part2 answers to Firestore
+async function savePart2AnswersToFirestore(uid: string, part2Answers: any) {
+  const db = getFirestore(app);
+  const docRef = doc(db, 'users', uid, 'onboarding', 'answers');
+  await setDoc(docRef, { part2Answers }, { merge: true });
+}
+
+const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {}, user }: { onSurveyComplete: (surveyAnswers: any) => void, initialAnswers: any, user: any }) => {
     const [answers, setAnswers] = useState<any>({});
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [firestoreLoaded, setFirestoreLoaded] = useState(false);
 
-    // Load answers from localStorage (sync with onboarding)
+    // Load answers from Firestore
     useEffect(() => {
-        const stored = localStorage.getItem('onboardingAnswers');
-        if (stored) {
-            setAnswers(JSON.parse(stored));
-        } else {
-            setAnswers(initialAnswers);
+        async function loadAnswers() {
+            if (user) {
+                const firestoreAnswers = await loadPart2AnswersFromFirestore(user.uid);
+                setAnswers(firestoreAnswers && Object.keys(firestoreAnswers).length > 0 ? firestoreAnswers : initialAnswers);
+                setFirestoreLoaded(true);
+                setIsLoading(false);
+            } else {
+                setAnswers(initialAnswers);
+                setFirestoreLoaded(false);
+                setIsLoading(false);
+            }
         }
-    }, [initialAnswers]);
+        loadAnswers();
+    }, [initialAnswers, user]);
 
-    // Save answers to localStorage whenever they change
+    // Save answers to Firestore whenever they change (if user is logged in)
     useEffect(() => {
-        // Merge current answers with existing onboardingAnswers
-        const existing = localStorage.getItem('onboardingAnswers');
-        let merged = { ...answers };
-        if (existing) {
-            try {
-                const parsed = JSON.parse(existing);
-                merged = { ...parsed, ...answers };
-            } catch {}
+        if (user && firestoreLoaded) {
+            savePart2AnswersToFirestore(user.uid, answers);
         }
-        localStorage.setItem('onboardingAnswers', JSON.stringify(merged));
-    }, [answers]);
+    }, [answers, user, firestoreLoaded]);
 
     const allCategories = Object.keys(questionnaireData.part2);
 
@@ -269,36 +293,47 @@ const DiagnosticSurveyContent = ({ onSurveyComplete, initialAnswers = {} }: { on
     );
 };
 
-
 export default function StandaloneDiagnosticSurveyPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [initialSurveyAnswers, setInitialSurveyAnswers] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
 
+    // Listen for auth state
     useEffect(() => {
-        let loadedAnswers: any = {};
-        try {
-            const onboardingSaved = localStorage.getItem('onboardingAnswers');
-            if (onboardingSaved) {
-                loadedAnswers = JSON.parse(onboardingSaved);
-            }
-        } catch (error) {
-            console.error("Error loading onboarding answers from localStorage:", error);
-        }
-        setInitialSurveyAnswers(loadedAnswers);
-        setIsLoading(false);
+        const auth = getAuth(app);
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            setUser(firebaseUser);
+        });
+        return () => unsubscribe();
     }, []);
 
-    const handleSurveySubmission = (currentSurveyAnswers: any) => {
+    // Load initial answers from Firestore (if user is logged in)
+    useEffect(() => {
+        async function loadInitial() {
+            if (user) {
+                const firestoreAnswers = await loadPart2AnswersFromFirestore(user.uid);
+                setInitialSurveyAnswers(firestoreAnswers);
+            } else {
+                setInitialSurveyAnswers({});
+            }
+            setIsLoading(false);
+        }
+        loadInitial();
+    }, [user]);
+
+    const handleSurveySubmission = async (currentSurveyAnswers: any) => {
         try {
-            localStorage.setItem('standaloneSurveyAnswers', JSON.stringify(currentSurveyAnswers));
+            if (user) {
+                await savePart2AnswersToFirestore(user.uid, currentSurveyAnswers);
+            }
             toast({
                 title: "Progress Saved!",
                 description: "Your diagnostic survey answers have been saved.",
             });
         } catch (error) {
-            console.error("Error saving survey answers to localStorage:", error);
+            console.error("Error saving survey answers:", error);
             toast({
                 title: "Error",
                 description: "Could not save your survey answers. Please try again.",
@@ -339,6 +374,7 @@ export default function StandaloneDiagnosticSurveyPage() {
                             <DiagnosticSurveyContent 
                                 onSurveyComplete={handleSurveySubmission} 
                                 initialAnswers={initialSurveyAnswers}
+                                user={user}
                             />
                         </div>
                     </CardContent>

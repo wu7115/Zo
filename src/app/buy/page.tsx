@@ -23,6 +23,8 @@ import { products as zoProducts } from '@/data/products';
 import type { Product } from '@/data/products';
 import { SuggestedProductCard } from '@/app/components/SuggestedProductCard';
 import { AiPencilPanel } from '../components/AiPencilPanel';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { loadUserBuyProducts, addUserBuyProducts } from '@/lib/trackingService';
 
 interface ShopItem {
   id: string;
@@ -102,14 +104,57 @@ export default function BuyPage() {
   const [selectedItemForModal, setSelectedItemForModal] = React.useState<ModalItemData | null>(null);
   const currentUserContext = "enhancing overall wellness and vitality"; // Example context
 
-  // Get onboarding answers from localStorage
+  // Auth state
+  const [user, setUser] = React.useState<any>(null);
+  React.useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Onboarding answers (for LLM context)
   const [onboardingAnswers, setOnboardingAnswers] = React.useState<any>({});
   React.useEffect(() => {
     setOnboardingAnswers(JSON.parse(localStorage.getItem('onboardingAnswers') || '{}'));
   }, []);
 
-  // Shared AI product feed
-  const { aiProducts, fetchNextBatch, loading: loadingAiProducts } = useSharedAiProductFeed(onboardingAnswers);
+  // LLM products from Firestore
+  const [aiProducts, setAiProducts] = React.useState<any[]>([]);
+  const [loadingAiProducts, setLoadingAiProducts] = React.useState(false);
+
+  // Load all LLM products from Firestore
+  const loadProductsFromDB = React.useCallback(async () => {
+    if (!user) return;
+    setLoadingAiProducts(true);
+    const products = await loadUserBuyProducts(user.uid);
+    setAiProducts(products);
+    setLoadingAiProducts(false);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (user) loadProductsFromDB();
+  }, [user, loadProductsFromDB]);
+
+  // Trigger LLM and store new products in Firestore
+  const handleFetchMoreProducts = async () => {
+    if (!user) return;
+    setLoadingAiProducts(true);
+    try {
+      const res = await fetch('/api/ai-product-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onboardingAnswers, batchIndex: aiProducts.length }),
+      });
+      const newProducts = await res.json();
+      await addUserBuyProducts(user.uid, newProducts);
+      await loadProductsFromDB();
+    } catch (e) {
+      // fallback: do nothing
+    }
+    setLoadingAiProducts(false);
+  };
 
   const handleOpenModal = (item: ShopItem) => {
     setSelectedItemForModal({
@@ -216,25 +261,35 @@ export default function BuyPage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="bg-background p-0">
-                      {category.items.length > 0 ? (
-                        <div className="flex overflow-x-auto space-x-3 p-3">
-                          {category.id === 'marketplace-solutions'
-                            ? category.items.map((item: any, idx: number) => (
+                      {category.id === 'marketplace-solutions' ? (
+                        <div className="flex flex-col items-center p-3">
+                          {category.items.length > 0 ? (
+                            <div className="flex overflow-x-auto space-x-3 w-full">
+                              {category.items.map((item: any, idx: number) => (
                                 <SuggestedProductCard key={`ai-product-${item.id || idx}`} data={item} />
-                              ))
-                            : category.items.map((item: Product) => (
-                                <ShopItemCard key={`${category.id}-${item.id}`} item={item as any} />
                               ))}
-                          {category.id === 'marketplace-solutions' && (
-                            <Button onClick={fetchNextBatch} disabled={loadingAiProducts} className="min-w-[120px] h-[200px] flex-shrink-0 flex flex-col items-center justify-center border-dashed border-2 border-primary/30 bg-muted/30 hover:bg-muted/50">
-                              {loadingAiProducts ? 'Loading...' : '+ More'}
-                            </Button>
+                            </div>
+                          ) : (
+                            <div className="p-4 text-center w-full">
+                              <p className="text-sm text-muted-foreground mb-2">No products yet. Click '+ More' to generate recommendations!</p>
+                            </div>
                           )}
+                          <Button onClick={handleFetchMoreProducts} disabled={loadingAiProducts} className="min-w-[120px] h-[200px] mt-2 flex-shrink-0 flex flex-col items-center justify-center border-dashed border-2 border-primary/30 bg-muted/30 hover:bg-muted/50">
+                            {loadingAiProducts ? 'Loading...' : '+ More'}
+                          </Button>
                         </div>
                       ) : (
-                        <div className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground">Coming soon!</p>
-                        </div>
+                        category.items.length > 0 ? (
+                          <div className="flex overflow-x-auto space-x-3 p-3">
+                            {category.items.map((item: Product) => (
+                              <ShopItemCard key={`${category.id}-${item.id}`} item={item as any} />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-muted-foreground">Coming soon!</p>
+                          </div>
+                        )
                       )}
                     </AccordionContent>
                   </AccordionItem>

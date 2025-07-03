@@ -14,6 +14,7 @@ import { SuggestedTopicCard } from './SuggestedTopicCard';
 import { SuggestedProductCard } from './SuggestedProductCard';
 import { ConsolidatedMissedTasksCard } from './ConsolidatedMissedTasksCard';
 import { PostsSection } from './PostsSection';
+import { LearnArticleFeedData } from '@/app/types/feed';
 
 interface DynamicFeedCardProps {
   item: FeedItem;
@@ -24,6 +25,19 @@ interface TimeBasedTrackingFeedData {
   timeOfDay: 'morning' | 'afternoon' | 'evening';
   priorities?: Record<string, 'high' | 'medium' | 'low'>;
   anytimeAllocation?: Record<string, string>;
+}
+
+function LearnArticleCard({ data }: { data: LearnArticleFeedData }) {
+  return (
+    <div className="p-4 border rounded-lg bg-card shadow flex flex-col items-start">
+      <h3 className="font-bold text-lg mb-2">{data.title}</h3>
+      {data.imageUrl && (
+        <img src={data.imageUrl} alt={data.title} className="mb-2 rounded w-full max-w-xs" />
+      )}
+      <p className="text-sm text-muted-foreground mb-2">{data.snippet}</p>
+      <a href={data.link} target="_blank" rel="noopener noreferrer" className="text-primary underline mt-2">Read more</a>
+    </div>
+  );
 }
 
 export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
@@ -50,7 +64,8 @@ export function DynamicFeedCard({ item }: DynamicFeedCardProps) {
     case 'friendActivity':
       return <FriendActivityCard data={item.data} />;
     case 'recommendedLearning':
-      return <RecommendedLearningCard />; // Assumes RecommendedLearningCard fetches/contains its own items
+      // Pass Firestore articles if present
+      return <RecommendedLearningCard articles={item.data.articles} />;
     case 'productRecommendations':
       return <ProductRecommendationsCard />; // Assumes ProductRecommendationsCard fetches/contains its own items
     case 'aiInsight':

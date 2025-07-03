@@ -763,15 +763,11 @@ const FinalInsightsComponent = ({ part1Answers, part2Answers }: { part1Answers: 
         }
       }
 
-      // Set a flag to indicate onboarding is complete
-      localStorage.setItem('onboardingCompleted', 'true');
-      
       // Redirect to home
       window.location.href = '/';
     } catch (error) {
       console.error('Error generating priorities:', error);
       // Still redirect to home even if priority generation fails
-      localStorage.setItem('onboardingCompleted', 'true');
       window.location.href = '/';
     }
   };

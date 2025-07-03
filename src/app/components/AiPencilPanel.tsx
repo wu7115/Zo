@@ -63,9 +63,9 @@ export function AiPencilPanel({ page }: AiPencilPanelProps) {
         const trackingAnswers = await loadDailyTrackingAnswers();
         const trackingHistory = await getRecentTrackingHistory(7); // Last 7 days
         
-        fetch('/api/ai-pencil', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+    fetch('/api/ai-pencil', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             page, 
             onboardingAnswers, 
@@ -73,16 +73,16 @@ export function AiPencilPanel({ page }: AiPencilPanelProps) {
             trackingAnswers,
             trackingHistory 
           }),
-        })
-          .then(res => res.json())
-          .then(data => {
+    })
+      .then(res => res.json())
+      .then(data => {
             const suggestion = data.suggestion || 'No advice available.';
             setContent(suggestion);
             setHasContent(suggestion !== 'No advice available.' && suggestion !== 'AI Pencil is unavailable right now.');
-            setLoading(false);
-            hasFetched.current = true;
-          })
-          .catch(() => {
+        setLoading(false);
+        hasFetched.current = true;
+      })
+      .catch(() => {
             setContent('AI Pencil is unavailable right now.');
             setHasContent(false);
             setLoading(false);

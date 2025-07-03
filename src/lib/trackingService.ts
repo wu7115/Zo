@@ -311,47 +311,6 @@ export async function getTodayCompletionStats(): Promise<{ completed: number; to
   };
 }
 
-/**
- * Migrate existing localStorage data to Firestore
- */
-export async function migrateLocalStorageToFirestore(): Promise<void> {
-  const userId = getCurrentUserId();
-  if (!userId || typeof window === 'undefined') return;
-  
-  try {
-    // Migrate priorities
-    const prioritiesStr = localStorage.getItem('trackingQuestionPriorities');
-    if (prioritiesStr) {
-      const priorities = JSON.parse(prioritiesStr);
-      await saveTrackingPriorities(priorities);
-      console.log('Migrated tracking priorities to Firestore');
-    }
-    
-    // Migrate current day's answers
-    const answersStr = localStorage.getItem('trackingAnswers');
-    const dateStr = localStorage.getItem('trackingAnswersDate');
-    if (answersStr && dateStr) {
-      const answers = JSON.parse(answersStr);
-      await saveDailyTrackingAnswers(answers, dateStr);
-      console.log('Migrated current day tracking answers to Firestore');
-    }
-    
-    // Migrate history
-    const historyStr = localStorage.getItem('trackingAnswersHistory');
-    if (historyStr) {
-      const history = JSON.parse(historyStr);
-      for (const [date, answers] of Object.entries(history)) {
-        await saveDailyTrackingAnswers(answers as DailyTrackingAnswers, date);
-        await archiveDailyTrackingAnswers(date);
-      }
-      console.log('Migrated tracking history to Firestore');
-    }
-    
-  } catch (error) {
-    console.error('Error migrating localStorage data to Firestore:', error);
-  }
-}
-
 // ===== DIAGNOSTIC/SURVEY ANSWERS =====
 
 export async function saveSurveyAnswers(answers: any): Promise<void> {
@@ -406,4 +365,66 @@ export async function clearOnboardingAnswers(): Promise<void> {
   const db = getFirestore(app);
   const docRef = doc(db, 'users', user.uid, 'diagnostic', 'onboardingAnswers');
   await deleteDoc(docRef);
+} 
+
+// ===== BUY PRODUCTS (AI/LLM) =====
+
+/**
+ * Load all buy products for the user from Firestore
+ */
+export async function loadUserBuyProducts(userId: string): Promise<any[]> {
+  if (!userId) return [];
+  const db = (await import('./firebase')).db;
+  const { collection, getDocs } = await import('firebase/firestore');
+  const productsRef = collection(db, 'users', userId, 'buyProducts');
+  const snap = await getDocs(productsRef);
+  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Add new buy products for the user to Firestore (array of product objects)
+ */
+export async function addUserBuyProducts(userId: string, products: any[]): Promise<void> {
+  if (!userId || !Array.isArray(products)) return;
+  const db = (await import('./firebase')).db;
+  const { collection, addDoc } = await import('firebase/firestore');
+  const productsRef = collection(db, 'users', userId, 'buyProducts');
+  for (const product of products) {
+    await addDoc(productsRef, product);
+  }
+} 
+
+// ===== LEARN ARTICLES (AI/LLM) =====
+
+/**
+ * Load all learn articles for the user from Firestore
+ */
+export async function loadUserLearnArticles(userId: string): Promise<any[]> {
+  if (!userId) return [];
+  const db = (await import('./firebase')).db;
+  const { collection, getDocs } = await import('firebase/firestore');
+  const articlesRef = collection(db, 'users', userId, 'learnArticles');
+  // TEMP: Remove orderBy for migration/debug
+  const snap = await getDocs(articlesRef);
+  const articles = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.log('loadUserLearnArticles for userId:', userId, 'returned', articles);
+  return articles;
+}
+
+/**
+ * Add new learn articles for the user to Firestore (array of article objects)
+ */
+export async function addUserLearnArticles(userId: string, articles: any[]): Promise<void> {
+  if (!userId || !Array.isArray(articles)) return;
+  const db = (await import('./firebase')).db;
+  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+  const articlesRef = collection(db, 'users', userId, 'learnArticles');
+  for (const article of articles) {
+    // Ensure createdAt is set
+    const articleWithTimestamp = {
+      ...article,
+      createdAt: article.createdAt || serverTimestamp(),
+    };
+    await addDoc(articlesRef, articleWithTimestamp);
+  }
 } 

@@ -5,7 +5,7 @@ import { trackingQuestions } from '@/data/trackingQuestions';
 import { getQuestionTime } from '@/utils/taskAllocation';
 import { useToast } from '@/hooks/use-toast';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, doc, getDocs, deleteDoc, updateDoc, orderBy, query, limit, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, getDocs, deleteDoc, updateDoc, orderBy, query, limit, onSnapshot, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { loadDailyTrackingAnswers } from '@/lib/trackingService';
 
@@ -73,6 +73,11 @@ const getIncompleteTasksForPeriod = (
   });
   return incompleteTasks;
 };
+
+// Helper to get YYYY-MM-DD from Date
+function getDateString(date: Date) {
+  return date.toISOString().split('T')[0];
+}
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -152,6 +157,27 @@ export function useNotifications() {
     }
   };
 
+  // Helper to check if a notification of this type/period/date already exists
+  const notificationExists = async (type: string, period: string, dateString: string) => {
+    if (!user) return false;
+    const notifRef = collection(db, 'users', user.uid, 'notifications');
+    const qNotif = query(
+      notifRef,
+      orderBy('timestamp', 'desc'),
+      limit(10)
+    );
+    const snap = await getDocs(qNotif);
+    return snap.docs.some(doc => {
+      const data = doc.data();
+      if (data.type !== type || data.timePeriod !== period) return false;
+      // Compare date part only
+      let ts = data.timestamp;
+      if (ts && ts.toDate) ts = ts.toDate();
+      else ts = new Date(ts);
+      return getDateString(ts) === dateString;
+    });
+  };
+
   // Mark notification as read in Firestore
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return;
@@ -195,7 +221,10 @@ export function useNotifications() {
     const currentPeriod = getCurrentTimePeriod();
     const startHour = getTimePeriodStartHour(currentPeriod);
     const isBeginningOfPeriod = now.getHours() === startHour && now.getMinutes() < 30;
+    const todayString = getDateString(now);
     if (isBeginningOfPeriod && lastCheckedPeriod !== currentPeriod) {
+      // Only send if not already sent today for this period
+      if (await notificationExists('new-period', currentPeriod, todayString)) return;
       const newNotification = {
         type: 'new-period' as const,
         title: `New ${currentPeriod.charAt(0).toUpperCase() + currentPeriod.slice(1)} Tasks Available`,
@@ -223,7 +252,10 @@ export function useNotifications() {
     let middleHour = startHour + Math.floor((endHour - startHour) / 2);
     if (middleHour < startHour) middleHour += 24;
     const isMiddleOfPeriod = Math.abs(now.getHours() - middleHour) <= 0.5;
+    const todayString = getDateString(now);
     if (isMiddleOfPeriod) {
+      // Only send if not already sent today for this period
+      if (await notificationExists('incomplete-tasks', currentPeriod, todayString)) return;
       const answers = await getTrackingAnswers();
       const incompleteTasks = getIncompleteTasksForPeriod(currentPeriod, answers);
       if (incompleteTasks.length > 0) {
@@ -235,15 +267,12 @@ export function useNotifications() {
           timestamp: now,
           read: false,
         };
-        // Only add if not already present
-        if (!notifications.find(n => n.type === 'incomplete-tasks' && n.timePeriod === currentPeriod && !n.read)) {
-          await addNotification(notification);
-          toast({
-            title: notification.title,
-            description: notification.message,
-            duration: 5000,
-          });
-        }
+        await addNotification(notification);
+        toast({
+          title: notification.title,
+          description: notification.message,
+          duration: 5000,
+        });
       }
     }
   }, [notifications, getTrackingAnswers, toast, user]);

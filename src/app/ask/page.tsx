@@ -16,6 +16,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { loadDailyTrackingAnswers } from '@/lib/trackingService';
 import { app } from '@/lib/firebase';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import * as chrono from 'chrono-node';
 
 interface ChatMessage {
   id: string;
@@ -43,6 +44,11 @@ async function loadOnboardingDataFromFirestore(uid: string) {
     } catch {}
   }
   return {};
+}
+
+// Utility to get YYYY-MM-DD from Date
+function formatDate(date: Date) {
+  return date.toISOString().split('T')[0];
 }
 
 export default function AskAiPage() {
@@ -113,9 +119,8 @@ export default function AskAiPage() {
     scrollToBottom();
   }, [chatHistory]);
 
-  // Helper to build a summary of tracking tasks (now async)
-  const buildTrackingSummary = async () => {
-    // Use loaded trackingAnswers and anytimeAllocation
+  // Helper to build a summary of tracking tasks for a given answers object
+  const buildTrackingSummary = async (trackingAnswers: any, anytimeAllocation: any) => {
     const tasksByTime: Record<string, { id: string; text: string; answered: boolean; answer?: any }[]> = {
       morning: [],
       afternoon: [],
@@ -134,7 +139,8 @@ export default function AskAiPage() {
           else if (alloc === 'Evening') time = 'evening';
         }
         if (time) {
-          const taskId = `${category.toLowerCase().replace(/[^a-z0-9]+/g, '-') }__${q.id}`;
+          // FIX: Use the original category string to match Firestore keys
+          const taskId = `${category}__${q.id}`;
           tasksByTime[time].push({
             id: taskId,
             text: q.text,
@@ -162,6 +168,7 @@ export default function AskAiPage() {
     return summary.join('\n');
   };
 
+  // --- Smarter prompt handler ---
   const handleSubmitPrompt = async () => {
     if (!inputPrompt.trim()) return;
     const newUserMessage: ChatMessage = {
@@ -175,12 +182,44 @@ export default function AskAiPage() {
     setIsLoading(true);
     setError(null);
 
-    // Gather user data for context (from Firestore)
-    const trackingSummary = await buildTrackingSummary();
-    const contextString = `\nUser Profile Data:\n- Onboarding Answers: ${JSON.stringify(onboardingAnswers)}\n- Part 2 Answers: ${JSON.stringify(part2Answers)}\n- Tracking Answers: ${JSON.stringify(trackingAnswers)}\n- Tracking Task Summary: ${trackingSummary}\n`;
+    // --- Smart date detection ---
+    let dateToQuery: string | undefined = undefined;
+    const parsed = chrono.parse(currentPrompt);
+    if (parsed && parsed.length > 0) {
+      const date = parsed[0].start.date();
+      dateToQuery = formatDate(date);
+    }
+    if (!dateToQuery) {
+      dateToQuery = formatDate(new Date());
+    }
+    console.log('[AskAI] Querying tracking answers for date:', dateToQuery);
+
+    // Load tracking answers for the detected date
+    let trackingAnswersForDate = {};
+    try {
+      trackingAnswersForDate = await loadDailyTrackingAnswers(dateToQuery);
+      console.log('[AskAI] Firestore tracking answers for', dateToQuery, trackingAnswersForDate);
+    } catch (e) {
+      console.error('[AskAI] Error loading tracking answers for', dateToQuery, e);
+      trackingAnswersForDate = {};
+    }
+
+    // Build summary for the detected date
+    const trackingSummary = await buildTrackingSummary(trackingAnswersForDate, anytimeAllocation);
+    let contextString = `\nUser Profile Data:\n- Onboarding Answers: ${JSON.stringify(onboardingAnswers)}\n- Part 2 Answers: ${JSON.stringify(part2Answers)}\n- Tracking Answers (${dateToQuery}): ${JSON.stringify(trackingAnswersForDate)}\n- Tracking Task Summary: ${trackingSummary}\n`;
+    // Trim context if too long (e.g., >4000 chars)
+    if (contextString.length > 4000) {
+      contextString = contextString.slice(0, 4000) + '\n[TRUNCATED]\n';
+      console.warn('[AskAI] Context string truncated to 4000 chars');
+    }
 
     try {
       const aiResponse = await askAI({ prompt: `${contextString}\nUser: ${currentPrompt}` } as AskAIInput);
+      // Defensive: ensure aiResponse is an object with a 'response' property
+      if (!aiResponse || typeof aiResponse !== 'object' || typeof aiResponse.response !== 'string') {
+        console.error('[AskAI] Invalid AI response object:', aiResponse);
+        throw new Error('AI did not return a valid response.');
+      }
       const newAiMessage: ChatMessage = {
         id: Date.now().toString() + "-ai",
         sender: "ai",

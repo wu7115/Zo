@@ -48,32 +48,32 @@ export default function PlanViewPage() {
         // ... rest of the logic below uses parsedAnswers instead of localStorage
         // (copy the logic from before, but use parsedAnswers)
         // ---
-        const ALL_CATEGORIES = [
-          'Digestive Health',
-          'Nutrition & Diet',
-          'Health Goals & Body Changes',
-          'Physical Wellness',
-          'Mental & Emotional Wellness',
-          'Medications & Supplements',
-        ];
-        const { questionnaireData } = await import('@/data/questionnaireData');
-        const part2: Record<string, any[]> = questionnaireData.part2;
-        let totalQuestions = 0;
-        let totalAnswered = 0;
-        const categoryCompletion: Record<string, number> = {};
-        for (const cat of ALL_CATEGORIES) {
-          const questions: any[] = part2[cat] || [];
-          const visible: any[] = questions.filter((q: any) => !q.condition || q.condition(parsedAnswers));
-          const answered: any[] = visible.filter((q: any) => {
-            const a = parsedAnswers[q.id];
-            if (Array.isArray(a)) return a.length > 0;
-            return a !== undefined && a !== '';
-          });
-          categoryCompletion[cat] = visible.length === 0 ? 1 : answered.length / visible.length;
-          totalQuestions += visible.length;
-          totalAnswered += answered.length;
-        }
-        const overallCompletion = totalQuestions === 0 ? 1 : totalAnswered / totalQuestions;
+    const ALL_CATEGORIES = [
+      'Digestive Health',
+      'Nutrition & Diet',
+      'Health Goals & Body Changes',
+      'Physical Wellness',
+      'Mental & Emotional Wellness',
+      'Medications & Supplements',
+    ];
+      const { questionnaireData } = await import('@/data/questionnaireData');
+      const part2: Record<string, any[]> = questionnaireData.part2;
+      let totalQuestions = 0;
+      let totalAnswered = 0;
+      const categoryCompletion: Record<string, number> = {};
+      for (const cat of ALL_CATEGORIES) {
+        const questions: any[] = part2[cat] || [];
+        const visible: any[] = questions.filter((q: any) => !q.condition || q.condition(parsedAnswers));
+        const answered: any[] = visible.filter((q: any) => {
+          const a = parsedAnswers[q.id];
+          if (Array.isArray(a)) return a.length > 0;
+          return a !== undefined && a !== '';
+        });
+        categoryCompletion[cat] = visible.length === 0 ? 1 : answered.length / visible.length;
+        totalQuestions += visible.length;
+        totalAnswered += answered.length;
+      }
+      const overallCompletion = totalQuestions === 0 ? 1 : totalAnswered / totalQuestions;
         // ---
         // Use insights from Firestore if available
         let healthInsight = data.secondInsight || data.initialInsight || '';
@@ -84,31 +84,31 @@ export default function PlanViewPage() {
           // ... (optional, can skip if you want to only show saved insights)
         }
         // Post-process insights for UI
-        let summaryOverride = null;
-        if (overallCompletion < 0.8) {
+      let summaryOverride = null;
+      if (overallCompletion < 0.8) {
           summaryOverride = 'To get a more detailed and accurate insight, please complete at least 80% of the questions in your diagnostic survey.';
-        }
+      }
         setSummary(summaryOverride || healthInsight || 'Here are your personalized wellness insights based on your answers.');
         // Map to UI format
         const processedInsights = (categoryRecommendations || []).map((insight: any) => {
-          const cat = insight.category;
-          if (categoryCompletion[cat] < 0.8) {
+        const cat = insight.category;
+        if (categoryCompletion[cat] < 0.8) {
             return { ...insight, recommendation: 'To get a more detailed and accurate recommendation, please answer more questions in this category.' };
-          }
-          return insight;
-        });
-        for (const cat of ALL_CATEGORIES) {
+        }
+        return insight;
+      });
+      for (const cat of ALL_CATEGORIES) {
           if (!processedInsights.find((i: any) => i.category === cat)) {
             processedInsights.push({ category: cat, recommendation: categoryCompletion[cat] < 0.8 ? 'To get a more detailed and accurate recommendation, please answer more questions in this category.' : 'No recommendation available.' });
-          }
         }
+      }
         setInsights(ALL_CATEGORIES.map(cat => processedInsights.find((i: any) => i.category === cat)!));
       } catch (e) {
         setSummary('Sorry, I could not load your insights.');
         setInsights([]);
       } finally {
         setLoading(false);
-        setLoadingSummary(false);
+      setLoadingSummary(false);
       }
     };
     fetchInsights();

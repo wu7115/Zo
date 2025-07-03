@@ -168,11 +168,11 @@ function QuickTaskInputCurrentPeriod() {
   }, [dailyAnswers, priorities, anytimeAllocation]);
 
   useEffect(() => {
-    const initialValues: Record<string, any> = {};
-    tasks.forEach(task => {
+      const initialValues: Record<string, any> = {};
+      tasks.forEach(task => {
       initialValues[task.id] = dailyAnswers[task.id] ?? '';
-    });
-    setValues(initialValues);
+      });
+      setValues(initialValues);
   }, [tasks, dailyAnswers]);
 
   const handleChange = (taskId: string, val: any) => {

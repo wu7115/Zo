@@ -11,7 +11,6 @@ import {
   updateTrackingAnswer,
   checkAndArchivePreviousDay,
   getTodayCompletionStats,
-  migrateLocalStorageToFirestore,
 } from '@/lib/trackingService';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
@@ -91,9 +90,6 @@ export function useTrackingData() {
         
         setPriorities(loadedPriorities);
         setDailyAnswers(loadedAnswers);
-        
-        // Migrate localStorage data if this is the first time
-        await migrateLocalStorageToFirestore();
         
       } catch (error) {
         console.error('Error loading tracking data:', error);

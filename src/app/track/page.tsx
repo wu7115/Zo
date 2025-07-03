@@ -73,16 +73,16 @@ const renderInputType = (task: TrackingTask, value: any, onChange: (val: any) =>
       return (
         <div className="space-y-2">
           {task.options?.map((option) => (
-            <Button
+              <Button
               key={option}
               variant={value === option ? "default" : "outline"}
               size="sm"
               onClick={() => onChange(option)}
               className="w-full justify-start"
-            >
+              >
               {option}
               {value === option && <CheckCircle2 className="ml-2 h-4 w-4" />}
-            </Button>
+              </Button>
           ))}
         </div>
       );
@@ -337,37 +337,37 @@ export default function TrackPage() {
     let isMounted = true;
     setLoadingAllocation(true);
     (async () => {
-      // Use the new hard-coded tracking questions from trackingQuestions.ts
+    // Use the new hard-coded tracking questions from trackingQuestions.ts
       const hardcodedTrackingPlan = await convertTrackingQuestionsToPlan(trackingQuestions);
-      // Get categories in the same order and names as trackingQuestions
-      const ALL_TRACKING_CATEGORIES = getTrackingCategories();
-      const activityMap = new Map<string, { dailyTasks: TrackingTask[]; weeklyTasks: TrackingTask[] }>();
-      for (const cat of hardcodedTrackingPlan as any[]) {
-        // Sort daily tasks by time period and priority
-        const sortedDailyTasks = sortTasksByTimeAndPriority(
-          Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+    // Get categories in the same order and names as trackingQuestions
+    const ALL_TRACKING_CATEGORIES = getTrackingCategories();
+    const activityMap = new Map<string, { dailyTasks: TrackingTask[]; weeklyTasks: TrackingTask[] }>();
+    for (const cat of hardcodedTrackingPlan as any[]) {
+      // Sort daily tasks by time period and priority
+      const sortedDailyTasks = sortTasksByTimeAndPriority(
+        Array.isArray(cat.dailyTasks) ? cat.dailyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
           priorities
-        );
-        activityMap.set(cat.title, {
-          dailyTasks: sortedDailyTasks,
-          weeklyTasks: Array.isArray(cat.weeklyTasks) ? cat.weeklyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
-        });
-      }
-      const fullCategories: TrackingCategory[] = ALL_TRACKING_CATEGORIES.map(({ id, title, icon }) => {
-        const tasks = activityMap.get(title) || { dailyTasks: [], weeklyTasks: [] };
+      );
+      activityMap.set(cat.title, {
+        dailyTasks: sortedDailyTasks,
+        weeklyTasks: Array.isArray(cat.weeklyTasks) ? cat.weeklyTasks.map((t: any) => ({ ...t, inputType: t.inputType as TrackingTask['inputType'], status: 'Pending' })) : [],
+      });
+    }
+    const fullCategories: TrackingCategory[] = ALL_TRACKING_CATEGORIES.map(({ id, title, icon }) => {
+      const tasks = activityMap.get(title) || { dailyTasks: [], weeklyTasks: [] };
         // Count unanswered daily tasks
         const unansweredCount = tasks.dailyTasks.filter(task => !isTaskCompleted(task.id)).length;
-        return {
-          id,
-          title,
-          icon,
-          badgeCount: unansweredCount,
-          dailyTasks: tasks.dailyTasks,
-          weeklyTasks: tasks.weeklyTasks,
-        };
-      });
+      return {
+        id,
+        title,
+        icon,
+        badgeCount: unansweredCount,
+        dailyTasks: tasks.dailyTasks,
+        weeklyTasks: tasks.weeklyTasks,
+      };
+    });
       if (isMounted) {
-        setTrackingData(fullCategories);
+    setTrackingData(fullCategories);
         setLoadingAllocation(false);
       }
     })();
@@ -511,14 +511,14 @@ export default function TrackPage() {
                           </div>
                           <div className="flex gap-2">
                             <Button onClick={handleCalculateCalories} className="flex-1">
-                              Calculate Calories
-                            </Button>
+                            Calculate Calories
+                          </Button>
                             {calculatedCalories !== null && (
                               <div className="flex items-center justify-center px-4 bg-muted rounded-md">
                                 <span className="font-semibold text-primary">{calculatedCalories} cal</span>
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+                            </div>
                           {calculatedCalories !== null && (
                             <Button onClick={handleLogActivity} className="w-full">
                               Log Activity
@@ -533,46 +533,46 @@ export default function TrackPage() {
                     <div className="flex justify-center items-center h-32">Loading task allocation...</div>
                   ) : (
                     trackingData.map((category) => (
-                      <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
+                    <AccordionItem value={category.id} key={category.id} id={`diary-${category.id}`} className="rounded-lg border bg-card shadow-md overflow-hidden">
                         <AccordionTrigger className="px-4 py-3 font-semibold text-primary text-base rounded-lg hover:bg-primary/5 focus:outline-none">
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-1">
                               <category.icon className="h-4 w-4 text-accent" />
                               <span className="text-sm whitespace-nowrap">{category.title}</span>
-                            </div>
+                          </div>
                             {category.badgeCount && category.badgeCount > 0 && (
                               <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
-                                {category.badgeCount}
+                              {category.badgeCount}
                               </span>
-                            )}
-                          </div>
-                        </AccordionTrigger>
+                          )}
+                        </div>
+                      </AccordionTrigger>
                         <AccordionContent className="px-4 pb-4">
                           <div className="space-y-4">
-                            <div>
-                              <h4 className="font-semibold text-primary mb-2">Daily Tasks</h4>
-                              {category.dailyTasks.length === 0 && <p className="text-muted-foreground text-sm">No daily tasks for this category.</p>}
-                              {category.dailyTasks.map((task) => {
+                          <div>
+                            <h4 className="font-semibold text-primary mb-2">Daily Tasks</h4>
+                            {category.dailyTasks.length === 0 && <p className="text-muted-foreground text-sm">No daily tasks for this category.</p>}
+                            {category.dailyTasks.map((task) => {
                                 const answered = isTaskCompleted(task.id);
                                 const taskPriority = getTaskPriority(task.id, priorities);
 
-                                return (
-                                  <div
-                                    key={task.id}
+                              return (
+                                <div
+                                  key={task.id}
                                     className={`tracking-question-subcard${answered ? ' answered' : ''} mb-4 p-3 flex flex-col gap-2`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold text-primary flex items-center">
-                                        Goal: {task.goal}
-                                      </span>
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-primary flex items-center">
+                                      Goal: {task.goal}
+                                    </span>
                                       {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
-                                    </div>
-                                    <hr className="my-1 border-muted" />
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground text-sm flex items-center">
-                                        {task.question}
-                                      </span>
-                                    </div>
+                                  </div>
+                                  <hr className="my-1 border-muted" />
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-sm flex items-center">
+                                      {task.question}
+                                    </span>
+                                  </div>
                                     {/* Time period and priority badges */}
                                     <div className="flex items-center justify-between mb-2 w-full">
                                       {/* Time period badge on the left */}
@@ -600,13 +600,13 @@ export default function TrackPage() {
                                     {renderInputType(task, dailyAnswers[task.id], (val) => {
                                       updateAnswer(task.id, val);
                                     }, priorities)}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div className="mt-4">
-                              <h4 className="font-semibold text-primary mb-2">Weekly Tasks</h4>
-                              {category.weeklyTasks.length === 0 && <p className="text-muted-foreground text-sm">No weekly tasks for this category.</p>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-4">
+                            <h4 className="font-semibold text-primary mb-2">Weekly Tasks</h4>
+                            {category.weeklyTasks.length === 0 && <p className="text-muted-foreground text-sm">No weekly tasks for this category.</p>}
                               {category.weeklyTasks.map((task) => {
                                 const answered = isTaskCompleted(task.id);
                                 const taskPriority = getTaskPriority(task.id, priorities);
@@ -616,18 +616,18 @@ export default function TrackPage() {
                                     key={task.id}
                                     className={`tracking-question-subcard${answered ? ' answered' : ''} mb-4 p-3 flex flex-col gap-2`}
                                   >
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold text-primary flex items-center">
-                                        Goal: {task.goal}
-                                      </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-primary flex items-center">
+                                    Goal: {task.goal}
+                                  </span>
                                       {answered && <CheckCircle2 className="ml-2 h-5 w-5 text-green-600" />}
-                                    </div>
-                                    <hr className="my-1 border-muted" />
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground text-sm flex items-center">
-                                        {task.question}
-                                      </span>
-                                    </div>
+                                </div>
+                                <hr className="my-1 border-muted" />
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground text-sm flex items-center">
+                                    {task.question}
+                                  </span>
+                                </div>
                                     {/* Time period and priority badges */}
                                     <div className="flex items-center justify-between mb-2 w-full">
                                       {/* Time period badge on the left */}
@@ -655,13 +655,13 @@ export default function TrackPage() {
                                     {renderInputType(task, dailyAnswers[task.id], (val) => {
                                       updateAnswer(task.id, val);
                                     }, priorities)}
-                                  </div>
+                              </div>
                                 );
                               })}
-                            </div>
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
                     ))
                   )}
                 </Accordion>
